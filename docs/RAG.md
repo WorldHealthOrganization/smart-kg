@@ -1,6 +1,6 @@
 # Ingestion contract
 
-What a retrieval system may load from a DAK graph, and what it must carry with it. This is a
+What a retrieval system may load from an L1 graph, and what it must carry with it. This is a
 contract, not an implementation: no index, no embedding model, no vector store is specified or
 shipped, for the same reason the starter kit's `ai/spine/INTERFACE.md` declares five operations
 and implements none.
@@ -88,8 +88,9 @@ person to remember to invalidate it. What retrieval adds is that the expiry has 
 index. An embedding computed in June from a dictionary edited in July has no way to announce
 itself; the pin is what lets a loader announce it instead.
 
-Rebuild on any change to: the DAK sources, the ArchiMate model (the ontology's classes and licensed
-edges move), or the smart-base logical models (a class's instance shape moves).
+Rebuild on any change to: the source publication or DMN the graph was extracted from, or
+`ontology/l1.json` (the classes, their declared properties, and the licensed edges all move with
+it).
 
 ---
 
