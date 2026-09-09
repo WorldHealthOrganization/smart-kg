@@ -1,0 +1,288 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://smart.who.int/kg/shapes/recommendation-graph.schema.json",
+  "title": "L1 recommendation graph document",
+  "description": "One L1 graph: publications, recommendations and the citations that point at them, as typed nodes and reified edges. This schema checks form only -- tier 1. It cannot check that a node's type is a class the ontology declares, nor that an edge is a triple the ontology licenses, because both live in ontology/l1.json rather than in this file; that is tier 2, and tools/validate.mjs is the reference implementation. A document passing this schema and failing that check is a well-formed graph of things the model does not say.",
+  "type": "object",
+  "required": [
+    "@context",
+    "id",
+    "type",
+    "ontologyVersion",
+    "generatedAt",
+    "nodes",
+    "edges"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "@context": {
+      "description": "The context published beside this schema, by URL or inline. A graph carrying its own ad-hoc context is not interoperable with the rest of the WHO linked-data estate, which is the point of having one.",
+      "oneOf": [
+        {
+          "type": "string",
+          "format": "uri"
+        },
+        {
+          "type": "object"
+        },
+        {
+          "type": "array"
+        }
+      ]
+    },
+    "id": {
+      "type": "string",
+      "description": "IRI of this graph document. One document is one DAK at one version."
+    },
+    "type": {
+      "const": "Entity",
+      "description": "prov:Entity. The document is a provenance-tracked thing, matching how smart-base stamps its generated JSON-LD vocabularies."
+    },
+    "ontologyVersion": {
+      "type": "string",
+      "description": "schemaVersion of the ontology/l1.json this graph was built against. A graph outliving its ontology is why this is recorded rather than assumed."
+    },
+    "generatedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "wasDerivedFrom": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/provenanceSource"
+      },
+      "description": "The DAK sources this graph was extracted from, each pinned by hash. Same doctrine as the audit sidecar: edit a source and everything derived from it goes stale on its own rather than quietly disagreeing."
+    },
+    "nodes": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/node"
+      }
+    },
+    "edges": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/edge"
+      }
+    },
+    "dak": {
+      "$ref": "#/$defs/nodeProperties",
+      "description": "The DAK envelope itself \u2014 the fields of the smart-base DAK logical model. Kept out of nodes because it is the subject of the whole document rather than one thing in it."
+    }
+  },
+  "$defs": {
+    "classId": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+      "description": "An ontology class id -- \"recommendation\", \"terminology-code\". Membership is checked at tier 2 against ontology/l1.json; this only rules out ids that could never be one."
+    },
+    "predicate": {
+      "type": "string",
+      "pattern": "^[a-z][A-Za-z0-9]*$",
+      "description": "A predicate name. Membership is checked at tier 2 against ontology/l1.json; this only rules out strings that could never be one. Deliberately not an enum: the predicate set belongs to the ontology and changes with it, so a list here would be a second copy that drifts."
+    },
+    "derivation": {
+      "enum": [
+        "derived",
+        "inferred",
+        "decided"
+      ],
+      "description": "Identical to traceability-link.schema.json, deliberately. derived: mechanically produced, no choice involved. inferred: a rule that could reasonably have gone another way. decided: the source is silent and someone chose. Every node and edge in a graph is one of the three, and the third is the one a reviewer needs to find."
+    },
+    "evidence": {
+      "type": "object",
+      "description": "Where this came from in the DAK. Required on anything not mechanically derived, for the same reason a failing check must quote its source: an assertion with nothing to point at is the confident wrong answer the package exists to prevent.",
+      "required": [
+        "location"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "location": {
+          "type": "string",
+          "description": "file:line, a spreadsheet sheet and cell, or a BPMN element id."
+        },
+        "quote": {
+          "type": "string",
+          "description": "Verbatim text from the source."
+        },
+        "artifact": {
+          "type": "string",
+          "description": "The generated artifact affected, where one exists."
+        }
+      }
+    },
+    "provenanceSource": {
+      "type": "object",
+      "required": [
+        "path",
+        "sha256"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "path": {
+          "type": "string"
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "repository": {
+          "type": "string"
+        },
+        "commit": {
+          "type": "string"
+        }
+      }
+    },
+    "nodeProperties": {
+      "type": "object",
+      "description": "Instance fields. The permitted keys per class are declared on the class in ontology/l1.json and checked at tier 2; nothing is asserted about them here.",
+      "propertyNames": {
+        "pattern": "^[A-Za-z][A-Za-z0-9_]*(\\[x\\])?(\\.[A-Za-z][A-Za-z0-9_]*(\\[x\\])?)*$"
+      }
+    },
+    "node": {
+      "type": "object",
+      "required": [
+        "id",
+        "type",
+        "label",
+        "derivation"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "IRI, unique within the document."
+        },
+        "type": {
+          "$ref": "#/$defs/classId"
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Human-readable name. Required so a retrieved node reads without resolving it."
+        },
+        "definedBy": {
+          "type": "string",
+          "format": "uri",
+          "description": "Canonical URL of the smart-base logical model giving this node's instance shape, where the class has one. Ten of the nineteen concepts have none; those carry an id, a label and their edges, and nothing about their contents can be validated."
+        },
+        "properties": {
+          "$ref": "#/$defs/nodeProperties"
+        },
+        "derivation": {
+          "$ref": "#/$defs/derivation"
+        },
+        "note": {
+          "type": "string"
+        },
+        "evidence": {
+          "$ref": "#/$defs/evidence"
+        },
+        "flagRef": {
+          "type": "string",
+          "description": "Id of a flag raised while extracting this node. The flag itself lives in the extracting skill's validation report, not in the graph: a graph records what it found and what it had to decide, and routing an open question to its owner is the authoring pipeline's job."
+        },
+        "skill": {
+          "type": "string",
+          "description": "Skill id that produced this node."
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "derivation": {
+                "enum": [
+                  "inferred",
+                  "decided"
+                ]
+              }
+            },
+            "required": [
+              "derivation"
+            ]
+          },
+          "then": {
+            "required": [
+              "note",
+              "evidence"
+            ],
+            "description": "A node that was not mechanically derived must say why it is what it is and point at the source. Without both, the record is no better than no record."
+          }
+        }
+      ]
+    },
+    "edge": {
+      "type": "object",
+      "description": "One reified statement. Reified rather than written as a plain node property because an edge here carries a qualifier, a derivation and its evidence, and a plain property has nowhere to put them.",
+      "required": [
+        "type",
+        "predicate",
+        "source",
+        "target",
+        "derivation"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "Statement"
+        },
+        "predicate": {
+          "$ref": "#/$defs/predicate"
+        },
+        "source": {
+          "type": "string",
+          "description": "IRI of a node in this document."
+        },
+        "target": {
+          "type": "string",
+          "description": "IRI of a node in this document."
+        },
+        "qualifier": {
+          "type": "string",
+          "description": "The relationship label from the ArchiMate model \u2014 \"use\", \"has\", \"participate\", \"applies to\". It is the difference between a Business Process using a Data Object and having a Requirement, and dropping it flattens the model to bare adjacency."
+        },
+        "derivation": {
+          "$ref": "#/$defs/derivation"
+        },
+        "note": {
+          "type": "string"
+        },
+        "evidence": {
+          "$ref": "#/$defs/evidence"
+        },
+        "flagRef": {
+          "type": "string"
+        },
+        "skill": {
+          "type": "string"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "derivation": {
+                "enum": [
+                  "inferred",
+                  "decided"
+                ]
+              }
+            },
+            "required": [
+              "derivation"
+            ]
+          },
+          "then": {
+            "required": [
+              "note",
+              "evidence"
+            ]
+          }
+        }
+      ]
+    }
+  }
+}

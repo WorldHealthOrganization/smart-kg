@@ -1,0 +1,47 @@
+# Structural checks for the L1 knowledge graph schema.
+#
+# Everything generated here is committed, so a consumer can fetch the ontology in the format their
+# tool reads without installing a toolchain. Committed generated files go stale silently, so each is
+# checked against its source on every push.
+
+name: Knowledge graph
+
+on:
+  push:
+    branches-ignore: ['gh-pages']
+    paths: ['ontology/**', 'shapes/**', 'examples/**', 'tools/**', '.github/workflows/kg.yml']
+  pull_request:
+    paths: ['ontology/**', 'shapes/**', 'examples/**', 'tools/**', '.github/workflows/kg.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: Validate L1 schema package
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      # The Turtle, Cypher and JSON-LD context are views of ontology/l1.json.
+      - name: Check exports match the ontology
+        run: node tools/build-exports.mjs --check
+
+      # Tier 2: node types are declared classes, edges are licensed triples, references resolve,
+      # properties are declared, and a citation claiming resolution actually resolves.
+      - name: Validate examples against the ontology
+        run: node tools/validate.mjs
+
+      # Tier 1: the fixtures satisfy the document shape. Separate from the step above because a
+      # document can conform to the ontology and still be malformed, and the two need different fixes.
+      - name: Validate examples against the shape schema
+        run: |
+          npm install --no-save --no-audit --no-fund ajv-cli@5 ajv-formats@2
+          npx ajv compile --spec=draft2020 -c ajv-formats -s shapes/recommendation-graph.schema.json > /dev/null
+          for f in examples/*.json; do
+            npx ajv validate --spec=draft2020 -c ajv-formats -s shapes/recommendation-graph.schema.json -d "$f"
+          done
