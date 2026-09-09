@@ -183,6 +183,12 @@ export function buildTurtle(ont) {
   return T.join("\n") + "\n";
 }
 
+// Compare ignoring line endings. The .gitattributes in this repository normalises to LF, but a
+// checkout made before it existed -- or with a global core.autocrlf that overrides it -- will have
+// CRLF in the working tree. Reporting "stale" at someone who has changed nothing is a check that
+// trains people to distrust it, and the newline is not what the check is about.
+const sameContent = (a, b) => a.replace(/\r\n/g, "\n") === b.replace(/\r\n/g, "\n");
+
 function main() {
   const check = process.argv.includes("--check");
   let total = 0;
@@ -207,9 +213,15 @@ function main() {
           console.error(`${name} is missing. Run: node tools/build-exports.mjs`);
           process.exit(1);
         }
-        if (readFileSync(file, "utf8") !== want) {
+        const have = readFileSync(file, "utf8");
+        if (!sameContent(have, want)) {
           console.error(`${name} is stale. Run: node tools/build-exports.mjs`);
           process.exit(1);
+        }
+        if (have !== want) {
+          console.warn(
+            `warning: ${name} matches but its line endings differ from what the tools write. ` +
+            `Run: git add --renormalize .`);
         }
       }
       console.log(`${layer}: exports current -- ${ont.classes.length} classes, ${ont.edges.length} edges`);
