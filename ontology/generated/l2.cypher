@@ -15,18 +15,18 @@
 CREATE CONSTRAINT kgclass_id IF NOT EXISTS
 FOR (c:KGClass) REQUIRE c.id IS UNIQUE;
 
-MERGE (:KGClass:Kit {id:'dak', name:'Digital Adaptation Kit', kind:'Kit', iri:'http://smart.who.int/kg/dak'});
-MERGE (:KGClass:Component {id:'persona', name:'Generic Persona', kind:'Component', iri:'http://smart.who.int/kg/persona'});
-MERGE (:KGClass:Component {id:'user-scenario', name:'User Scenario', kind:'Component', iri:'http://smart.who.int/kg/user-scenario'});
-MERGE (:KGClass:Component {id:'business-process', name:'Business Process Workflow', kind:'Component', iri:'http://smart.who.int/kg/business-process'});
-MERGE (:KGClass:Element {id:'dak-task', name:'Task Entry', kind:'Element', iri:'http://smart.who.int/kg/dak-task'});
-MERGE (:KGClass:Component {id:'data-element', name:'Core Data Element', kind:'Component', iri:'http://smart.who.int/kg/data-element'});
-MERGE (:KGClass:Component {id:'decision-support-logic', name:'Decision-Support Logic', kind:'Component', iri:'http://smart.who.int/kg/decision-support-logic'});
-MERGE (:KGClass:Component {id:'program-indicator', name:'Program Indicator', kind:'Component', iri:'http://smart.who.int/kg/program-indicator'});
-MERGE (:KGClass:Component {id:'functional-requirement', name:'Functional Requirement', kind:'Component', iri:'http://smart.who.int/kg/functional-requirement'});
-MERGE (:KGClass:Component {id:'non-functional-requirement', name:'Non-Functional Requirement', kind:'Component', iri:'http://smart.who.int/kg/non-functional-requirement'});
-MERGE (:KGClass:Element {id:'requirement-statement', name:'Requirement Statement', kind:'Element', iri:'http://smart.who.int/kg/requirement-statement'});
-MERGE (:KGClass:Component {id:'test-scenario', name:'Test Scenario', kind:'Component', iri:'http://smart.who.int/kg/test-scenario'});
+MERGE (:KGClass:Kit {id:'dak', name:'Digital Adaptation Kit', kind:'Kit', layer:'l2', iri:'http://smart.who.int/kg/dak'});
+MERGE (:KGClass:Component {id:'persona', name:'Generic Persona', kind:'Component', layer:'l2', iri:'http://smart.who.int/kg/persona'});
+MERGE (:KGClass:Component {id:'user-scenario', name:'User Scenario', kind:'Component', layer:'l2', iri:'http://smart.who.int/kg/user-scenario'});
+MERGE (:KGClass:Component {id:'business-process', name:'Business Process Workflow', kind:'Component', layer:'l2', iri:'http://smart.who.int/kg/business-process'});
+MERGE (:KGClass:Element {id:'dak-task', name:'Task Entry', kind:'Element', layer:'l2', iri:'http://smart.who.int/kg/dak-task'});
+MERGE (:KGClass:Component {id:'data-element', name:'Core Data Element', kind:'Component', layer:'l2', iri:'http://smart.who.int/kg/data-element'});
+MERGE (:KGClass:Component {id:'decision-support-logic', name:'Decision-Support Logic', kind:'Component', layer:'l2', iri:'http://smart.who.int/kg/decision-support-logic'});
+MERGE (:KGClass:Component {id:'program-indicator', name:'Program Indicator', kind:'Component', layer:'l2', iri:'http://smart.who.int/kg/program-indicator'});
+MERGE (:KGClass:Component {id:'functional-requirement', name:'Functional Requirement', kind:'Component', layer:'l2', iri:'http://smart.who.int/kg/functional-requirement'});
+MERGE (:KGClass:Component {id:'non-functional-requirement', name:'Non-Functional Requirement', kind:'Component', layer:'l2', iri:'http://smart.who.int/kg/non-functional-requirement'});
+MERGE (:KGClass:Element {id:'requirement-statement', name:'Requirement Statement', kind:'Element', layer:'l2', iri:'http://smart.who.int/kg/requirement-statement'});
+MERGE (:KGClass:Component {id:'test-scenario', name:'Test Scenario', kind:'Component', layer:'l2', iri:'http://smart.who.int/kg/test-scenario'});
 
 MATCH (s:KGClass {id:'dak'}), (t:KGClass {id:'health-intervention'}) MERGE (s)-[:HASCOMPONENT {predicate:'hasComponent', qualifier:'healthInterventions'}]->(t);
 MATCH (s:KGClass {id:'dak'}), (t:KGClass {id:'persona'}) MERGE (s)-[:HASCOMPONENT {predicate:'hasComponent', qualifier:'personas'}]->(t);

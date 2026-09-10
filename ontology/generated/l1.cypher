@@ -9,22 +9,22 @@
 CREATE CONSTRAINT kgclass_id IF NOT EXISTS
 FOR (c:KGClass) REQUIRE c.id IS UNIQUE;
 
-MERGE (:KGClass:Source {id:'publication', name:'Publication', kind:'Source', iri:'http://smart.who.int/kg/publication'});
-MERGE (:KGClass:Source {id:'publication-section', name:'Publication section', kind:'Source', iri:'http://smart.who.int/kg/publication-section'});
-MERGE (:KGClass:Concept {id:'recommendation', name:'Recommendation', kind:'Concept', iri:'http://smart.who.int/kg/recommendation'});
-MERGE (:KGClass:Concept {id:'remark', name:'Remark', kind:'Concept', iri:'http://smart.who.int/kg/remark'});
-MERGE (:KGClass:Concept {id:'evidence', name:'Evidence', kind:'Concept', iri:'http://smart.who.int/kg/evidence'});
-MERGE (:KGClass:Concept {id:'population', name:'Population', kind:'Concept', iri:'http://smart.who.int/kg/population'});
-MERGE (:KGClass:Concept {id:'intervention', name:'Intervention', kind:'Concept', iri:'http://smart.who.int/kg/intervention'});
-MERGE (:KGClass:Concept {id:'comparator', name:'Comparator', kind:'Concept', iri:'http://smart.who.int/kg/comparator'});
-MERGE (:KGClass:Concept {id:'outcome', name:'Outcome', kind:'Concept', iri:'http://smart.who.int/kg/outcome'});
-MERGE (:KGClass:Concept {id:'health-intervention', name:'Health intervention', kind:'Concept', iri:'http://smart.who.int/kg/health-intervention'});
-MERGE (:KGClass:Concept {id:'schedule', name:'Schedule', kind:'Concept', iri:'http://smart.who.int/kg/schedule'});
-MERGE (:KGClass:Concept {id:'schedule-entry', name:'Schedule entry', kind:'Concept', iri:'http://smart.who.int/kg/schedule-entry'});
-MERGE (:KGClass:Concept {id:'indicator', name:'Indicator', kind:'Concept', iri:'http://smart.who.int/kg/indicator'});
-MERGE (:KGClass:Reference {id:'terminology-code', name:'Terminology code', kind:'Reference', iri:'http://smart.who.int/kg/terminology-code'});
-MERGE (:KGClass:Reference {id:'citation', name:'Citation', kind:'Reference', iri:'http://smart.who.int/kg/citation'});
-MERGE (:KGClass:Reference {id:'external-artifact', name:'External artefact', kind:'Reference', iri:'http://smart.who.int/kg/external-artifact'});
+MERGE (:KGClass:Source {id:'publication', name:'Publication', kind:'Source', layer:'l1', iri:'http://smart.who.int/kg/publication'});
+MERGE (:KGClass:Source {id:'publication-section', name:'Publication section', kind:'Source', layer:'l1', iri:'http://smart.who.int/kg/publication-section'});
+MERGE (:KGClass:Concept {id:'recommendation', name:'Recommendation', kind:'Concept', layer:'l1', iri:'http://smart.who.int/kg/recommendation'});
+MERGE (:KGClass:Concept {id:'remark', name:'Remark', kind:'Concept', layer:'l1', iri:'http://smart.who.int/kg/remark'});
+MERGE (:KGClass:Concept {id:'evidence', name:'Evidence', kind:'Concept', layer:'l1', iri:'http://smart.who.int/kg/evidence'});
+MERGE (:KGClass:Concept {id:'population', name:'Population', kind:'Concept', layer:'l1', iri:'http://smart.who.int/kg/population'});
+MERGE (:KGClass:Concept {id:'intervention', name:'Intervention', kind:'Concept', layer:'l1', iri:'http://smart.who.int/kg/intervention'});
+MERGE (:KGClass:Concept {id:'comparator', name:'Comparator', kind:'Concept', layer:'l1', iri:'http://smart.who.int/kg/comparator'});
+MERGE (:KGClass:Concept {id:'outcome', name:'Outcome', kind:'Concept', layer:'l1', iri:'http://smart.who.int/kg/outcome'});
+MERGE (:KGClass:Concept {id:'health-intervention', name:'Health intervention', kind:'Concept', layer:'l1', iri:'http://smart.who.int/kg/health-intervention'});
+MERGE (:KGClass:Concept {id:'schedule', name:'Schedule', kind:'Concept', layer:'l1', iri:'http://smart.who.int/kg/schedule'});
+MERGE (:KGClass:Concept {id:'schedule-entry', name:'Schedule entry', kind:'Concept', layer:'l1', iri:'http://smart.who.int/kg/schedule-entry'});
+MERGE (:KGClass:Concept {id:'indicator', name:'Indicator', kind:'Concept', layer:'l1', iri:'http://smart.who.int/kg/indicator'});
+MERGE (:KGClass:Reference {id:'terminology-code', name:'Terminology code', kind:'Reference', layer:'l1', iri:'http://smart.who.int/kg/terminology-code'});
+MERGE (:KGClass:Reference {id:'citation', name:'Citation', kind:'Reference', layer:'l1', iri:'http://smart.who.int/kg/citation'});
+MERGE (:KGClass:Reference {id:'external-artifact', name:'External artefact', kind:'Reference', layer:'l1', iri:'http://smart.who.int/kg/external-artifact'});
 
 MATCH (s:KGClass {id:'publication'}), (t:KGClass {id:'publication-section'}) MERGE (s)-[:CONTAINS {predicate:'contains'}]->(t);
 MATCH (s:KGClass {id:'publication-section'}), (t:KGClass {id:'recommendation'}) MERGE (s)-[:CONTAINS {predicate:'contains'}]->(t);

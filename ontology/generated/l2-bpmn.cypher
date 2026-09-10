@@ -15,12 +15,12 @@
 CREATE CONSTRAINT kgclass_id IF NOT EXISTS
 FOR (c:KGClass) REQUIRE c.id IS UNIQUE;
 
-MERGE (:KGClass:Artefact {id:'bpmn-definitions', name:'BPMN File', kind:'Artefact', iri:'http://smart.who.int/kg/bpmn-definitions'});
-MERGE (:KGClass:Structure {id:'bpmn-process', name:'BPMN Process', kind:'Structure', iri:'http://smart.who.int/kg/bpmn-process'});
-MERGE (:KGClass:Structure {id:'bpmn-participant', name:'BPMN Participant', kind:'Structure', iri:'http://smart.who.int/kg/bpmn-participant'});
-MERGE (:KGClass:Structure {id:'bpmn-task', name:'BPMN Task', kind:'Structure', iri:'http://smart.who.int/kg/bpmn-task'});
-MERGE (:KGClass:Structure {id:'bpmn-gateway', name:'BPMN Gateway', kind:'Structure', iri:'http://smart.who.int/kg/bpmn-gateway'});
-MERGE (:KGClass:Structure {id:'bpmn-event', name:'BPMN Event', kind:'Structure', iri:'http://smart.who.int/kg/bpmn-event'});
+MERGE (:KGClass:Artefact {id:'bpmn-definitions', name:'BPMN File', kind:'Artefact', layer:'l2-bpmn', iri:'http://smart.who.int/kg/bpmn-definitions'});
+MERGE (:KGClass:Structure {id:'bpmn-process', name:'BPMN Process', kind:'Structure', layer:'l2-bpmn', iri:'http://smart.who.int/kg/bpmn-process'});
+MERGE (:KGClass:Structure {id:'bpmn-participant', name:'BPMN Participant', kind:'Structure', layer:'l2-bpmn', iri:'http://smart.who.int/kg/bpmn-participant'});
+MERGE (:KGClass:Structure {id:'bpmn-task', name:'BPMN Task', kind:'Structure', layer:'l2-bpmn', iri:'http://smart.who.int/kg/bpmn-task'});
+MERGE (:KGClass:Structure {id:'bpmn-gateway', name:'BPMN Gateway', kind:'Structure', layer:'l2-bpmn', iri:'http://smart.who.int/kg/bpmn-gateway'});
+MERGE (:KGClass:Structure {id:'bpmn-event', name:'BPMN Event', kind:'Structure', layer:'l2-bpmn', iri:'http://smart.who.int/kg/bpmn-event'});
 
 MATCH (s:KGClass {id:'bpmn-definitions'}), (t:KGClass {id:'bpmn-process'}) MERGE (s)-[:CONTAINS {predicate:'contains'}]->(t);
 MATCH (s:KGClass {id:'bpmn-definitions'}), (t:KGClass {id:'bpmn-participant'}) MERGE (s)-[:CONTAINS {predicate:'contains'}]->(t);

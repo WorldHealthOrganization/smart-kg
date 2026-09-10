@@ -51,7 +51,8 @@ cross-model edge everyone wants **already exists in the artefact** — it just h
 | [`ontology/l2.json`](ontology/l2.json) | **DAK components.** All nine, 12 classes, 32 edges. Imports L1 |
 | [`ontology/l2-bpmn.json`](ontology/l2-bpmn.json) | **BPMN interiors.** 6 classes, 19 edges. Imports L2 |
 | [`ontology/l2-dmn.json`](ontology/l2-dmn.json) | **DMN interiors.** 6 classes, 9 edges. Imports L2-BPMN |
-| `ontology/*.ttl` · `*.cypher` · `*.context.jsonld` | Generated views — Protégé, Neo4j, JSON-LD |
+| [`ontology/generated/`](ontology/generated/) | **Never edit.** Turtle, Cypher and JSON-LD contexts, plus `instances.cypher` — the extracted data as Cypher |
+| [`docs/VISUALIZING.md`](docs/VISUALIZING.md) | Loading and querying it all in Neo4j |
 | [`shapes/recommendation-graph.schema.json`](shapes/recommendation-graph.schema.json) | Graph document shape — tier 1, both layers |
 | [`docs/SCOPE.md`](docs/SCOPE.md) | **Read first.** What this graph refuses to hold, and why |
 | [`docs/STORAGE.md`](docs/STORAGE.md) · [`docs/RAG.md`](docs/RAG.md) | Where instances live; the ingestion contract |
@@ -187,8 +188,9 @@ node tools/extract-bpmn.mjs <f.bpmn> --personas <dir> --out examples/bpmn.json
 # one DMN file's interior; pass --bpmn to resolve usingTask instead of recording it unresolved
 node tools/extract-dmn.mjs <f.dmn> --bpmn <f.bpmn> --out examples/dmn.json
 
-node tools/build-exports.mjs          # regenerate ttl/cypher/context for every layer
-node tools/build-exports.mjs --check  # fail if stale
+node tools/build-exports.mjs          # regenerate everything in ontology/generated/,
+                                      # including instances.cypher from examples/
+node tools/build-exports.mjs --check  # fail if any of it is stale
 node tools/validate.mjs               # tier 2, each document against its layer, references
                                       # resolved across the whole set
 node tools/negative-test.mjs          # prove tier 2 fails on what it claims to catch
@@ -196,12 +198,13 @@ node tools/negative-test.mjs          # prove tier 2 fails on what it claims to 
 
 Plain Node, no dependencies, no install step.
 
-**Neo4j** — load in import order: `l1`, `l2`, `l2-bpmn`, `l2-dmn`. Each layer licenses edges onto
-classes from the ones it imports, so loading one alone leaves those edges silently absent; every
-importing layer's `.cypher` ends with a verification query returning the imported classes it
-expects to find.
+**Neo4j** — see [`docs/VISUALIZING.md`](docs/VISUALIZING.md). In short: load
+`ontology/generated/{l1,l2,l2-bpmn,l2-dmn}.cypher` in that order for the **schema**, and
+`instances.cypher` for the **data**. The two never mix — schema nodes are `:KGClass`, extracted
+nodes are `:Instance`, no relationship joins them — and every node carries `layer`, so one subgraph
+is selectable on its own.
 
-**Protégé** — open any `ontology/*.ttl`; the four merge to 835 triples and each declares
+**Protégé** — open any `ontology/generated/*.ttl`; the four merge to 835 triples and each declares
 `owl:imports` on its parents. Pairwise edge licensing is carried as qualified sub-properties, since
 licensing here is per class-pair while an OWL object property has one global domain and range.
 

@@ -1,5 +1,9 @@
 #!/usr/bin/env node
-// Builds ontology/<layer>.cypher and ontology/<layer>.ttl from an ontology JSON file.
+// Builds ontology/generated/<layer>.{cypher,ttl,context.jsonld} from ontology/<layer>.json.
+//
+// Authored files sit in ontology/; everything this writes goes in ontology/generated/. The split
+// is so a reviewer can tell at a glance which files are hand-written and under review, and which
+// are projections that will be silently regenerated. Both are committed -- see the note below.
 //
 // Both are views of the same model, committed rather than generated on demand because the point of
 // a standalone ontology repository is that someone can fetch it in the format their tool reads --
@@ -11,10 +15,11 @@
 //   node tools/build-exports.mjs
 //   node tools/build-exports.mjs --check
 
-import { readFileSync, writeFileSync, existsSync } from "node:fs";
+import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync } from "node:fs";
 import { join, dirname, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import { loadLayer, scopeOf, borrowedClassIds } from "./ontology.mjs";
+import { buildInstanceCypher } from "./build-instance-cypher.mjs";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 // Which ontology files to export. Each is authored or generated elsewhere; this only projects.
@@ -56,7 +61,7 @@ export function buildCypher(ont, layer = { own: ont, imported: { classes: [], pr
   for (const c of ont.classes) {
     L.push(
       `MERGE (:KGClass:${c.kind} {id:'${cy(c.id)}', name:'${cy(c.name)}', ` +
-      `kind:'${c.kind}', iri:'${c.iri}'` +
+      `kind:'${c.kind}', layer:'${cy((ont.layer ?? "").toLowerCase())}', iri:'${c.iri}'` +
       (c.archimateType ? `, archimateType:'${c.archimateType}'` : "") + `});`);
   }
   L.push("");
@@ -255,10 +260,12 @@ function main() {
     }
     const ont = loaded.own;
     const layer = name;
+    const gen = join(ROOT, "ontology", "generated");
+    mkdirSync(gen, { recursive: true });
     const outputs = [
-      [join(ROOT, "ontology", `${layer}.cypher`), buildCypher(ont, loaded)],
-      [join(ROOT, "ontology", `${layer}.ttl`), buildTurtle(ont, loaded)],
-      [join(ROOT, "ontology", `${layer}.context.jsonld`), JSON.stringify(buildContext(ont, loaded), null, 2) + "\n"],
+      [join(gen, `${layer}.cypher`), buildCypher(ont, loaded)],
+      [join(gen, `${layer}.ttl`), buildTurtle(ont, loaded)],
+      [join(gen, `${layer}.context.jsonld`), JSON.stringify(buildContext(ont, loaded), null, 2) + "\n"],
     ];
 
     if (check) {
@@ -283,12 +290,35 @@ function main() {
                   (loaded.imported.layers.length ? ` (imports ${loaded.imported.layers.join(", ")})` : ""));
     } else {
       for (const [file, text] of outputs) writeFileSync(file, text, "utf8");
-      console.log(`${layer}: wrote ${layer}.cypher, ${layer}.ttl, ${layer}.context.jsonld -- ` +
+      console.log(`${layer}: wrote generated/${layer}.{cypher,ttl,context.jsonld} -- ` +
                   `${ont.classes.length} classes, ${ont.edges.length} edges` +
                   (loaded.imported.layers.length ? ` (imports ${loaded.imported.layers.join(", ")})` : ""));
     }
     total += ont.edges.length;
   }
+  // The fixtures are generated output too. Building them here keeps `--check` honest: an
+  // extractor change that alters the data fails the same check that catches a stale ontology.
+  const gen = join(ROOT, "ontology", "generated");
+  const examples = join(ROOT, "examples");
+  const docs = readdirSync(examples).filter((f) => f.endsWith(".json")).sort()
+    .map((f) => JSON.parse(readFileSync(join(examples, f), "utf8")));
+  if (docs.length) {
+    const { text, nodeCount, edgeCount } = buildInstanceCypher(docs);
+    const file = join(gen, "instances.cypher");
+    const name = relative(ROOT, file);
+    if (check) {
+      if (!existsSync(file)) { console.error(`${name} is missing. Run: node tools/build-exports.mjs`); process.exit(1); }
+      if (!sameContent(readFileSync(file, "utf8"), text)) {
+        console.error(`${name} is stale. Run: node tools/build-exports.mjs`);
+        process.exit(1);
+      }
+      console.log(`instances: current -- ${nodeCount} nodes, ${edgeCount} relationships`);
+    } else {
+      writeFileSync(file, text, "utf8");
+      console.log(`instances: wrote generated/instances.cypher -- ${nodeCount} nodes, ${edgeCount} relationships`);
+    }
+  }
+
   if (!total) { console.error("no edges exported"); process.exit(1); }
 }
 

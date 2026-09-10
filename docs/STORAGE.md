@@ -50,7 +50,8 @@ committed. A DAK graph is the same kind of artifact and should travel the same p
 
 ```
                         smart-kg  (here)
-                          ontology/   T-Box — l1, l2, l2-bpmn, l2-dmn
+                          ontology/   T-Box — l1, l2, l2-bpmn, l2-dmn (authored)
+                          ontology/generated/   projections; never edited
                           shapes/     constraints
                           docs/  tools/  examples/   one fixture
                              │

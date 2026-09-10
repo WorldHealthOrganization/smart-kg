@@ -15,12 +15,12 @@
 CREATE CONSTRAINT kgclass_id IF NOT EXISTS
 FOR (c:KGClass) REQUIRE c.id IS UNIQUE;
 
-MERGE (:KGClass:Artefact {id:'dmn-definitions', name:'DMN File', kind:'Artefact', iri:'http://smart.who.int/kg/dmn-definitions'});
-MERGE (:KGClass:Structure {id:'dmn-decision', name:'DMN Decision', kind:'Structure', iri:'http://smart.who.int/kg/dmn-decision'});
-MERGE (:KGClass:Structure {id:'dmn-decision-table', name:'DMN Decision Table', kind:'Structure', iri:'http://smart.who.int/kg/dmn-decision-table'});
-MERGE (:KGClass:Structure {id:'dmn-input-clause', name:'DMN Input Clause', kind:'Structure', iri:'http://smart.who.int/kg/dmn-input-clause'});
-MERGE (:KGClass:Structure {id:'dmn-output-clause', name:'DMN Output Clause', kind:'Structure', iri:'http://smart.who.int/kg/dmn-output-clause'});
-MERGE (:KGClass:Structure {id:'dmn-rule', name:'DMN Rule', kind:'Structure', iri:'http://smart.who.int/kg/dmn-rule'});
+MERGE (:KGClass:Artefact {id:'dmn-definitions', name:'DMN File', kind:'Artefact', layer:'l2-dmn', iri:'http://smart.who.int/kg/dmn-definitions'});
+MERGE (:KGClass:Structure {id:'dmn-decision', name:'DMN Decision', kind:'Structure', layer:'l2-dmn', iri:'http://smart.who.int/kg/dmn-decision'});
+MERGE (:KGClass:Structure {id:'dmn-decision-table', name:'DMN Decision Table', kind:'Structure', layer:'l2-dmn', iri:'http://smart.who.int/kg/dmn-decision-table'});
+MERGE (:KGClass:Structure {id:'dmn-input-clause', name:'DMN Input Clause', kind:'Structure', layer:'l2-dmn', iri:'http://smart.who.int/kg/dmn-input-clause'});
+MERGE (:KGClass:Structure {id:'dmn-output-clause', name:'DMN Output Clause', kind:'Structure', layer:'l2-dmn', iri:'http://smart.who.int/kg/dmn-output-clause'});
+MERGE (:KGClass:Structure {id:'dmn-rule', name:'DMN Rule', kind:'Structure', layer:'l2-dmn', iri:'http://smart.who.int/kg/dmn-rule'});
 
 MATCH (s:KGClass {id:'dmn-definitions'}), (t:KGClass {id:'dmn-decision'}) MERGE (s)-[:CONTAINS {predicate:'contains'}]->(t);
 MATCH (s:KGClass {id:'dmn-decision'}), (t:KGClass {id:'dmn-decision-table'}) MERGE (s)-[:CONTAINS {predicate:'contains'}]->(t);
