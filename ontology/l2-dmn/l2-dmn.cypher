@@ -6,6 +6,13 @@
 //
 // Every statement is MERGE, so re-running is safe.
 //
+// RUN THIS AGAINST A USER DATABASE, NOT `system`. The CREATE CONSTRAINT below is rejected
+// with "can only be executed in a user database" if `system` is selected, which is where
+// Neo4j Browser can land you after connecting. Switch first:
+//
+//     :use neo4j                                    (Browser, or your database's name)
+//     cypher-shell -d neo4j -f <this file>           (shell)
+//
 // REQUIRES l2-bpmn.cypher and l2.cypher and l1.cypher TO BE LOADED FIRST.
 // This layer licenses edges onto imported classes (bpmn-task, citation, data-element, external-artifact). The MATCH
 // statements below find nothing if those classes are absent, and Cypher does not treat

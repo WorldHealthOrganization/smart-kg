@@ -33,10 +33,20 @@ the BPMN task that invokes a decision, so DMN depends on BPMN and not the revers
 
 ## Loading
 
+**Run against a user database, not `system`.** The first statement is a `CREATE CONSTRAINT`, which
+`system` rejects — and `system` is where Neo4j Browser can land you after connecting.
+
+```cypher
+:use neo4j          -- in Browser, before pasting; or your database's name
+```
+
+In Browser, also turn on **Enable multi statement query editor** in Settings, or only the first
+statement runs.
+
 **Everything at once** — the safe default:
 
 ```bash
-cypher-shell -f ontology/all.cypher
+cypher-shell -d neo4j -f ontology/all.cypher
 ```
 
 **One subgraph, or a few** — load in dependency order. A layer licenses edges onto classes from the
@@ -44,9 +54,9 @@ ones it imports, and Cypher does **not** treat a `MATCH` that finds nothing as a
 out of order silently drops those edges rather than failing:
 
 ```bash
-cypher-shell -f ontology/l1/l1.cypher
-cypher-shell -f ontology/l2/l2.cypher
-cypher-shell -f ontology/l2-bpmn/l2-bpmn.cypher
+cypher-shell -d neo4j -f ontology/l1/l1.cypher
+cypher-shell -d neo4j -f ontology/l2/l2.cypher
+cypher-shell -d neo4j -f ontology/l2-bpmn/l2-bpmn.cypher
 ```
 
 Every statement is `MERGE`; re-running is safe. Each importing layer's file ends with a commented

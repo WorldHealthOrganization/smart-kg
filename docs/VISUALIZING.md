@@ -6,10 +6,21 @@
 
 ## Loading
 
+**First: use a user database, not `system`.** The first statement is a `CREATE CONSTRAINT`, and
+`system` rejects it with *"can only be executed in a user database"* — which is what you get if
+Neo4j Browser left you on `system` after connecting.
+
+```cypher
+:use neo4j          -- in Browser; or whatever your database is called
+```
+
+While you are in Settings, turn on **Enable multi statement query editor** — without it, pasting a
+file runs only its first statement.
+
 **The whole model:**
 
 ```bash
-cypher-shell -f ontology/all.cypher
+cypher-shell -d neo4j -f ontology/all.cypher
 ```
 
 **One subgraph at a time** — in dependency order. Each layer licenses edges onto classes from the
@@ -17,14 +28,14 @@ ones it imports, and Cypher does **not** treat a `MATCH` that finds nothing as a
 out of order silently drops those edges instead of failing:
 
 ```bash
-cypher-shell -f ontology/l1/l1.cypher
-cypher-shell -f ontology/l2/l2.cypher
-cypher-shell -f ontology/l2-bpmn/l2-bpmn.cypher
-cypher-shell -f ontology/l2-dmn/l2-dmn.cypher
+cypher-shell -d neo4j -f ontology/l1/l1.cypher
+cypher-shell -d neo4j -f ontology/l2/l2.cypher
+cypher-shell -d neo4j -f ontology/l2-bpmn/l2-bpmn.cypher
+cypher-shell -d neo4j -f ontology/l2-dmn/l2-dmn.cypher
 ```
 
-In **Neo4j Desktop / Browser** without `cypher-shell`: open the file, paste, run. `all.cypher` is
-~140 statements, so `:auto` or the shell is easier than the Browser's one-at-a-time default.
+In **Neo4j Desktop / Browser** without `cypher-shell`: paste the file with multi-statement enabled.
+`all.cypher` is ~140 statements, so the shell is still easier.
 
 Everything is `MERGE`, so re-running is safe.
 
