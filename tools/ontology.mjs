@@ -50,10 +50,25 @@ export function loadLayer(layer, seen = new Set()) {
         `${layer}.json namespace ${own.namespace} differs from imported ${dep}.json ` +
         `${sub.own.namespace}. Imported class IRIs would not resolve.`);
     }
-    imported.layers.push(dep, ...sub.imported.layers);
-    imported.classes.push(...sub.own.classes, ...sub.imported.classes);
-    imported.predicates.push(...sub.own.predicates, ...sub.imported.predicates);
-    imported.edges.push(...sub.own.edges, ...sub.imported.edges);
+    // Deduplicate: the chain is l1 <- l2 <- l2-bpmn <- l2-dmn today, but a layer importing two
+    // layers that share an ancestor would otherwise carry that ancestor's classes twice and emit
+    // owl:imports for it twice.
+    for (const l of [dep, ...sub.imported.layers]) {
+      if (!imported.layers.includes(l)) imported.layers.push(l);
+    }
+    const seenClass = new Set(imported.classes.map((c) => c.id));
+    for (const c of [...sub.own.classes, ...sub.imported.classes]) {
+      if (!seenClass.has(c.id)) { seenClass.add(c.id); imported.classes.push(c); }
+    }
+    const seenPred = new Set(imported.predicates.map((x) => x.predicate));
+    for (const x of [...sub.own.predicates, ...sub.imported.predicates]) {
+      if (!seenPred.has(x.predicate)) { seenPred.add(x.predicate); imported.predicates.push(x); }
+    }
+    const seenEdge = new Set(imported.edges.map((e) => `${e.predicate}|${e.source}|${e.target}|${e.qualifier ?? ""}`));
+    for (const e of [...sub.own.edges, ...sub.imported.edges]) {
+      const k = `${e.predicate}|${e.source}|${e.target}|${e.qualifier ?? ""}`;
+      if (!seenEdge.has(k)) { seenEdge.add(k); imported.edges.push(e); }
+    }
   }
 
   // An imported id that the layer also declares is a genuine conflict, not an override: two
@@ -66,6 +81,26 @@ export function loadLayer(layer, seen = new Set()) {
         `definitions -- rename one, or drop the local copy and rely on the import.`);
     }
   }
+
+  // Every class an edge names, and every predicate it uses, must be declared somewhere in scope.
+  // Without this a typo in an edge becomes a silently unlicensed relationship: the edge is simply
+  // never matched, the graph loses it, and nothing says so.
+  const known = new Set([...ownIds, ...imported.classes.map((c) => c.id)]);
+  const preds = new Set([...own.predicates, ...imported.predicates].map((p) => p.predicate));
+  const problems = [];
+  for (const e of own.edges) {
+    for (const [role, id] of [["source", e.source], ["target", e.target]]) {
+      if (!known.has(id)) {
+        problems.push(`edge ${e.predicate} names ${role} class "${id}", which neither ` +
+                      `${layer}.json nor anything it imports declares`);
+      }
+    }
+    if (!preds.has(e.predicate)) {
+      problems.push(`edge "${e.source} ${e.predicate} ${e.target}" uses predicate ` +
+                    `"${e.predicate}", which is not declared in ${layer}.json or its imports`);
+    }
+  }
+  if (problems.length) throw new Error(`${layer}.json:\n  - ${problems.join("\n  - ")}`);
 
   return { own, imported };
 }

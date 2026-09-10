@@ -1,9 +1,9 @@
 {
   "@context": "http://smart.who.int/kg/l1.context.jsonld",
-  "id": "http://smart.who.int/immunizations/kg/l1",
+  "id": "https://smart.who.int/immunizations/kg/l1",
   "type": "Entity",
   "ontologyVersion": "1.0",
-  "generatedAt": "2026-09-10T07:53:55Z",
+  "generatedAt": "2026-09-10T11:39:14Z",
   "wasDerivedFrom": [
     {
       "path": "../smart-base/input/dmn/DAK.DT.IMMZ.D2.DT.BCG.dmn",
@@ -12,18 +12,18 @@
   ],
   "nodes": [
     {
-      "id": "http://smart.who.int/immunizations/artifact/DAK.DT.IMMZ.D2.DT.BCG",
+      "id": "https://smart.who.int/immunizations/artifact/DAK.DT.IMMZ.D2.DT.BCG",
       "type": "external-artifact",
       "label": "IMMZ.D2 Determine required vaccination(s) if any",
       "properties": {
-        "iri": "http://smart.who.int/immunizations/artifact/DAK.DT.IMMZ.D2.DT.BCG",
+        "iri": "https://smart.who.int/immunizations/artifact/DAK.DT.IMMZ.D2.DT.BCG",
         "targetKind": "dmn:DecisionTable"
       },
       "derivation": "derived",
       "skill": "kg/extract-citations"
     },
     {
-      "id": "http://smart.who.int/immunizations/citation/601a58741d62",
+      "id": "https://smart.who.int/immunizations/citation/601a58741d62",
       "type": "citation",
       "label": "WHO recommendations for routine immunization – summary tables (March 2023) (1)",
       "properties": {
@@ -41,8 +41,8 @@
     {
       "type": "Statement",
       "predicate": "appearsIn",
-      "source": "http://smart.who.int/immunizations/citation/601a58741d62",
-      "target": "http://smart.who.int/immunizations/artifact/DAK.DT.IMMZ.D2.DT.BCG",
+      "source": "https://smart.who.int/immunizations/citation/601a58741d62",
+      "target": "https://smart.who.int/immunizations/artifact/DAK.DT.IMMZ.D2.DT.BCG",
       "derivation": "derived",
       "skill": "kg/extract-citations"
     }

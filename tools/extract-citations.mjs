@@ -17,7 +17,7 @@
 
 import { readFileSync, writeFileSync } from "node:fs";
 import { basename } from "node:path";
-import { sha256, dakNamespace, artifactId, citationId } from "./kgid.mjs";
+import { sha256, dakNamespace, artifactId, citationId, normalisedScheme } from "./kgid.mjs";
 
 const dec = (s) => s.replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"')
                     .replace(/&#39;/g, "'").replace(/&amp;/g, "&");
@@ -27,7 +27,7 @@ const text = (block, tag) => {
 };
 
 export function extract(xml, path) {
-  const nsUrl = dakNamespace(/namespace="([^"]+)"/.exec(xml)?.[1]);
+  const nsUrl = dakNamespace(/namespace="([^"]+)"/.exec(xml)?.[1]);   // scheme-normalised; see kgid.mjs
   const tableId = /<dmn:decision id="([^"]+)"/.exec(xml)?.[1] ?? basename(path);
   const usingTask = /<dmn:usingTask href="([^"]+)"/.exec(xml)?.[1] ?? null;
 

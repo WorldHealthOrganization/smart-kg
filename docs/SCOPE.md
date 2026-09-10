@@ -63,50 +63,66 @@ the fixture has become a dataset and this rule has quietly stopped holding.
 
 ---
 
-## What L2 holds
+## What L2 holds, in three graphs
 
-L2 is the opposite problem to L1. L1 has no representation; L2 has three of them — BPMN XML, DMN XML
-and FSH — and no joins between them.
+L2 is the opposite problem to L1. L1 has no representation; L2 has several — and no joins between
+them. But it is also not one layer, and modelling it as one was a mistake worth naming.
 
-Applying the rule and its corollary gives the whole answer:
+`DAK.fsh` declares a Digital Adaptation Kit as **nine components**, each of which points at a file
+by URI and asserts nothing about that file's interior. That boundary is the natural seam:
+
+| Graph | Holds | Vocabulary | Reads |
+|---|---|---|---|
+| `l2` | the nine DAK components and their cross-references | WHO's | `dak.json`, the FSH tree |
+| `l2-bpmn` | one BPMN file's interior | OMG's | BPMN XML |
+| `l2-dmn` | one DMN file's interior | OMG's | DMN XML |
+
+They are separate because their failure modes are separate. A DAK component is wrong when it points
+at a file that is not there; a BPMN subgraph is wrong when it misreads the file it did find. One
+graph mixing both would need a reader to hold two vocabularies and two notions of correctness at
+once, and would make "which components does this DAK have" unanswerable amid 60 task nodes.
+
+The dependency runs one way and only where the artefacts do: `l2-dmn` imports `l2-bpmn` because
+`dmn:usingTask` names the BPMN task that invokes a decision. Nothing points back.
+
+Applying the rule and its corollary decides the contents:
 
 | | Other representation? | Other query layer? | Verdict |
 |---|---|---|---|
-| BPMN flows, pools, gateways | No — only the XML | No | **Graph** |
-| DMN clauses and rules | No — only the XML | No | **Graph** |
-| The three cross-format joins | Only as string equality | No | **Graph.** This is the point |
-| A FHIR canonical's contents | Yes — FHIR | Yes — validator, publisher, canonical refs | **Index by URL** |
-| Decision-table cells | Yes — the table itself | The table | **Carry as properties** |
-
-What that excludes is as load-bearing as what it includes. `CoreDataElement` is a canonical URI to a
-ValueSet, CodeSystem, ConceptMap or logical model; L2 records the URL and nothing about the target.
-The BCG table's 250 input and output cells are properties of their rule, not 250 nodes. BPMN diagram
-interchange is dropped entirely — coordinates answer no question this graph exists to answer.
-
-### An edge with no instance is not licensed
-
-`ontology/l2.json` carries a `deliberatelyOmitted` list, and the first entry is a `writes` edge from
-an output clause to a data element. It is plausible, it is the natural mirror of `reads`, and no
-committed artefact exhibits it: the BCG table's four outputs are Care Plan, Guidance displayed to
-health worker, Annotations and Reference(s), none of them a dictionary element. Licensing it would
-be inventing vocabulary — the failure this repository was rebuilt to avoid.
+| The nine components and their links | Only as FSH fields and bare ids | No | **Graph** (`l2`) |
+| BPMN flows, pools, gateways | No — only the XML | No | **Graph** (`l2-bpmn`) |
+| DMN clauses and rules | No — only the XML | No | **Graph** (`l2-dmn`) |
+| A FHIR canonical's contents | Yes — FHIR | Yes — validator, publisher | **Index by URL** |
+| Decision-table cells | Yes — the table | The table | **Carry as properties** |
+| A Gherkin feature file's interior | Yes — the file | No | **Not yet** — no instance exists |
 
 ### Every join says how confident it is
 
-A join made by string equality across two file formats is a **judgement**, so it is `inferred` and
-never `derived`, and it carries `resolutionStatus`: `unresolved`, `resolved` or `ambiguous`.
-`ambiguous` is terminal, exactly as for a citation — two ActorDefinitions with one title is a
-question for a person, not a tie-break for a matcher.
+A DAK links its components four ways, by two different mechanisms. One is a canonical reference —
+`actor = Canonical(SGAuthoring.Persona.BusinessAnalyst)` — and it resolves exactly: 46 of 46. The
+other three are string matching across file formats, and they resolve when the strings agree.
+
+So a match made by string equality is a **judgement**: `inferred`, never `derived`, carrying
+`resolutionStatus` of `unresolved`, `resolved` or `ambiguous`. `ambiguous` is terminal — two
+ActorDefinitions with one title is a question for a person, not a tie-break for a matcher.
 
 An unresolved reference still gets a node, marked unresolved. A dangling edge would be dropped by
 any store and the finding with it; a placeholder makes *"roles a process names that nothing
 defines"* a query rather than a warning nobody kept.
 
+### An edge with no instance is not licensed
+
+Each ontology carries a `deliberatelyOmitted` list. The entries are not hypotheticals — they are
+relationships that looked obviously right and had nothing behind them. A `writes` edge from a DMN
+output clause to a data element is the natural mirror of `reads`, and no committed artefact exhibits
+one. A `derivedFrom` edge from a data element to a recommendation is plausible and unrecorded
+anywhere. Both are omitted, with the reason, so the next person does not re-derive the argument.
+
 ### A Care Plan column is not a care plan
 
 The BCG table declares an output column labelled "Care Plan". That is a column definition inside a
-decision table — a definition, like a `PlanDefinition`. Boundary 2 above is unaffected and
-unchanged: nothing in L2 reaches an execution artefact, and `output-clause` has no edge that could.
+decision table — a definition, like a `PlanDefinition`. Boundary 2 above is unaffected: nothing in
+any L2 graph reaches an execution artefact, and `dmn-output-clause` has no edge that could.
 
 ---
 

@@ -18,7 +18,10 @@ const load = (f) => JSON.parse(readFileSync(join(ROOT, "examples", f), "utf8"));
 const clone = (o) => JSON.parse(JSON.stringify(o));
 
 const L1 = load("immz-bcg-citations.json");
-const L2 = load("l2-daklifecycle-bcg.json");
+const DAK = load("l2-smart-base-dak.json");
+const BPMN = load("l2-bpmn-daklifecycle.json");
+const DMN = load("l2-dmn-immz-bcg.json");
+const ALL = [L1, DAK, BPMN, DMN];
 const index = (...docs) => new Map(docs.flatMap((d) => (d.nodes ?? []).map((n) => [n.id, n])));
 
 const find = (doc, type) => doc.nodes.find((n) => n.type === type);
@@ -37,49 +40,64 @@ const cases = [
   }, /claims resolutionStatus "resolved" but has no resolvesTo/],
   ["version mismatch stops the run", L1, (d) => { d.ontologyVersion = "0.9"; }, /Nothing below was checked/],
 
-  // --- L2: licensing --------------------------------------------------------------------------
-  ["unlicensed edge is rejected", L2, (d) => {
-    // A persona does not contain a data element, and the ontology says so.
+  // --- the DAK component layer ------------------------------------------------------------------
+  ["unlicensed edge is rejected", DAK, (d) => {
+    // A requirement statement does not contain a persona, and the ontology says so.
     d.edges.push({ type: "Statement", predicate: "contains",
-                   source: find(d, "persona").id, target: find(d, "data-element").id,
+                   source: find(d, "requirement-statement").id, target: find(d, "persona").id,
                    derivation: "derived" });
   }, /is not licensed by the ontology/],
-  ["an L1 class an L2 edge does not license is still rejected", L2, (d) => {
-    d.edges.push({ type: "Statement", predicate: "reads",
-                   source: find(d, "input-clause").id, target: find(d, "persona").id,
-                   derivation: "derived" });
-  }, /is not licensed by the ontology/],
+  ["a canonical join resolved with no evidence is rejected", DAK, (d) => {
+    delete d.edges.find((e) => e.predicate === "fulfilledBy").evidence;
+  }, /points at no evidence|carries no evidence/],
+  ["an invented resolutionStatus is rejected", DAK, (d) => {
+    findEdge(d, "fulfilledBy").properties.resolutionStatus = "probably";
+  }, /permitted values are/],
+  ["an undeclared property on a DAK component is rejected", DAK, (d) => {
+    find(d, "dak").properties.budget = "none of your business";
+  }, /does not declare/],
 
-  // --- L2: the cross-format joins -------------------------------------------------------------
-  ["a join resolved against a placeholder is rejected", L2, (d) => {
-    // The target persona is itself marked unresolved; claiming the match resolved is a match
-    // asserted against a thing that was never found.
+  // --- the BPMN subgraph --------------------------------------------------------------------
+  ["a subgraph may not license an edge its parent layer does not", BPMN, (d) => {
+    d.edges.push({ type: "Statement", predicate: "flowsTo",
+                   source: find(d, "bpmn-participant").id, target: find(d, "bpmn-task").id,
+                   derivation: "derived" });
+  }, /is not licensed by the ontology/],
+  ["a join resolved against a placeholder is rejected", BPMN, (d) => {
+    // The target persona is itself marked unresolved; claiming the match resolved asserts a match
+    // against a thing that was never found.
     const e = d.edges.find((x) => x.predicate === "performedBy"
                                && x.properties?.resolutionStatus !== "resolved");
     e.properties.resolutionStatus = "resolved";
   }, /cannot be resolved against a placeholder/],
-  ["a resolved join with no evidence is rejected", L2, (d) => {
-    const e = d.edges.find((x) => x.predicate === "performedBy"
-                               && x.properties?.resolutionStatus === "resolved");
-    delete e.evidence;
-  }, /points at no evidence|carries no evidence/],
-  ["an invented resolutionStatus is rejected", L2, (d) => {
-    findEdge(d, "performedBy").properties.resolutionStatus = "probably";
-  }, /permitted values are/],
 
-  // --- L2: what must NOT be rejected ----------------------------------------------------------
-  ["a free-text BPMN branch label is not a finding", L2, (d) => {
+  // --- the DMN subgraph ---------------------------------------------------------------------
+  ["a DMN clause may not read a persona", DMN, (d) => {
+    d.edges.push({ type: "Statement", predicate: "reads",
+                   source: find(d, "dmn-input-clause").id,
+                   target: "https://smart.who.int/base/persona/business-analyst",
+                   derivation: "derived" });
+  }, /is not licensed by the ontology/],
+  ["an unknown class is rejected in a subgraph too", DMN, (d) => {
+    find(d, "dmn-rule").type = "dmn-wormhole";
+  }, /does not declare/],
+
+  // --- what must NOT be rejected ------------------------------------------------------------
+  ["a free-text BPMN branch label is not a finding", BPMN, (d) => {
     d.edges.find((e) => e.predicate === "flowsTo").qualifier = "Something nobody has written before";
   }, null],
-  ["an unresolved join is a legitimate state", L2, null, null],
+  ["an unresolved join is a legitimate state", BPMN, null, null],
+  ["a cross-document reference resolves across the set", DMN, null, null],
+  ["the DAK layer conforms as extracted", DAK, null, null],
 ];
 
 let failures = 0;
 for (const [name, base, mutate, expect] of cases) {
   const doc = clone(base);
   if (mutate) mutate(doc);
-  const other = base === L1 ? L2 : L1;
-  const { errors } = validateGraph(doc, loadLayer(layerOf(doc)), index(doc, other));
+  // Every other document in the set, so a cross-layer reference resolves the way it does in CI.
+  const { errors } = validateGraph(doc, loadLayer(layerOf(doc)),
+                                   index(doc, ...ALL.filter((d) => d !== base)));
 
   if (expect === null) {
     if (errors.length) {

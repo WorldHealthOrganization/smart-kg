@@ -32,7 +32,8 @@ const DEFAULT_LAYER = "l1";
 /** Which ontology a document should be checked against. */
 export function layerOf(doc) {
   const ctx = typeof doc["@context"] === "string" ? doc["@context"] : "";
-  const m = /\/(l\d+)\.context\.jsonld$/.exec(ctx);
+  // Layer names are l1, l2, l2-bpmn, l2-dmn — the subgraph suffix is part of the name.
+  const m = /\/(l\d+(?:-[a-z0-9]+)*)\.context\.jsonld$/.exec(ctx);
   return m ? m[1] : DEFAULT_LAYER;
 }
 

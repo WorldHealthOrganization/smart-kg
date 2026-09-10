@@ -7,9 +7,10 @@ identity, cross-model edges and provenance, and points at those artefacts by URL
 **L1 first**, because L1 is the layer nothing currently represents. A WHO recommendation is prose in
 a PDF: no identifier, no structure, and no way for a tool to follow a citation to it.
 
-**L2 second**, because L2 has plenty of representation and no joins. BPMN, DMN and the persona
-definitions each describe part of a DAK, and the links between them are string equality across
-three file formats.
+**L2 second**, in three parts, because L2 is not one thing. `DAK.fsh` declares a Digital Adaptation
+Kit as **nine components**, each pointing at a file by URI and saying nothing about its interior.
+So the DAK component layer is one graph, and the interiors of BPMN and DMN files are two more —
+different vocabularies (OMG's, not WHO's), different extractors, different failure modes.
 
 ---
 
@@ -47,7 +48,9 @@ cross-model edge everyone wants **already exists in the artefact** — it just h
 | Path | Contents |
 |---|---|
 | [`ontology/l1.json`](ontology/l1.json) | **The L1 ontology.** 16 classes, 35 licensed edges. Authored |
-| [`ontology/l2.json`](ontology/l2.json) | **The L2 ontology.** 11 classes, 30 licensed edges. Imports L1 |
+| [`ontology/l2.json`](ontology/l2.json) | **DAK components.** All nine, 12 classes, 32 edges. Imports L1 |
+| [`ontology/l2-bpmn.json`](ontology/l2-bpmn.json) | **BPMN interiors.** 6 classes, 19 edges. Imports L2 |
+| [`ontology/l2-dmn.json`](ontology/l2-dmn.json) | **DMN interiors.** 6 classes, 9 edges. Imports L2-BPMN |
 | `ontology/*.ttl` · `*.cypher` · `*.context.jsonld` | Generated views — Protégé, Neo4j, JSON-LD |
 | [`shapes/recommendation-graph.schema.json`](shapes/recommendation-graph.schema.json) | Graph document shape — tier 1, both layers |
 | [`docs/SCOPE.md`](docs/SCOPE.md) | **Read first.** What this graph refuses to hold, and why |
@@ -100,39 +103,71 @@ for a person.
 
 ---
 
-## The L2 model
+## The L2 models
 
-Eleven classes in three kinds — **Artefact** (a file a DAK ships), **Structure** (an element inside
-one), **Definition** (something defined once and referenced by name from many). It exists for three
-joins, and everything else in it is there to make those joins addressable.
+`DAK.fsh` describes itself as "a complete Digital Adaptation Kit with metadata and all 9 DAK
+components". The component layer carries all nine — eight as classes, and `healthInterventions` as
+`l1:health-intervention`, which L1 already declares as its hinge to L2.
 
-| Join | How it survives today |
-|---|---|
-| Which role runs a process | BPMN participant `@name` == ActorDefinition `title` |
-| Which task invokes a decision | DMN `usingTask/@href` fragment == BPMN task `@name` |
-| What a decision reads | element names inside DMN input-expression prose |
+| # | Component | Class | Points at |
+|---|---|---|---|
+| 1 | healthInterventions | `l1:health-intervention` | Dublin Core references |
+| 2 | personas | `persona` | ActorDefinition / GenericPersona |
+| 3 | userScenarios | `user-scenario` | narrative, plus persona ids |
+| 4 | businessProcesses | `business-process` | a BPMN file, by URI |
+| 5 | dataElements | `data-element` | a FHIR canonical |
+| 6 | decisionLogic | `decision-support-logic` | a DMN file, by URI |
+| 7 | indicators | `program-indicator` | numerator/denominator prose |
+| 8 | requirements | `functional-requirement` · `non-functional-requirement` | statements, actors |
+| 9 | testScenarios | `test-scenario` | a Gherkin feature file, by URI |
 
-None has a shared identifier. Each breaks silently on a rename, and every edge produced from one
-carries a `resolutionStatus` of `unresolved`, `resolved` or `ambiguous` — never an unqualified fact.
+Every component reaches its file through `sourcedFrom`, whose target is an `l1:external-artifact`.
+The BPMN and DMN subgraphs then describe that file's interior **at the same IRI** — so opening a
+file never creates a second name for it.
 
-Run against WHO's committed artefacts, that is not a hypothetical:
+### Two mechanisms for one problem
+
+A DAK links its components together four times, and it does so two different ways:
+
+| Link | Mechanism | Resolves |
+|---|---|---|
+| requirement → persona | `actor = Canonical(SGAuthoring.Persona.X)` | **46 / 46** |
+| BPMN pool → persona | `@name` == ActorDefinition `title` | 6 / 8 |
+| DMN decision → BPMN task | `usingTask/@href` fragment == task `@name` | 0 / 1 |
+| DMN clause → data element | names inside expression prose | 0 / 10 |
+
+The first is a canonical reference and it resolves exactly. The rest are string matching, and they
+resolve when the strings happen to agree. Same estate, same personas — **the mechanism that works
+already exists; BPMN and DMN just do not use it.** That is the finding this layer makes visible,
+and it is more useful than any individual broken link.
 
 ```
 warning: participant "Clinical SME" -> persona unresolved
 warning: participant "QC Reviewer"  -> persona unresolved
 ```
 
-Both personas exist. They are titled *"Clinical Subject Matter Expert"* and *"Quality Control
-Reviewer"*. Two of the eight role assignments in the DAK lifecycle BPMN point at nothing, and
-nothing in the estate reports it.
+Both personas exist, titled *"Clinical Subject Matter Expert"* and *"Quality Control Reviewer"*.
 
-### One artefact, one address
+### Coverage is the other half
 
-`external-artifact` (L1) and `decision-table` (L2) describe the same DMN file **at the same IRI** —
-L1 opaquely, L2 structurally. That is declared by `elaborates` on the L2 class, and
-`tools/validate.mjs` rejects any other pair of types sharing an IRI. It is also what makes the
-cross-layer edge work without machinery: `citesSource` runs from an L2 decision rule to an L1
-citation, and neither document knows the other exists.
+```
+DAK component coverage (DAK.fsh declares nine):
+  · healthInterventions  none in this IG
+  ✓ personas             22 instance(s)
+  · userScenarios        none in this IG
+  · businessProcesses    none in this IG
+  ...
+  ✓ requirements         41 instance(s)
+  7 of 9 components have no instance here.
+
+2 file(s) present with no component declaring them:
+  input/bpmn/SGAuthoring.DAKLifecycle.bpmn  (would be businessProcesses)
+  input/dmn/DAK.DT.IMMZ.D2.DT.BCG.dmn       (would be decisionLogic)
+```
+
+smart-base defines the model rather than instantiating a DAK, so most components being empty is
+expected there. The gap that is **not** expected is the last two lines: a BPMN and a DMN sit in the
+input tree with no component declaring them. Nothing else in the estate reports either direction.
 
 ---
 
@@ -140,26 +175,35 @@ citation, and neither document knows the other exists.
 
 ```bash
 # DMN -> L1 citation nodes, with coverage
-node tools/extract-citations.mjs <file.dmn> --out examples/x.json
+node tools/extract-citations.mjs <file.dmn> --out examples/l1.json
 
-# BPMN + DMN + personas -> L2, with the three joins resolved as far as they can be
-node tools/extract-l2.mjs --bpmn <f.bpmn> --dmn <f.dmn> --personas <dir> --out examples/y.json
+# dak.json + the FSH tree -> the nine components, with coverage across all of them
+node tools/extract-dak.mjs --dak <dak.json> --fsh <input/fsh> \
+  --bpmn-dir <input/bpmn> --dmn-dir <input/dmn> --out examples/dak.json
+
+# one BPMN file's interior
+node tools/extract-bpmn.mjs <f.bpmn> --personas <dir> --out examples/bpmn.json
+
+# one DMN file's interior; pass --bpmn to resolve usingTask instead of recording it unresolved
+node tools/extract-dmn.mjs <f.dmn> --bpmn <f.bpmn> --out examples/dmn.json
 
 node tools/build-exports.mjs          # regenerate ttl/cypher/context for every layer
 node tools/build-exports.mjs --check  # fail if stale
-node tools/validate.mjs               # tier 2, each document against its layer
+node tools/validate.mjs               # tier 2, each document against its layer, references
+                                      # resolved across the whole set
 node tools/negative-test.mjs          # prove tier 2 fails on what it claims to catch
 ```
 
 Plain Node, no dependencies, no install step.
 
-**Neo4j** — `cypher-shell -f ontology/l1.cypher` then `-f ontology/l2.cypher`. L2 licenses edges
-onto L1 classes, so loading it alone leaves those edges silently absent; `l2.cypher` ends with a
-verification query that returns the imported classes it expects to find.
+**Neo4j** — load in import order: `l1`, `l2`, `l2-bpmn`, `l2-dmn`. Each layer licenses edges onto
+classes from the ones it imports, so loading one alone leaves those edges silently absent; every
+importing layer's `.cypher` ends with a verification query returning the imported classes it
+expects to find.
 
-**Protégé** — open `ontology/l1.ttl` (326 triples) or `ontology/l2.ttl` (243), which declares
-`owl:imports` on L1. Pairwise edge licensing is carried as qualified sub-properties, since licensing
-here is per class-pair while an OWL object property has one global domain and range.
+**Protégé** — open any `ontology/*.ttl`; the four merge to 835 triples and each declares
+`owl:imports` on its parents. Pairwise edge licensing is carried as qualified sub-properties, since
+licensing here is per class-pair while an OWL object property has one global domain and range.
 
 ---
 
@@ -171,12 +215,16 @@ here is per class-pair while an OWL object property has one global domain and ra
 | **T2 Conformance** | Node types are declared classes; edges are licensed; references resolve across the document set; properties are declared; a `resolved` citation or join actually resolves | `tools/validate.mjs` |
 | **T3 Fidelity** | Does the graph faithfully represent the PDF, the BPMN, the DMN? | Human. Never auto-passed |
 
-T2 is negative-tested by [`tools/negative-test.mjs`](tools/negative-test.mjs) — 13 cases, run in CI.
+T2 is negative-tested by [`tools/negative-test.mjs`](tools/negative-test.mjs) — 18 cases, run in CI.
 Unknown classes, unlicensed edges, undeclared properties, citations falsely claiming resolution, a
 join resolved against a placeholder, a resolved join with no evidence, and an invented
-`resolutionStatus` are each rejected with a located message. Two cases assert the opposite: a
-free-text BPMN branch label and an unresolved join must **not** be reported, because a check that
-fires on the normal case trains people to ignore it.
+`resolutionStatus` are each rejected with a located message, in the subgraphs as well as the base
+layers. Four cases assert the opposite — a free-text BPMN branch label, an unresolved join, and a
+cross-document reference must **not** be reported — because a check that fires on the normal case
+trains people to ignore it.
+
+Loading an ontology also checks it: every class an edge names and every predicate it uses must be
+declared in that layer or something it imports. That check caught a real typo the first time it ran.
 
 ---
 
@@ -191,10 +239,16 @@ immunization – summary tables (March 2023)"* to a publication node is a judgem
 requires a note and evidence for a judgement. An extractor that resolved silently would be
 manufacturing provenance.
 
-**The L2 extractor works on real data too.** Against `SGAuthoring.DAKLifecycle.bpmn` (8 participants,
-61 tasks, 70 flows, 10 message flows), the BCG decision table and the 22 committed ActorDefinition
-instances, it produces 163 nodes and 226 edges, resolves 6 of 19 cross-format joins, and names all
-13 it could not.
+**All three L2 extractors work on real data.** Against smart-base they produce 385 nodes and 515
+edges across three documents: 234 from `dak.json` and the FSH tree (22 personas, 41 requirements,
+170 statements, 46/46 canonical references resolved), 100 from the lifecycle BPMN, 51 from the BCG
+decision table.
+
+**smart-base disagrees with itself about scheme.** `dak.json` declares `https://smart.who.int/base`;
+the BPMN's `targetNamespace` is `http://smart.who.int/base/bpmn` and the DMN's is
+`http://smart.who.int/immunizations`. An IRI is an identity key, so two schemes for one authority
+split every persona into two unconnected nodes. `kgid.mjs` normalises to https and every extractor
+warns that it did — the graph joins, and the inconsistency stays visible for someone to fix.
 
 **Not built yet:** no PDF extractor, so `publication` and `recommendation` nodes must currently be
 authored by hand; the L3 subgraph; and the FHIR projection (CPG-on-FHIR is already a smart-base
@@ -202,6 +256,8 @@ dependency, EBM-on-FHIR is not — the mapping is intent until checked against t
 packages).
 
 **Known limits, stated rather than hidden.** No data dictionary instance ships in smart-base, so
-every `data-element` is a name that was referenced rather than a definition that was found. The BCG
-table's `usingTask` points into `Determine.bpmn` in the immunizations DAK, which is not in this
-clone, so that join is recorded unresolved rather than guessed at.
+every `data-element` recovered from a DMN is a name that was referenced rather than a definition
+that was found. The BCG table's `usingTask` points into `Determine.bpmn` in the immunizations DAK,
+which is not in this clone, so that join is recorded unresolved rather than guessed at. No DAK in
+the estate ships a Gherkin feature file, so `test-scenario` has no instance and the feature file's
+interior is deliberately unmodelled.

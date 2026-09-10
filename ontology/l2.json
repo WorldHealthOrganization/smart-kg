@@ -4,194 +4,198 @@
   "namespace": "http://smart.who.int/kg/",
   "source": "authored",
   "imports": ["l1"],
-  "note": "The DAK layer. Every class below is grounded in an artefact committed to smart-base today; `groundedIn` names which, and each class note says what it was read from. L2 exists to hold the three joins that currently survive only as string equality across three file formats -- BPMN pool name to persona title, DMN usingTask href to BPMN task name, and DMN input expression to data dictionary element name. Those joins break silently on a rename. Nothing else here is modelled for its own sake: rule cells stay properties rather than nodes, FHIR canonicals stay URLs, and an edge with no instance in a real file was left out.",
+  "note": "The DAK component layer, modelled on smart-base's own DAK logical model rather than on a selection from it. DAK.fsh declares NINE components and this layer carries all of them: eight as classes here, and healthInterventions as l1:health-intervention, which L1 already declares as its hinge to L2. The internals of BPMN and DMN files are NOT here -- they are separate subgraphs, l2-bpmn and l2-dmn, because a DAK component points at a file by URI and what is inside that file is a different question with a different vocabulary, a different extractor and a different failure mode.",
 
   "groundedIn": [
     {
-      "what": "A real, committed BPMN collaboration",
-      "where": "smart-base input/bpmn/SGAuthoring.DAKLifecycle.bpmn",
-      "detail": "8 participants, 61 tasks, 3 exclusive gateways, 8 start and 8 end events, 70 sequence flows, 10 message flows, 1 sub-process, 0 lanes, 0 condition expressions. The process, participant, task, gateway, event, flowsTo and messageTo classes are the element types this file actually contains -- not the BPMN specification's full element set."
+      "what": "The DAK logical model itself",
+      "where": "smart-base input/fsh/models/DAK.fsh",
+      "detail": "\"Logical Model for representing a complete Digital Adaptation Kit (DAK) with metadata and all 9 DAK components\": healthInterventions, personas, userScenarios, businessProcesses, dataElements, decisionLogic, indicators, requirements, testScenarios. Each is `0..* <Component>Source`. The class list below is that list, not a subset of it."
     },
     {
-      "what": "A real, committed DMN decision table",
-      "where": "smart-base input/dmn/DAK.DT.IMMZ.D2.DT.BCG.dmn",
-      "detail": "1 decision, 8 input clauses, 4 output clauses, 25 rules, 1 usingTask href into a BPMN. Two of the four outputs are serialised as outputEntry and two as annotationEntry (guidance text, then the L1 reference); trailing empty annotations are omitted rather than serialised empty, so of the 25 rules only 1 carries a citation, 8 carry guidance only and 16 carry no annotation at all. No hitPolicy attribute is present, so `hitPolicy` is optional on decision-table rather than required."
+      "what": "The uniform source pattern every component uses",
+      "where": "smart-base input/fsh/models/DAKComponentSources.fsh",
+      "detail": "Nine parallel Source types, each offering exactly one of `url`, `canonical` or an inline `instance`. A component is therefore reachable three different ways, and `sourceKind` on each class below records which was used -- a canonical reference and a raw URL do not carry the same guarantees and flattening them would hide that."
     },
     {
-      "what": "Personas as they already exist, and as the DAK model defines them",
-      "where": "smart-base input/fsh/actors/*.fsh and input/fsh/models/Persona.fsh",
-      "detail": "22 ActorDefinition instances carrying name, title, type and description. Persona.fsh adds id, ISCO (bound to urn:oid:2.16.840.1.113883.2.9.6.2.7) and a persona type value set. All 8 BPMN participant names match an ActorDefinition `title` exactly, so `performedBy` has a demonstrable instance -- and a demonstrable failure mode."
+      "what": "A real DAK instance",
+      "where": "smart-base dak.json",
+      "detail": "Carries id, name, title, version, status, publicationUrl, previewUrl, canonicalUrl, license, copyrightYear and publisher -- and none of the nine component arrays, because smart-base defines the model rather than instantiating a DAK. The `dak` class records exactly the metadata that file carries."
     },
     {
-      "what": "The two DAK logical models that point at these files and model nothing inside them",
-      "where": "smart-base input/fsh/models/BusinessProcessWorkflow.fsh and DecisionSupportLogic.fsh",
-      "detail": "Both declare `source 1..1 uri` -- a link to a BPMN or DMN file. DecisionSupportLogic carries nothing else at all. This is the gap L2 fills: WHO's own model addresses the file and stops at its boundary, so no query can cross it."
+      "what": "41 committed requirement instances",
+      "where": "smart-base input/fsh/actors/SGAuthoring.Skills.*.fsh",
+      "detail": "SGRequirements instances carrying 170 statements (155 SHALL, 15 SHOULD) and 47 actor references across 10 personas, each written as `actor[+] = Canonical(SGAuthoring.Persona.X)`. This is the richest structured content in the repository and the one place a DAK component references another BY CANONICAL rather than by name."
     },
     {
-      "what": "The rule that core data elements are referenced, not copied",
-      "where": "smart-base input/fsh/models/CoreDataElement.fsh",
-      "detail": "`canonical 1..1 uri` pointing at a ValueSet, CodeSystem, ConceptMap or logical model. FHIR already has a query layer and a validator for those, so `definedBy` records the canonical URL and this graph re-represents none of their contents."
+      "what": "The three id-reference joins the model declares",
+      "where": "smart-base input/fsh/models/BusinessProcessWorkflow.fsh, UserScenario.fsh, ProgramIndicator.fsh",
+      "detail": "`scenario 0..* id` (\"References to user scenario IDs\"), `personas 0..* id` (\"References to persona IDs\"), and `references 0..* id` (\"References to Health Intervention IDs\"). All three are bare id strings with no declared target profile -- resolvable only by matching against the ids of instances that may or may not exist."
     }
   ],
 
   "predicates": [
-    { "predicate": "flowsTo", "iri": "http://smart.who.int/kg/flowsTo", "openQualifier": true, "note": "A BPMN sequence flow, within one participant. The qualifier carries the flow's name where it has one -- 6 of the 70 flows in the lifecycle BPMN do, all of them gateway branches such as \"Yes - approved\". No flow in that file carries a conditionExpression, so the branch condition exists only as that label. `openQualifier` says the qualifier is free text authored in the BPMN rather than a term from a fixed vocabulary, so a value the ontology has not seen is not a finding." },
-    { "predicate": "messageTo", "iri": "http://smart.who.int/kg/messageTo", "note": "A BPMN message flow, which by definition crosses participants. Kept distinct from flowsTo because a handoff between two roles is the thing governance and adaptation reviews look for, and burying it among 70 intra-pool flows loses it." },
-    { "predicate": "performedBy", "iri": "http://smart.who.int/kg/performedBy", "note": "A participant pool is performed by a persona. TODAY THIS IS STRING EQUALITY between the BPMN participant's @name and an ActorDefinition's title, across two file formats with no shared identifier. Renaming either side breaks it silently and nothing reports it. Every instance of this edge must carry a resolutionStatus." },
-    { "predicate": "invokedBy", "iri": "http://smart.who.int/kg/invokedBy", "note": "A decision table is invoked by a business rule task. Read from dmn:usingTask/@href, whose fragment is the URL-encoded task NAME rather than the task id -- in the BCG table it is '#if%20the%20client%20is%20due%20for%20a%20bacille%20Calmette%E2%80%93Gu%C3%A9rin...'. It therefore resolves only if that prose is byte-identical in the BPMN, punctuation included. Carries a resolutionStatus." },
-    { "predicate": "reads", "iri": "http://smart.who.int/kg/reads", "note": "An input clause reads a data element. Recovered from the input expression's free text, where element names appear either bare ('HIV status') or quoted inside a larger expression ('Today's date - \"Date of birth\"'). Quoted tokens on the right of a comparison are values, not elements, so extraction is a heuristic and every instance carries a resolutionStatus and the rule that produced it." },
-    { "predicate": "citesSource", "iri": "http://smart.who.int/kg/citesSource", "note": "A decision rule cites an L1 source. The target is an l1:citation, so this is the edge that joins the L2 and L1 graphs. Grounded, though sparsely: of the BCG table's 25 rules exactly 1 carries a citation in its second annotation entry. The sparseness is the point -- a rule with no citesSource edge is a rule with no stated source, and counting those is the coverage question." },
-    { "predicate": "definedBy", "iri": "http://smart.who.int/kg/definedBy", "note": "A data element is defined by a FHIR canonical -- a ValueSet, CodeSystem, ConceptMap or logical model, as CoreDataElement.fsh declares. The target is an l1:external-artifact holding the URL. Nothing about the target's contents is copied here; FHIR is its own query layer." }
+    { "predicate": "hasComponent", "iri": "http://smart.who.int/kg/hasComponent", "note": "A DAK contains one of its nine components. The qualifier carries the component name from DAK.fsh, so `dak hasComponent persona` and `dak hasComponent program-indicator` stay distinguishable when a query walks the kit." },
+    { "predicate": "sourcedFrom", "iri": "http://smart.who.int/kg/sourcedFrom", "note": "A component points at the file that defines it -- a BPMN, a DMN, a Gherkin feature, a FHIR canonical. The target is an l1:external-artifact addressed by URI, and this graph asserts nothing about its interior. The BPMN and DMN subgraphs supply that interior at the same IRI." },
+    { "predicate": "realises", "iri": "http://smart.who.int/kg/realises", "note": "A business process realises a user scenario. From `scenario 0..* id` on BusinessProcessWorkflow -- a bare id string, so an instance carries a resolutionStatus." },
+    { "predicate": "involves", "iri": "http://smart.who.int/kg/involves", "note": "A user scenario involves a persona. From `personas 0..* id` on UserScenario -- again bare ids, again a resolutionStatus." },
+    { "predicate": "fulfilledBy", "iri": "http://smart.who.int/kg/fulfilledBy", "note": "A functional requirement is fulfilled by a persona. THE ONE JOIN IN THIS LAYER THAT IS NOT STRING MATCHING: the committed instances write `actor[+] = Canonical(SGAuthoring.Persona.BusinessAnalyst)`, a canonical reference that resolves without guessing. It is the counter-example that shows the other joins are a choice, not a necessity." },
+    { "predicate": "hasStatement", "iri": "http://smart.who.int/kg/hasStatement", "note": "A requirement carries numbered, labelled statements with a conformance verb. 170 of them exist today." },
+    { "predicate": "listsTask", "iri": "http://smart.who.int/kg/listsTask", "note": "BusinessProcessWorkflow declares `task 0..*` with identifier, name and description -- the same tasks the BPMN file draws. Two representations of one list, joined by identifier, which is why dak-task exists as a node rather than a property." },
+    { "predicate": "references", "iri": "http://smart.who.int/kg/references", "note": "A program indicator names the health interventions that give it context. From `references 0..* id` on ProgramIndicator -- bare id strings again, so an instance carries a resolutionStatus. Distinct from derivedFrom: referencing an intervention for context is not the same claim as restating a normative indicator." },
+    { "predicate": "describes", "iri": "http://smart.who.int/kg/describes", "note": "A DAK-level task entry describes an element of a BPMN file. Declared here and licensed in l2-bpmn, where the target class lives." }
   ],
 
   "classes": [
     {
-      "id": "business-process",
-      "name": "Business Process",
-      "kind": "Artefact",
-      "iri": "http://smart.who.int/kg/business-process",
-      "elaborates": "external-artifact",
-      "note": "One BPMN file, as a unit. Corresponds to a BusinessProcessWorkflow instance, whose `source 1..1 uri` points at exactly this. Shares its IRI with the l1:external-artifact for the same file: L1 addresses the file and asserts nothing about the inside, L2 supplies the inside, and one artefact keeps one address.",
-      "properties": ["id", "name", "source", "sha256", "targetNamespace", "exporter", "isExecutable", "objectives"],
-      "propertyNote": "objectives is `1..1 markdown` on BusinessProcessWorkflow but absent from BPMN XML, so it is optional here and populated only when the FSH instance is read alongside the file."
-    },
-    {
-      "id": "process-participant",
-      "name": "Process Participant",
-      "kind": "Structure",
-      "iri": "http://smart.who.int/kg/process-participant",
-      "note": "A BPMN pool: a role that owns part of the process. The lifecycle BPMN has 8 and no lanes at all, so the pool is the only unit of role assignment present. Its @name is the sole link to a persona.",
-      "properties": ["id", "name", "processRef"]
-    },
-    {
-      "id": "process-task",
-      "name": "Process Task",
-      "kind": "Structure",
-      "iri": "http://smart.who.int/kg/process-task",
-      "note": "A BPMN task or sub-process. Present as a node because it is what a DMN usingTask href points at and what sequence flows connect; a task with neither would still be included, since omitting it would disconnect the flow graph around it. Sub-processes are tasks with isSubProcess true rather than a separate class -- the lifecycle BPMN has exactly one, 'For each business process'.",
-      "properties": ["id", "name", "taskType", "isSubProcess", "parent"]
-    },
-    {
-      "id": "process-gateway",
-      "name": "Process Gateway",
-      "kind": "Structure",
-      "iri": "http://smart.who.int/kg/process-gateway",
-      "note": "A branch or merge. Included for connectivity, not for a cross-model edge: a sequence flow through a gateway that had no node would have nothing to point at, and every reachability question over the process would break at the first decision point. The 3 in the lifecycle BPMN are all exclusive.",
-      "properties": ["id", "name", "gatewayType", "direction"]
-    },
-    {
-      "id": "process-event",
-      "name": "Process Event",
-      "kind": "Structure",
-      "iri": "http://smart.who.int/kg/process-event",
-      "note": "A start or end event. Same connectivity justification as gateway, plus one of its own: a process's entry and exit points are what make 'is this task reachable' and 'does this path terminate' answerable at all.",
-      "properties": ["id", "name", "eventType"]
-    },
-    {
-      "id": "decision-table",
-      "name": "Decision Table",
-      "kind": "Artefact",
-      "iri": "http://smart.who.int/kg/decision-table",
-      "elaborates": "external-artifact",
-      "note": "One DMN decision, as a unit. Corresponds to a DecisionSupportLogic instance, which carries an id, an optional description and `source 1..1 uri` -- and nothing whatsoever about the decision itself. Shares its IRI with the l1:external-artifact for the same file, on the same reasoning as business-process.",
-      "properties": ["id", "label", "question", "hitPolicy", "source", "sha256", "namespace"],
-      "propertyNote": "hitPolicy is optional: the BCG table declares none, and inventing a default would assert something the file does not say."
-    },
-    {
-      "id": "input-clause",
-      "name": "Input Clause",
-      "kind": "Structure",
-      "iri": "http://smart.who.int/kg/input-clause",
-      "note": "A decision table input column. Its expression text is where data element names hide, which is the only reason this is a node rather than a property of the table.",
-      "properties": ["id", "label", "expression", "typeRef", "ordinal"]
-    },
-    {
-      "id": "output-clause",
-      "name": "Output Clause",
-      "kind": "Structure",
-      "iri": "http://smart.who.int/kg/output-clause",
-      "note": "A decision table output column. The BCG table's four are Care Plan, Guidance displayed to health worker, Annotations, and Reference(s) -- the last described 'Reference for the source content (L1)'. These are column definitions in a decision table, not clinical records: no output-clause edge reaches patient data, and none may. See docs/SCOPE.md.",
-      "properties": ["id", "label", "description", "ordinal", "isReferenceColumn"],
-      "propertyNote": "isReferenceColumn marks the L1 reference column, identified by its description rather than its position -- column order is not stable across DAKs and indexing by it is how this breaks."
-    },
-    {
-      "id": "decision-rule",
-      "name": "Decision Rule",
-      "kind": "Structure",
-      "iri": "http://smart.who.int/kg/decision-rule",
-      "note": "One row. Its input and output cells are carried as properties, not as nodes: 250 cells in the BCG table alone, none of them the target of a cross-model edge, and turning them into nodes would re-represent the table rather than join it. What the rule needs a node for is its citation edge into L1.",
-      "properties": ["id", "ordinal", "conditions", "outputs", "annotations"],
-      "propertyNote": "conditions and outputs are arrays of {clause, description, text} preserving the cell's own two fields; DMN puts the formal expression in description and the human-readable gloss in text, and both are worth keeping."
+      "id": "dak",
+      "name": "Digital Adaptation Kit",
+      "kind": "Kit",
+      "iri": "http://smart.who.int/kg/dak",
+      "note": "The kit itself. Properties are exactly the metadata fields DAK.fsh declares and dak.json carries -- no more, so that a dak node can be produced from a real file without anything being invented.",
+      "properties": ["id", "name", "title", "description", "version", "status", "publicationUrl", "previewUrl", "canonicalUrl", "license", "copyrightYear", "publisherName", "publisherUrl"],
+      "propertyNote": "canonicalUrl equals publicationUrl on a release branch and previewUrl on a development branch, per DAK.fsh. Both are kept because which one canonicalUrl currently equals is what says whether a graph describes a release or a build."
     },
     {
       "id": "persona",
-      "name": "Persona",
-      "kind": "Definition",
+      "name": "Generic Persona",
+      "kind": "Component",
       "iri": "http://smart.who.int/kg/persona",
-      "note": "A role, defined once and referenced by name from every process that involves it. Read from ActorDefinition instances in input/fsh/actors, whose shape Persona.fsh governs. `title` is the field BPMN pools match on; `name` is the CamelCase identifier and does not match.",
-      "properties": ["id", "name", "title", "personaType", "isco", "description", "source", "resolutionStatus"],
-      "propertyNote": "isco is a list of codes from urn:oid:2.16.840.1.113883.2.9.6.2.7. Persona.fsh declares `ISCO 0..* CodeableConcept`, but the committed ActorDefinition instances record ISCO in prose inside description instead, so this field is usually empty and should not be read as authoritative. resolutionStatus is `unresolved` on a persona that a process names but no ActorDefinition defines -- the node exists so that the gap is queryable, and carries a title and nothing else."
+      "note": "DAK component 2. Grounded in GenericPersona.fsh -- title, id, description, otherNames, iscoCode bound to ISCO08ValueSet -- and in the 22 committed ActorDefinition instances that carry name, title, type and description. The two disagree about where ISCO lives, which the properties record rather than smooth over.",
+      "properties": ["id", "title", "name", "description", "otherNames", "iscoCode", "personaType", "sourceKind", "source", "resolutionStatus"],
+      "propertyNote": "`title` is the human-readable label a BPMN pool matches on; `name` is the CamelCase identifier a Canonical() reference matches on. They are different strings for the same persona and conflating them is precisely how the pool join breaks. GenericPersona.fsh declares `iscoCode 0..* code`, but the committed ActorDefinitions record ISCO in prose inside description, so iscoCode is usually empty and is not authoritative."
+    },
+    {
+      "id": "user-scenario",
+      "name": "User Scenario",
+      "kind": "Component",
+      "iri": "http://smart.who.int/kg/user-scenario",
+      "note": "DAK component 3. A narrative describing how personas interact. Carries `personas 0..* id`, which is the only structured link between the narrative layer and the personas it names.",
+      "properties": ["id", "title", "description", "sourceKind", "source"]
+    },
+    {
+      "id": "business-process",
+      "name": "Business Process Workflow",
+      "kind": "Component",
+      "iri": "http://smart.who.int/kg/business-process",
+      "note": "DAK component 4. NOT the BPMN file -- the component that points at one. `source 1..1 uri` is that pointer, and the BPMN's interior is the l2-bpmn subgraph, reached through the external-artifact this sourcedFrom targets.",
+      "properties": ["id", "description", "objectives", "sourceKind", "source"],
+      "propertyNote": "`objectives 1..1 markdown` is required by BusinessProcessWorkflow.fsh and has no counterpart anywhere in BPMN XML, so it can only ever come from the FSH instance."
+    },
+    {
+      "id": "dak-task",
+      "name": "Task Entry",
+      "kind": "Element",
+      "iri": "http://smart.who.int/kg/dak-task",
+      "note": "One entry of BusinessProcessWorkflow's `task 0..*` backbone: identifier, name, description. A node rather than a property because the same task is also drawn in the BPMN file, and the two lists have to be joinable to be checkable against each other.",
+      "properties": ["identifier", "name", "description"]
     },
     {
       "id": "data-element",
-      "name": "Data Element",
-      "kind": "Definition",
+      "name": "Core Data Element",
+      "kind": "Component",
       "iri": "http://smart.who.int/kg/data-element",
-      "note": "A named item of information a decision reads -- the data dictionary row. Currently recovered from DMN input expressions, because smart-base ships no data dictionary instance to read from; a node here is therefore a name that was referenced, not a definition that was found. resolutionStatus says which. When a dictionary exists, resolution fills in the rest and the WHO-versus-country diff this class is for becomes possible.",
-      "properties": ["name", "elementId", "dataType", "cardinality", "canonical", "resolutionStatus", "extractionRule"],
-      "propertyNote": "extractionRule records how the name was recovered -- bare expression, or quoted token left of a comparison -- so a wrong guess is auditable rather than anonymous. resolutionStatus is unresolved | resolved | ambiguous, exactly as for an l1:citation, and for the same reason."
+      "note": "DAK component 5. CoreDataElement.fsh calls itself \"the ONE EXCEPTION to allowing FHIR R4 models into the DAK LMs\": `type` is one of valueset | codesystem | conceptmap | logicalmodel and `canonical 1..1 uri` points at it. The canonical is recorded; nothing inside it is copied, because FHIR is its own query layer.",
+      "properties": ["id", "name", "type", "canonical", "description", "sourceKind", "source", "resolutionStatus", "extractionRule"],
+      "propertyNote": "`name`, `resolutionStatus` and `extractionRule` are for elements recovered from DMN input expressions rather than declared in a dictionary. A recovered element is a name that was REFERENCED, not a definition that was found, and only a resolved one may carry a canonical."
+    },
+    {
+      "id": "decision-support-logic",
+      "name": "Decision-Support Logic",
+      "kind": "Component",
+      "iri": "http://smart.who.int/kg/decision-support-logic",
+      "note": "DAK component 6. The whole model is an id, an optional description and `source 1..1 uri` to a DMN file. Nothing about the decision itself -- which is the gap the l2-dmn subgraph fills.",
+      "properties": ["id", "description", "sourceKind", "source"]
+    },
+    {
+      "id": "program-indicator",
+      "name": "Program Indicator",
+      "kind": "Component",
+      "iri": "http://smart.who.int/kg/program-indicator",
+      "note": "DAK component 7. Named program-indicator and not `indicator` because L1 already declares an `indicator` -- one normatively defined in a publication. They are different things: this is the DAK's operational measure, and `derivedFrom` is how it points at the normative one. Collapsing them would silently merge a WHO definition with a country's implementation of it.",
+      "properties": ["id", "name", "definition", "numerator", "denominator", "disaggregation", "description", "sourceKind", "source"],
+      "propertyNote": "numerator, denominator and disaggregation are all `1..1 markdown` -- prose, not a computable expression. Nothing here should be read as a calculable measure; the L3 FHIR Measure is where that would live."
+    },
+    {
+      "id": "functional-requirement",
+      "name": "Functional Requirement",
+      "kind": "Component",
+      "iri": "http://smart.who.int/kg/functional-requirement",
+      "note": "DAK component 8, first half. The as-a/I-want/so-that shape: `activity`, `capability[x]`, `benefit[x]`, and `actor 0..* Reference(SGActor)`. The 41 committed instances use the R5 SGRequirements profile rather than this logical model, so a real instance carries `statement` entries and a userstory extension; both shapes are accommodated and `profile` records which was read.",
+      "properties": ["id", "activity", "capability", "benefit", "classification", "title", "description", "profile", "sourceKind", "source"]
+    },
+    {
+      "id": "non-functional-requirement",
+      "name": "Non-Functional Requirement",
+      "kind": "Component",
+      "iri": "http://smart.who.int/kg/non-functional-requirement",
+      "note": "DAK component 8, second half. `requirement 1..1 markdown`, an optional category and classification codings. Kept separate from the functional half because the fields genuinely differ -- a non-functional requirement has no actor and no benefit.",
+      "properties": ["id", "requirement", "category", "classification", "title", "description", "profile", "sourceKind", "source"]
+    },
+    {
+      "id": "requirement-statement",
+      "name": "Requirement Statement",
+      "kind": "Element",
+      "iri": "http://smart.who.int/kg/requirement-statement",
+      "note": "One numbered, labelled statement inside a requirement, with a conformance verb. A node rather than a property because conformance is queried across a whole DAK -- 'every SHALL in this kit, and what fulfils it' is the question requirements exist to answer.",
+      "properties": ["key", "label", "requirement", "conformance"],
+      "propertyNote": "conformance is the FHIR ConformanceExpectation verb: SHALL, SHOULD, MAY or SHOULD-NOT. Across the 41 committed instances it is 155 SHALL and 15 SHOULD."
+    },
+    {
+      "id": "test-scenario",
+      "name": "Test Scenario",
+      "kind": "Component",
+      "iri": "http://smart.who.int/kg/test-scenario",
+      "note": "DAK component 9. `feature 1..1 uri` to a Gherkin feature file, plus an optional description. The feature file's interior is not modelled: no DAK in this estate ships one yet, so a subgraph for it would have no instance to check it against.",
+      "properties": ["id", "feature", "description", "sourceKind", "source"]
     }
   ],
 
   "edges": [
-    { "predicate": "contains", "source": "business-process", "target": "process-participant" },
-    { "predicate": "contains", "source": "business-process", "target": "process-task" },
-    { "predicate": "contains", "source": "business-process", "target": "process-gateway" },
-    { "predicate": "contains", "source": "business-process", "target": "process-event" },
-    { "predicate": "contains", "source": "process-participant", "target": "process-task" },
-    { "predicate": "contains", "source": "process-participant", "target": "process-gateway" },
-    { "predicate": "contains", "source": "process-participant", "target": "process-event" },
-    { "predicate": "contains", "source": "process-task", "target": "process-task" },
+    { "predicate": "hasComponent", "source": "dak", "target": "health-intervention", "qualifier": "healthInterventions" },
+    { "predicate": "hasComponent", "source": "dak", "target": "persona", "qualifier": "personas" },
+    { "predicate": "hasComponent", "source": "dak", "target": "user-scenario", "qualifier": "userScenarios" },
+    { "predicate": "hasComponent", "source": "dak", "target": "business-process", "qualifier": "businessProcesses" },
+    { "predicate": "hasComponent", "source": "dak", "target": "data-element", "qualifier": "dataElements" },
+    { "predicate": "hasComponent", "source": "dak", "target": "decision-support-logic", "qualifier": "decisionLogic" },
+    { "predicate": "hasComponent", "source": "dak", "target": "program-indicator", "qualifier": "indicators" },
+    { "predicate": "hasComponent", "source": "dak", "target": "functional-requirement", "qualifier": "requirements" },
+    { "predicate": "hasComponent", "source": "dak", "target": "non-functional-requirement", "qualifier": "requirements" },
+    { "predicate": "hasComponent", "source": "dak", "target": "test-scenario", "qualifier": "testScenarios" },
 
-    { "predicate": "contains", "source": "decision-table", "target": "input-clause" },
-    { "predicate": "contains", "source": "decision-table", "target": "output-clause" },
-    { "predicate": "contains", "source": "decision-table", "target": "decision-rule" },
+    { "predicate": "sourcedFrom", "source": "business-process", "target": "external-artifact" },
+    { "predicate": "sourcedFrom", "source": "decision-support-logic", "target": "external-artifact" },
+    { "predicate": "sourcedFrom", "source": "test-scenario", "target": "external-artifact" },
+    { "predicate": "sourcedFrom", "source": "data-element", "target": "external-artifact" },
+    { "predicate": "sourcedFrom", "source": "persona", "target": "external-artifact" },
+    { "predicate": "sourcedFrom", "source": "user-scenario", "target": "external-artifact" },
+    { "predicate": "sourcedFrom", "source": "program-indicator", "target": "external-artifact" },
+    { "predicate": "sourcedFrom", "source": "functional-requirement", "target": "external-artifact" },
+    { "predicate": "sourcedFrom", "source": "non-functional-requirement", "target": "external-artifact" },
 
-    { "predicate": "flowsTo", "source": "process-event", "target": "process-task" },
-    { "predicate": "flowsTo", "source": "process-event", "target": "process-gateway" },
-    { "predicate": "flowsTo", "source": "process-task", "target": "process-task" },
-    { "predicate": "flowsTo", "source": "process-task", "target": "process-gateway" },
-    { "predicate": "flowsTo", "source": "process-task", "target": "process-event" },
-    { "predicate": "flowsTo", "source": "process-gateway", "target": "process-task" },
-    { "predicate": "flowsTo", "source": "process-gateway", "target": "process-gateway" },
-    { "predicate": "flowsTo", "source": "process-gateway", "target": "process-event" },
+    { "predicate": "realises", "source": "business-process", "target": "user-scenario" },
+    { "predicate": "involves", "source": "user-scenario", "target": "persona" },
+    { "predicate": "fulfilledBy", "source": "functional-requirement", "target": "persona" },
+    { "predicate": "hasStatement", "source": "functional-requirement", "target": "requirement-statement" },
+    { "predicate": "hasStatement", "source": "non-functional-requirement", "target": "requirement-statement" },
+    { "predicate": "listsTask", "source": "business-process", "target": "dak-task" },
 
-    { "predicate": "messageTo", "source": "process-task", "target": "process-task" },
-    { "predicate": "messageTo", "source": "process-task", "target": "process-event" },
-    { "predicate": "messageTo", "source": "process-event", "target": "process-task" },
+    { "predicate": "references", "source": "program-indicator", "target": "health-intervention" },
+    { "predicate": "derivedFrom", "source": "program-indicator", "target": "indicator" },
 
-    { "predicate": "performedBy", "source": "process-participant", "target": "persona" },
-
-    { "predicate": "invokedBy", "source": "decision-table", "target": "process-task" },
-    { "predicate": "invokedBy", "source": "decision-table", "target": "external-artifact" },
-
-    { "predicate": "reads", "source": "input-clause", "target": "data-element" },
-
-    { "predicate": "citesSource", "source": "decision-rule", "target": "citation" },
-
-    { "predicate": "definedBy", "source": "data-element", "target": "external-artifact" },
-
+    { "predicate": "crossReferences", "source": "persona", "target": "terminology-code" },
     { "predicate": "crossReferences", "source": "data-element", "target": "terminology-code" },
-    { "predicate": "crossReferences", "source": "persona", "target": "terminology-code" }
+    { "predicate": "crossReferences", "source": "program-indicator", "target": "terminology-code" },
+    { "predicate": "crossReferences", "source": "functional-requirement", "target": "terminology-code" },
+    { "predicate": "crossReferences", "source": "non-functional-requirement", "target": "terminology-code" }
   ],
 
   "deliberatelyOmitted": [
-    { "what": "A `writes` edge from output-clause to data-element", "why": "No instance exists. The BCG table's four outputs are Care Plan, Guidance displayed to health worker, Annotations and Reference(s) -- none of them a data dictionary element. Licensing an edge that no committed artefact exhibits would be inventing vocabulary, which is the failure this repository was rebuilt to avoid." },
-    { "what": "Nodes for input and output cells", "why": "250 in one table, none the target of a cross-model edge. They are carried as properties of decision-rule instead." },
-    { "what": "BPMN lanes", "why": "The class would have no instance: the lifecycle BPMN uses pools only and declares no laneSet. Add it when a DAK ships one." },
-    { "what": "Sequence flow conditions as structured expressions", "why": "The lifecycle BPMN has 70 sequence flows and 0 conditionExpression elements. The branch label carries all there is, so it is the flowsTo qualifier and nothing more is claimed." },
-    { "what": "BPMN diagram interchange (BPMNDI, DC, DI)", "why": "Presentation. Coordinates answer no question this graph exists to answer." },
-    { "what": "An `elaborates` instance edge", "why": "The relationship between an L1 external-artifact and its L2 elaboration is carried by the two sharing one IRI, and declared once on the class via its `elaborates` field (which the Turtle export renders as rdfs:subClassOf). An instance edge would have had the same node as its source and its target." },
-    { "what": "The contents of any FHIR canonical", "why": "ValueSets, CodeSystems, ConceptMaps and logical models have a validator, a publisher and canonical references already. definedBy records the URL. See the corollary in docs/SCOPE.md: graph what has no other query layer, index what does." }
+    { "what": "A class for healthInterventions", "why": "DAK component 1 is already l1:health-intervention, which L1 declares as its hinge to L2 and grounds in this same HealthInterventions.fsh. A second class for it would be two names for one thing across a layer boundary -- the exact failure the shared-IRI rule exists to prevent." },
+    { "what": "A `derivedFrom` edge from a data element to a recommendation", "why": "Plausible -- a dictionary entry often exists because a recommendation asks for it -- but no committed artefact records the link, and nothing in CoreDataElement.fsh provides for it. Same rule that excluded `writes` from the DMN subgraph." },
+    { "what": "A class per *Source type", "why": "The nine Source types in DAKComponentSources.fsh are one pattern repeated nine times: url, canonical, or inline instance. That is a property of the reference (`sourceKind`), not nine classes." },
+    { "what": "The interior of BPMN and DMN files", "why": "Separate subgraphs -- l2-bpmn and l2-dmn. A component points at a file by URI; what is inside it has its own vocabulary (OMG's, not WHO's), its own extractor and its own failure modes, and mixing the two would make the DAK component layer unreadable." },
+    { "what": "The interior of a Gherkin feature file", "why": "No DAK in this estate ships one. A subgraph with no instance to check it against is speculative vocabulary." },
+    { "what": "The contents of any FHIR canonical", "why": "ValueSets, CodeSystems, ConceptMaps and logical models have a validator, a publisher and canonical references already. Record the URL; re-represent nothing." }
   ]
 }

@@ -7,7 +7,7 @@
 // Every statement is MERGE, so re-running is safe.
 //
 // REQUIRES l1.cypher TO BE LOADED FIRST.
-// This layer licenses edges onto imported classes (citation, external-artifact, terminology-code). The MATCH
+// This layer licenses edges onto imported classes (external-artifact, health-intervention, indicator, terminology-code). The MATCH
 // statements below find nothing if those classes are absent, and Cypher does not treat
 // that as an error -- the edges would simply be missing. Verify with the query at the
 // end of this file.
@@ -15,49 +15,52 @@
 CREATE CONSTRAINT kgclass_id IF NOT EXISTS
 FOR (c:KGClass) REQUIRE c.id IS UNIQUE;
 
-MERGE (:KGClass:Artefact {id:'business-process', name:'Business Process', kind:'Artefact', iri:'http://smart.who.int/kg/business-process'});
-MERGE (:KGClass:Structure {id:'process-participant', name:'Process Participant', kind:'Structure', iri:'http://smart.who.int/kg/process-participant'});
-MERGE (:KGClass:Structure {id:'process-task', name:'Process Task', kind:'Structure', iri:'http://smart.who.int/kg/process-task'});
-MERGE (:KGClass:Structure {id:'process-gateway', name:'Process Gateway', kind:'Structure', iri:'http://smart.who.int/kg/process-gateway'});
-MERGE (:KGClass:Structure {id:'process-event', name:'Process Event', kind:'Structure', iri:'http://smart.who.int/kg/process-event'});
-MERGE (:KGClass:Artefact {id:'decision-table', name:'Decision Table', kind:'Artefact', iri:'http://smart.who.int/kg/decision-table'});
-MERGE (:KGClass:Structure {id:'input-clause', name:'Input Clause', kind:'Structure', iri:'http://smart.who.int/kg/input-clause'});
-MERGE (:KGClass:Structure {id:'output-clause', name:'Output Clause', kind:'Structure', iri:'http://smart.who.int/kg/output-clause'});
-MERGE (:KGClass:Structure {id:'decision-rule', name:'Decision Rule', kind:'Structure', iri:'http://smart.who.int/kg/decision-rule'});
-MERGE (:KGClass:Definition {id:'persona', name:'Persona', kind:'Definition', iri:'http://smart.who.int/kg/persona'});
-MERGE (:KGClass:Definition {id:'data-element', name:'Data Element', kind:'Definition', iri:'http://smart.who.int/kg/data-element'});
+MERGE (:KGClass:Kit {id:'dak', name:'Digital Adaptation Kit', kind:'Kit', iri:'http://smart.who.int/kg/dak'});
+MERGE (:KGClass:Component {id:'persona', name:'Generic Persona', kind:'Component', iri:'http://smart.who.int/kg/persona'});
+MERGE (:KGClass:Component {id:'user-scenario', name:'User Scenario', kind:'Component', iri:'http://smart.who.int/kg/user-scenario'});
+MERGE (:KGClass:Component {id:'business-process', name:'Business Process Workflow', kind:'Component', iri:'http://smart.who.int/kg/business-process'});
+MERGE (:KGClass:Element {id:'dak-task', name:'Task Entry', kind:'Element', iri:'http://smart.who.int/kg/dak-task'});
+MERGE (:KGClass:Component {id:'data-element', name:'Core Data Element', kind:'Component', iri:'http://smart.who.int/kg/data-element'});
+MERGE (:KGClass:Component {id:'decision-support-logic', name:'Decision-Support Logic', kind:'Component', iri:'http://smart.who.int/kg/decision-support-logic'});
+MERGE (:KGClass:Component {id:'program-indicator', name:'Program Indicator', kind:'Component', iri:'http://smart.who.int/kg/program-indicator'});
+MERGE (:KGClass:Component {id:'functional-requirement', name:'Functional Requirement', kind:'Component', iri:'http://smart.who.int/kg/functional-requirement'});
+MERGE (:KGClass:Component {id:'non-functional-requirement', name:'Non-Functional Requirement', kind:'Component', iri:'http://smart.who.int/kg/non-functional-requirement'});
+MERGE (:KGClass:Element {id:'requirement-statement', name:'Requirement Statement', kind:'Element', iri:'http://smart.who.int/kg/requirement-statement'});
+MERGE (:KGClass:Component {id:'test-scenario', name:'Test Scenario', kind:'Component', iri:'http://smart.who.int/kg/test-scenario'});
 
-MATCH (s:KGClass {id:'business-process'}), (t:KGClass {id:'process-participant'}) MERGE (s)-[:CONTAINS {predicate:'contains'}]->(t);
-MATCH (s:KGClass {id:'business-process'}), (t:KGClass {id:'process-task'}) MERGE (s)-[:CONTAINS {predicate:'contains'}]->(t);
-MATCH (s:KGClass {id:'business-process'}), (t:KGClass {id:'process-gateway'}) MERGE (s)-[:CONTAINS {predicate:'contains'}]->(t);
-MATCH (s:KGClass {id:'business-process'}), (t:KGClass {id:'process-event'}) MERGE (s)-[:CONTAINS {predicate:'contains'}]->(t);
-MATCH (s:KGClass {id:'process-participant'}), (t:KGClass {id:'process-task'}) MERGE (s)-[:CONTAINS {predicate:'contains'}]->(t);
-MATCH (s:KGClass {id:'process-participant'}), (t:KGClass {id:'process-gateway'}) MERGE (s)-[:CONTAINS {predicate:'contains'}]->(t);
-MATCH (s:KGClass {id:'process-participant'}), (t:KGClass {id:'process-event'}) MERGE (s)-[:CONTAINS {predicate:'contains'}]->(t);
-MATCH (s:KGClass {id:'process-task'}), (t:KGClass {id:'process-task'}) MERGE (s)-[:CONTAINS {predicate:'contains'}]->(t);
-MATCH (s:KGClass {id:'decision-table'}), (t:KGClass {id:'input-clause'}) MERGE (s)-[:CONTAINS {predicate:'contains'}]->(t);
-MATCH (s:KGClass {id:'decision-table'}), (t:KGClass {id:'output-clause'}) MERGE (s)-[:CONTAINS {predicate:'contains'}]->(t);
-MATCH (s:KGClass {id:'decision-table'}), (t:KGClass {id:'decision-rule'}) MERGE (s)-[:CONTAINS {predicate:'contains'}]->(t);
-MATCH (s:KGClass {id:'process-event'}), (t:KGClass {id:'process-task'}) MERGE (s)-[:FLOWSTO {predicate:'flowsTo'}]->(t);
-MATCH (s:KGClass {id:'process-event'}), (t:KGClass {id:'process-gateway'}) MERGE (s)-[:FLOWSTO {predicate:'flowsTo'}]->(t);
-MATCH (s:KGClass {id:'process-task'}), (t:KGClass {id:'process-task'}) MERGE (s)-[:FLOWSTO {predicate:'flowsTo'}]->(t);
-MATCH (s:KGClass {id:'process-task'}), (t:KGClass {id:'process-gateway'}) MERGE (s)-[:FLOWSTO {predicate:'flowsTo'}]->(t);
-MATCH (s:KGClass {id:'process-task'}), (t:KGClass {id:'process-event'}) MERGE (s)-[:FLOWSTO {predicate:'flowsTo'}]->(t);
-MATCH (s:KGClass {id:'process-gateway'}), (t:KGClass {id:'process-task'}) MERGE (s)-[:FLOWSTO {predicate:'flowsTo'}]->(t);
-MATCH (s:KGClass {id:'process-gateway'}), (t:KGClass {id:'process-gateway'}) MERGE (s)-[:FLOWSTO {predicate:'flowsTo'}]->(t);
-MATCH (s:KGClass {id:'process-gateway'}), (t:KGClass {id:'process-event'}) MERGE (s)-[:FLOWSTO {predicate:'flowsTo'}]->(t);
-MATCH (s:KGClass {id:'process-task'}), (t:KGClass {id:'process-task'}) MERGE (s)-[:MESSAGETO {predicate:'messageTo'}]->(t);
-MATCH (s:KGClass {id:'process-task'}), (t:KGClass {id:'process-event'}) MERGE (s)-[:MESSAGETO {predicate:'messageTo'}]->(t);
-MATCH (s:KGClass {id:'process-event'}), (t:KGClass {id:'process-task'}) MERGE (s)-[:MESSAGETO {predicate:'messageTo'}]->(t);
-MATCH (s:KGClass {id:'process-participant'}), (t:KGClass {id:'persona'}) MERGE (s)-[:PERFORMEDBY {predicate:'performedBy'}]->(t);
-MATCH (s:KGClass {id:'decision-table'}), (t:KGClass {id:'process-task'}) MERGE (s)-[:INVOKEDBY {predicate:'invokedBy'}]->(t);
-MATCH (s:KGClass {id:'decision-table'}), (t:KGClass {id:'external-artifact'}) MERGE (s)-[:INVOKEDBY {predicate:'invokedBy'}]->(t);
-MATCH (s:KGClass {id:'input-clause'}), (t:KGClass {id:'data-element'}) MERGE (s)-[:READS {predicate:'reads'}]->(t);
-MATCH (s:KGClass {id:'decision-rule'}), (t:KGClass {id:'citation'}) MERGE (s)-[:CITESSOURCE {predicate:'citesSource'}]->(t);
-MATCH (s:KGClass {id:'data-element'}), (t:KGClass {id:'external-artifact'}) MERGE (s)-[:DEFINEDBY {predicate:'definedBy'}]->(t);
-MATCH (s:KGClass {id:'data-element'}), (t:KGClass {id:'terminology-code'}) MERGE (s)-[:CROSSREFERENCES {predicate:'crossReferences'}]->(t);
+MATCH (s:KGClass {id:'dak'}), (t:KGClass {id:'health-intervention'}) MERGE (s)-[:HASCOMPONENT {predicate:'hasComponent', qualifier:'healthInterventions'}]->(t);
+MATCH (s:KGClass {id:'dak'}), (t:KGClass {id:'persona'}) MERGE (s)-[:HASCOMPONENT {predicate:'hasComponent', qualifier:'personas'}]->(t);
+MATCH (s:KGClass {id:'dak'}), (t:KGClass {id:'user-scenario'}) MERGE (s)-[:HASCOMPONENT {predicate:'hasComponent', qualifier:'userScenarios'}]->(t);
+MATCH (s:KGClass {id:'dak'}), (t:KGClass {id:'business-process'}) MERGE (s)-[:HASCOMPONENT {predicate:'hasComponent', qualifier:'businessProcesses'}]->(t);
+MATCH (s:KGClass {id:'dak'}), (t:KGClass {id:'data-element'}) MERGE (s)-[:HASCOMPONENT {predicate:'hasComponent', qualifier:'dataElements'}]->(t);
+MATCH (s:KGClass {id:'dak'}), (t:KGClass {id:'decision-support-logic'}) MERGE (s)-[:HASCOMPONENT {predicate:'hasComponent', qualifier:'decisionLogic'}]->(t);
+MATCH (s:KGClass {id:'dak'}), (t:KGClass {id:'program-indicator'}) MERGE (s)-[:HASCOMPONENT {predicate:'hasComponent', qualifier:'indicators'}]->(t);
+MATCH (s:KGClass {id:'dak'}), (t:KGClass {id:'functional-requirement'}) MERGE (s)-[:HASCOMPONENT {predicate:'hasComponent', qualifier:'requirements'}]->(t);
+MATCH (s:KGClass {id:'dak'}), (t:KGClass {id:'non-functional-requirement'}) MERGE (s)-[:HASCOMPONENT {predicate:'hasComponent', qualifier:'requirements'}]->(t);
+MATCH (s:KGClass {id:'dak'}), (t:KGClass {id:'test-scenario'}) MERGE (s)-[:HASCOMPONENT {predicate:'hasComponent', qualifier:'testScenarios'}]->(t);
+MATCH (s:KGClass {id:'business-process'}), (t:KGClass {id:'external-artifact'}) MERGE (s)-[:SOURCEDFROM {predicate:'sourcedFrom'}]->(t);
+MATCH (s:KGClass {id:'decision-support-logic'}), (t:KGClass {id:'external-artifact'}) MERGE (s)-[:SOURCEDFROM {predicate:'sourcedFrom'}]->(t);
+MATCH (s:KGClass {id:'test-scenario'}), (t:KGClass {id:'external-artifact'}) MERGE (s)-[:SOURCEDFROM {predicate:'sourcedFrom'}]->(t);
+MATCH (s:KGClass {id:'data-element'}), (t:KGClass {id:'external-artifact'}) MERGE (s)-[:SOURCEDFROM {predicate:'sourcedFrom'}]->(t);
+MATCH (s:KGClass {id:'persona'}), (t:KGClass {id:'external-artifact'}) MERGE (s)-[:SOURCEDFROM {predicate:'sourcedFrom'}]->(t);
+MATCH (s:KGClass {id:'user-scenario'}), (t:KGClass {id:'external-artifact'}) MERGE (s)-[:SOURCEDFROM {predicate:'sourcedFrom'}]->(t);
+MATCH (s:KGClass {id:'program-indicator'}), (t:KGClass {id:'external-artifact'}) MERGE (s)-[:SOURCEDFROM {predicate:'sourcedFrom'}]->(t);
+MATCH (s:KGClass {id:'functional-requirement'}), (t:KGClass {id:'external-artifact'}) MERGE (s)-[:SOURCEDFROM {predicate:'sourcedFrom'}]->(t);
+MATCH (s:KGClass {id:'non-functional-requirement'}), (t:KGClass {id:'external-artifact'}) MERGE (s)-[:SOURCEDFROM {predicate:'sourcedFrom'}]->(t);
+MATCH (s:KGClass {id:'business-process'}), (t:KGClass {id:'user-scenario'}) MERGE (s)-[:REALISES {predicate:'realises'}]->(t);
+MATCH (s:KGClass {id:'user-scenario'}), (t:KGClass {id:'persona'}) MERGE (s)-[:INVOLVES {predicate:'involves'}]->(t);
+MATCH (s:KGClass {id:'functional-requirement'}), (t:KGClass {id:'persona'}) MERGE (s)-[:FULFILLEDBY {predicate:'fulfilledBy'}]->(t);
+MATCH (s:KGClass {id:'functional-requirement'}), (t:KGClass {id:'requirement-statement'}) MERGE (s)-[:HASSTATEMENT {predicate:'hasStatement'}]->(t);
+MATCH (s:KGClass {id:'non-functional-requirement'}), (t:KGClass {id:'requirement-statement'}) MERGE (s)-[:HASSTATEMENT {predicate:'hasStatement'}]->(t);
+MATCH (s:KGClass {id:'business-process'}), (t:KGClass {id:'dak-task'}) MERGE (s)-[:LISTSTASK {predicate:'listsTask'}]->(t);
+MATCH (s:KGClass {id:'program-indicator'}), (t:KGClass {id:'health-intervention'}) MERGE (s)-[:REFERENCES {predicate:'references'}]->(t);
+MATCH (s:KGClass {id:'program-indicator'}), (t:KGClass {id:'indicator'}) MERGE (s)-[:DERIVEDFROM {predicate:'derivedFrom'}]->(t);
 MATCH (s:KGClass {id:'persona'}), (t:KGClass {id:'terminology-code'}) MERGE (s)-[:CROSSREFERENCES {predicate:'crossReferences'}]->(t);
+MATCH (s:KGClass {id:'data-element'}), (t:KGClass {id:'terminology-code'}) MERGE (s)-[:CROSSREFERENCES {predicate:'crossReferences'}]->(t);
+MATCH (s:KGClass {id:'program-indicator'}), (t:KGClass {id:'terminology-code'}) MERGE (s)-[:CROSSREFERENCES {predicate:'crossReferences'}]->(t);
+MATCH (s:KGClass {id:'functional-requirement'}), (t:KGClass {id:'terminology-code'}) MERGE (s)-[:CROSSREFERENCES {predicate:'crossReferences'}]->(t);
+MATCH (s:KGClass {id:'non-functional-requirement'}), (t:KGClass {id:'terminology-code'}) MERGE (s)-[:CROSSREFERENCES {predicate:'crossReferences'}]->(t);
 
-// Verification. Must return 3 rows -- one per imported class this layer
+// Verification. Must return 4 rows -- one per imported class this layer
 // builds on. Fewer means an imported layer was not loaded and edges above are missing.
-// MATCH (c:KGClass) WHERE c.id IN ['citation', 'external-artifact', 'terminology-code'] RETURN c.id;
+// MATCH (c:KGClass) WHERE c.id IN ['external-artifact', 'health-intervention', 'indicator', 'terminology-code'] RETURN c.id;

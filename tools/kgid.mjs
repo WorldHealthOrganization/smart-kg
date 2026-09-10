@@ -27,8 +27,20 @@ export const slug = (s) =>
  * a serialisation detail, not a different DAK, and leaving it in would file a DAK's BPMN and its
  * DMN under two namespaces.
  */
-export const dakNamespace = (raw) =>
-  String(raw ?? "urn:unknown").replace(/\/$/, "").replace(/\/(bpmn|dmn|cql|fsh)$/i, "");
+export const dakNamespace = (raw) => {
+  const ns = String(raw ?? "urn:unknown").replace(/\/$/, "").replace(/\/(bpmn|dmn|cql|fsh)$/i, "");
+  // smart-base's own files disagree about scheme: dak.json declares
+  // https://smart.who.int/base while the BPMN's targetNamespace is http://smart.who.int/base/bpmn
+  // and the DMN's is http://smart.who.int/immunizations. An IRI is an identity key, so two schemes
+  // for one authority split every persona and every artefact into two unconnected nodes. Normalise
+  // to https for smart.who.int, and let the caller report that it happened -- normalisedScheme()
+  // below exists so the inconsistency is surfaced upstream rather than quietly absorbed here.
+  return ns.replace(/^http:\/\/(smart\.who\.int\b)/, "https://$1");
+};
+
+/** True when dakNamespace() had to rewrite the scheme -- worth reporting, not worth failing on. */
+export const normalisedScheme = (raw) =>
+  /^http:\/\/smart\.who\.int\b/.test(String(raw ?? ""));
 
 /** A file a DAK ships. Shared by l1:external-artifact and its l2 elaboration. */
 export const artifactId = (ns, fileId) => `${ns}/artifact/${fileId}`;

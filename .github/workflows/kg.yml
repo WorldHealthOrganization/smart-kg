@@ -1,4 +1,4 @@
-# Structural checks for the L1 and L2 knowledge graph schemas.
+# Structural checks for the knowledge graph schemas: l1, l2, l2-bpmn, l2-dmn.
 #
 # Everything generated here is committed, so a consumer can fetch the ontology in the format their
 # tool reads without installing a toolchain. Committed generated files go stale silently, so each is
@@ -55,14 +55,19 @@ jobs:
           fi
           node tools/extract-citations.mjs /tmp/smart-base/input/dmn/DAK.DT.IMMZ.D2.DT.BCG.dmn \
             --out /tmp/l1.json
-          node tools/extract-l2.mjs \
-            --bpmn /tmp/smart-base/input/bpmn/SGAuthoring.DAKLifecycle.bpmn \
-            --dmn  /tmp/smart-base/input/dmn/DAK.DT.IMMZ.D2.DT.BCG.dmn \
-            --personas /tmp/smart-base/input/fsh/actors \
-            --out /tmp/l2.json
-          node tools/validate.mjs /tmp/l1.json /tmp/l2.json
-          node tools/compare-extract.mjs examples/immz-bcg-citations.json /tmp/l1.json
-          node tools/compare-extract.mjs examples/l2-daklifecycle-bcg.json /tmp/l2.json
+          node tools/extract-dak.mjs \
+            --dak /tmp/smart-base/dak.json --fsh /tmp/smart-base/input/fsh \
+            --bpmn-dir /tmp/smart-base/input/bpmn --dmn-dir /tmp/smart-base/input/dmn \
+            --out /tmp/dak.json
+          node tools/extract-bpmn.mjs /tmp/smart-base/input/bpmn/SGAuthoring.DAKLifecycle.bpmn \
+            --personas /tmp/smart-base/input/fsh/actors --out /tmp/bpmn.json
+          node tools/extract-dmn.mjs /tmp/smart-base/input/dmn/DAK.DT.IMMZ.D2.DT.BCG.dmn \
+            --bpmn /tmp/smart-base/input/bpmn/SGAuthoring.DAKLifecycle.bpmn --out /tmp/dmn.json
+          node tools/validate.mjs /tmp/l1.json /tmp/dak.json /tmp/bpmn.json /tmp/dmn.json
+          node tools/compare-extract.mjs examples/immz-bcg-citations.json    /tmp/l1.json
+          node tools/compare-extract.mjs examples/l2-smart-base-dak.json     /tmp/dak.json
+          node tools/compare-extract.mjs examples/l2-bpmn-daklifecycle.json  /tmp/bpmn.json
+          node tools/compare-extract.mjs examples/l2-dmn-immz-bcg.json       /tmp/dmn.json
 
       # Tier 1: the fixtures satisfy the document shape. Separate from the step above because a
       # document can conform to the ontology and still be malformed, and the two need different fixes.

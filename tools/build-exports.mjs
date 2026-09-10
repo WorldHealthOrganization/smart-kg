@@ -20,7 +20,7 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 // Which ontology files to export. Each is authored or generated elsewhere; this only projects.
 // A layer that imports another is exported on its own: l2.ttl declares L2's classes and references
 // L1's through owl:imports, rather than restating them.
-const LAYERS = ["l1", "l2"];
+const LAYERS = ["l1", "l2", "l2-bpmn", "l2-dmn"];
 
 const camel = (name) =>
   name.split(/[^A-Za-z0-9]+/).filter(Boolean)
@@ -157,10 +157,13 @@ export function buildTurtle(ont, layer = { own: ont, imported: { classes: [], pr
     Source: "A published document, or a part of one, that guidance is stated in.",
     Concept: "A thing the guidance is about.",
     Reference: "A pointer out of this graph. Carries identity only; asserts nothing about the target.",
-    // L2
-    Artefact: "A file a DAK ships, addressed as a whole. Elaborates the L1 reference to the same file.",
-    Structure: "An element inside an artefact. It has no identity apart from the file that contains it.",
-    Definition: "Something defined once and referenced by name from many artefacts. Where the joins land, and where a rename breaks them.",
+    // L2 -- the DAK component layer
+    Kit: "A Digital Adaptation Kit as a whole: metadata, and the nine components it contains.",
+    Component: "One of the nine components DAK.fsh declares a kit must be able to hold. It points at the file that defines it and does not describe that file's interior.",
+    Element: "A structured part of a component -- a requirement statement, a task entry. It exists as a node only where something outside its component needs to reach it.",
+    // L2-BPMN and L2-DMN -- the file-interior subgraphs
+    Artefact: "A file, addressed as a whole. Shares its IRI with the L1 reference to the same file, so opening a file does not create a second name for it.",
+    Structure: "An element inside a file. It has no identity apart from the file that contains it, and its vocabulary is the file format's, not WHO's.",
   };
   const kinds = [...new Set(ont.classes.map((c) => c.kind))].sort();
   const undescribed = kinds.filter((k) => !(k in KIND_NOTES));

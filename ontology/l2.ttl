@@ -6,115 +6,125 @@
 <http://smart.who.int/kg/l2> a owl:Ontology ;
   owl:imports <http://smart.who.int/kg/l1> ;
   rdfs:label "WHO SMART Guidelines L2 ontology" ;
-  rdfs:comment "The DAK layer. Every class below is grounded in an artefact committed to smart-base today; `groundedIn` names which, and each class note says what it was read from. L2 exists to hold the three joins that currently survive only as string equality across three file formats -- BPMN pool name to persona title, DMN usingTask href to BPMN task name, and DMN input expression to data dictionary element name. Those joins break silently on a rename. Nothing else here is modelled for its own sake: rule cells stay properties rather than nodes, FHIR canonicals stay URLs, and an edge with no instance in a real file was left out. Pairwise licensing is carried as sub-properties, because a relationship is licensed between specific class pairs while an OWL object property has one global domain and range." .
+  rdfs:comment "The DAK component layer, modelled on smart-base's own DAK logical model rather than on a selection from it. DAK.fsh declares NINE components and this layer carries all of them: eight as classes here, and healthInterventions as l1:health-intervention, which L1 already declares as its hinge to L2. The internals of BPMN and DMN files are NOT here -- they are separate subgraphs, l2-bpmn and l2-dmn, because a DAK component points at a file by URI and what is inside that file is a different question with a different vocabulary, a different extractor and a different failure mode. Pairwise licensing is carried as sub-properties, because a relationship is licensed between specific class pairs while an OWL object property has one global domain and range." .
 
 ### Node kinds
 
-sgkg:Artefact a owl:Class ; rdfs:label "Artefact" ; rdfs:comment "A file a DAK ships, addressed as a whole. Elaborates the L1 reference to the same file." .
-sgkg:Definition a owl:Class ; rdfs:label "Definition" ; rdfs:comment "Something defined once and referenced by name from many artefacts. Where the joins land, and where a rename breaks them." .
-sgkg:Structure a owl:Class ; rdfs:label "Structure" ; rdfs:comment "An element inside an artefact. It has no identity apart from the file that contains it." .
+sgkg:Component a owl:Class ; rdfs:label "Component" ; rdfs:comment "One of the nine components DAK.fsh declares a kit must be able to hold. It points at the file that defines it and does not describe that file's interior." .
+sgkg:Element a owl:Class ; rdfs:label "Element" ; rdfs:comment "A structured part of a component -- a requirement statement, a task entry. It exists as a node only where something outside its component needs to reach it." .
+sgkg:Kit a owl:Class ; rdfs:label "Kit" ; rdfs:comment "A Digital Adaptation Kit as a whole: metadata, and the nine components it contains." .
 
 ### Classes
 
-sgkg:BusinessProcess a owl:Class ;
-  rdfs:subClassOf sgkg:Artefact ;
-  rdfs:label "Business Process" ;
-  skos:notation "business-process" ;
-  rdfs:subClassOf sgkg:ExternalArtefact ;
-  skos:note "Instances share the IRI of the External artefact they elaborate: one artefact, one address, described opaquely at the layer above and structurally here." ;
-  rdfs:comment "One BPMN file, as a unit. Corresponds to a BusinessProcessWorkflow instance, whose `source 1..1 uri` points at exactly this. Shares its IRI with the l1:external-artifact for the same file: L1 addresses the file and asserts nothing about the inside, L2 supplies the inside, and one artefact keeps one address." .
+sgkg:DigitalAdaptationKit a owl:Class ;
+  rdfs:subClassOf sgkg:Kit ;
+  rdfs:label "Digital Adaptation Kit" ;
+  skos:notation "dak" ;
+  rdfs:comment "The kit itself. Properties are exactly the metadata fields DAK.fsh declares and dak.json carries -- no more, so that a dak node can be produced from a real file without anything being invented." .
 
-sgkg:ProcessParticipant a owl:Class ;
-  rdfs:subClassOf sgkg:Structure ;
-  rdfs:label "Process Participant" ;
-  skos:notation "process-participant" ;
-  rdfs:comment "A BPMN pool: a role that owns part of the process. The lifecycle BPMN has 8 and no lanes at all, so the pool is the only unit of role assignment present. Its @name is the sole link to a persona." .
-
-sgkg:ProcessTask a owl:Class ;
-  rdfs:subClassOf sgkg:Structure ;
-  rdfs:label "Process Task" ;
-  skos:notation "process-task" ;
-  rdfs:comment "A BPMN task or sub-process. Present as a node because it is what a DMN usingTask href points at and what sequence flows connect; a task with neither would still be included, since omitting it would disconnect the flow graph around it. Sub-processes are tasks with isSubProcess true rather than a separate class -- the lifecycle BPMN has exactly one, 'For each business process'." .
-
-sgkg:ProcessGateway a owl:Class ;
-  rdfs:subClassOf sgkg:Structure ;
-  rdfs:label "Process Gateway" ;
-  skos:notation "process-gateway" ;
-  rdfs:comment "A branch or merge. Included for connectivity, not for a cross-model edge: a sequence flow through a gateway that had no node would have nothing to point at, and every reachability question over the process would break at the first decision point. The 3 in the lifecycle BPMN are all exclusive." .
-
-sgkg:ProcessEvent a owl:Class ;
-  rdfs:subClassOf sgkg:Structure ;
-  rdfs:label "Process Event" ;
-  skos:notation "process-event" ;
-  rdfs:comment "A start or end event. Same connectivity justification as gateway, plus one of its own: a process's entry and exit points are what make 'is this task reachable' and 'does this path terminate' answerable at all." .
-
-sgkg:DecisionTable a owl:Class ;
-  rdfs:subClassOf sgkg:Artefact ;
-  rdfs:label "Decision Table" ;
-  skos:notation "decision-table" ;
-  rdfs:subClassOf sgkg:ExternalArtefact ;
-  skos:note "Instances share the IRI of the External artefact they elaborate: one artefact, one address, described opaquely at the layer above and structurally here." ;
-  rdfs:comment "One DMN decision, as a unit. Corresponds to a DecisionSupportLogic instance, which carries an id, an optional description and `source 1..1 uri` -- and nothing whatsoever about the decision itself. Shares its IRI with the l1:external-artifact for the same file, on the same reasoning as business-process." .
-
-sgkg:InputClause a owl:Class ;
-  rdfs:subClassOf sgkg:Structure ;
-  rdfs:label "Input Clause" ;
-  skos:notation "input-clause" ;
-  rdfs:comment "A decision table input column. Its expression text is where data element names hide, which is the only reason this is a node rather than a property of the table." .
-
-sgkg:OutputClause a owl:Class ;
-  rdfs:subClassOf sgkg:Structure ;
-  rdfs:label "Output Clause" ;
-  skos:notation "output-clause" ;
-  rdfs:comment "A decision table output column. The BCG table's four are Care Plan, Guidance displayed to health worker, Annotations, and Reference(s) -- the last described 'Reference for the source content (L1)'. These are column definitions in a decision table, not clinical records: no output-clause edge reaches patient data, and none may. See docs/SCOPE.md." .
-
-sgkg:DecisionRule a owl:Class ;
-  rdfs:subClassOf sgkg:Structure ;
-  rdfs:label "Decision Rule" ;
-  skos:notation "decision-rule" ;
-  rdfs:comment "One row. Its input and output cells are carried as properties, not as nodes: 250 cells in the BCG table alone, none of them the target of a cross-model edge, and turning them into nodes would re-represent the table rather than join it. What the rule needs a node for is its citation edge into L1." .
-
-sgkg:Persona a owl:Class ;
-  rdfs:subClassOf sgkg:Definition ;
-  rdfs:label "Persona" ;
+sgkg:GenericPersona a owl:Class ;
+  rdfs:subClassOf sgkg:Component ;
+  rdfs:label "Generic Persona" ;
   skos:notation "persona" ;
-  rdfs:comment "A role, defined once and referenced by name from every process that involves it. Read from ActorDefinition instances in input/fsh/actors, whose shape Persona.fsh governs. `title` is the field BPMN pools match on; `name` is the CamelCase identifier and does not match." .
+  rdfs:comment "DAK component 2. Grounded in GenericPersona.fsh -- title, id, description, otherNames, iscoCode bound to ISCO08ValueSet -- and in the 22 committed ActorDefinition instances that carry name, title, type and description. The two disagree about where ISCO lives, which the properties record rather than smooth over." .
 
-sgkg:DataElement a owl:Class ;
-  rdfs:subClassOf sgkg:Definition ;
-  rdfs:label "Data Element" ;
+sgkg:UserScenario a owl:Class ;
+  rdfs:subClassOf sgkg:Component ;
+  rdfs:label "User Scenario" ;
+  skos:notation "user-scenario" ;
+  rdfs:comment "DAK component 3. A narrative describing how personas interact. Carries `personas 0..* id`, which is the only structured link between the narrative layer and the personas it names." .
+
+sgkg:BusinessProcessWorkflow a owl:Class ;
+  rdfs:subClassOf sgkg:Component ;
+  rdfs:label "Business Process Workflow" ;
+  skos:notation "business-process" ;
+  rdfs:comment "DAK component 4. NOT the BPMN file -- the component that points at one. `source 1..1 uri` is that pointer, and the BPMN's interior is the l2-bpmn subgraph, reached through the external-artifact this sourcedFrom targets." .
+
+sgkg:TaskEntry a owl:Class ;
+  rdfs:subClassOf sgkg:Element ;
+  rdfs:label "Task Entry" ;
+  skos:notation "dak-task" ;
+  rdfs:comment "One entry of BusinessProcessWorkflow's `task 0..*` backbone: identifier, name, description. A node rather than a property because the same task is also drawn in the BPMN file, and the two lists have to be joinable to be checkable against each other." .
+
+sgkg:CoreDataElement a owl:Class ;
+  rdfs:subClassOf sgkg:Component ;
+  rdfs:label "Core Data Element" ;
   skos:notation "data-element" ;
-  rdfs:comment "A named item of information a decision reads -- the data dictionary row. Currently recovered from DMN input expressions, because smart-base ships no data dictionary instance to read from; a node here is therefore a name that was referenced, not a definition that was found. resolutionStatus says which. When a dictionary exists, resolution fills in the rest and the WHO-versus-country diff this class is for becomes possible." .
+  rdfs:comment "DAK component 5. CoreDataElement.fsh calls itself \"the ONE EXCEPTION to allowing FHIR R4 models into the DAK LMs\": `type` is one of valueset | codesystem | conceptmap | logicalmodel and `canonical 1..1 uri` points at it. The canonical is recorded; nothing inside it is copied, because FHIR is its own query layer." .
+
+sgkg:DecisionSupportLogic a owl:Class ;
+  rdfs:subClassOf sgkg:Component ;
+  rdfs:label "Decision-Support Logic" ;
+  skos:notation "decision-support-logic" ;
+  rdfs:comment "DAK component 6. The whole model is an id, an optional description and `source 1..1 uri` to a DMN file. Nothing about the decision itself -- which is the gap the l2-dmn subgraph fills." .
+
+sgkg:ProgramIndicator a owl:Class ;
+  rdfs:subClassOf sgkg:Component ;
+  rdfs:label "Program Indicator" ;
+  skos:notation "program-indicator" ;
+  rdfs:comment "DAK component 7. Named program-indicator and not `indicator` because L1 already declares an `indicator` -- one normatively defined in a publication. They are different things: this is the DAK's operational measure, and `derivedFrom` is how it points at the normative one. Collapsing them would silently merge a WHO definition with a country's implementation of it." .
+
+sgkg:FunctionalRequirement a owl:Class ;
+  rdfs:subClassOf sgkg:Component ;
+  rdfs:label "Functional Requirement" ;
+  skos:notation "functional-requirement" ;
+  rdfs:comment "DAK component 8, first half. The as-a/I-want/so-that shape: `activity`, `capability[x]`, `benefit[x]`, and `actor 0..* Reference(SGActor)`. The 41 committed instances use the R5 SGRequirements profile rather than this logical model, so a real instance carries `statement` entries and a userstory extension; both shapes are accommodated and `profile` records which was read." .
+
+sgkg:NonFunctionalRequirement a owl:Class ;
+  rdfs:subClassOf sgkg:Component ;
+  rdfs:label "Non-Functional Requirement" ;
+  skos:notation "non-functional-requirement" ;
+  rdfs:comment "DAK component 8, second half. `requirement 1..1 markdown`, an optional category and classification codings. Kept separate from the functional half because the fields genuinely differ -- a non-functional requirement has no actor and no benefit." .
+
+sgkg:RequirementStatement a owl:Class ;
+  rdfs:subClassOf sgkg:Element ;
+  rdfs:label "Requirement Statement" ;
+  skos:notation "requirement-statement" ;
+  rdfs:comment "One numbered, labelled statement inside a requirement, with a conformance verb. A node rather than a property because conformance is queried across a whole DAK -- 'every SHALL in this kit, and what fulfils it' is the question requirements exist to answer." .
+
+sgkg:TestScenario a owl:Class ;
+  rdfs:subClassOf sgkg:Component ;
+  rdfs:label "Test Scenario" ;
+  skos:notation "test-scenario" ;
+  rdfs:comment "DAK component 9. `feature 1..1 uri` to a Gherkin feature file, plus an optional description. The feature file's interior is not modelled: no DAK in this estate ships one yet, so a subgraph for it would have no instance to check it against." .
 
 ### Object properties (the ArchiMate relationship vocabulary)
 
-sgkg:flowsTo a owl:ObjectProperty ;
-  rdfs:label "flowsTo" ;
-  rdfs:comment "A BPMN sequence flow, within one participant. The qualifier carries the flow's name where it has one -- 6 of the 70 flows in the lifecycle BPMN do, all of them gateway branches such as \"Yes - approved\". No flow in that file carries a conditionExpression, so the branch condition exists only as that label. `openQualifier` says the qualifier is free text authored in the BPMN rather than a term from a fixed vocabulary, so a value the ontology has not seen is not a finding." .
+sgkg:hasComponent a owl:ObjectProperty ;
+  rdfs:label "hasComponent" ;
+  rdfs:comment "A DAK contains one of its nine components. The qualifier carries the component name from DAK.fsh, so `dak hasComponent persona` and `dak hasComponent program-indicator` stay distinguishable when a query walks the kit." .
 
-sgkg:messageTo a owl:ObjectProperty ;
-  rdfs:label "messageTo" ;
-  rdfs:comment "A BPMN message flow, which by definition crosses participants. Kept distinct from flowsTo because a handoff between two roles is the thing governance and adaptation reviews look for, and burying it among 70 intra-pool flows loses it." .
+sgkg:sourcedFrom a owl:ObjectProperty ;
+  rdfs:label "sourcedFrom" ;
+  rdfs:comment "A component points at the file that defines it -- a BPMN, a DMN, a Gherkin feature, a FHIR canonical. The target is an l1:external-artifact addressed by URI, and this graph asserts nothing about its interior. The BPMN and DMN subgraphs supply that interior at the same IRI." .
 
-sgkg:performedBy a owl:ObjectProperty ;
-  rdfs:label "performedBy" ;
-  rdfs:comment "A participant pool is performed by a persona. TODAY THIS IS STRING EQUALITY between the BPMN participant's @name and an ActorDefinition's title, across two file formats with no shared identifier. Renaming either side breaks it silently and nothing reports it. Every instance of this edge must carry a resolutionStatus." .
+sgkg:realises a owl:ObjectProperty ;
+  rdfs:label "realises" ;
+  rdfs:comment "A business process realises a user scenario. From `scenario 0..* id` on BusinessProcessWorkflow -- a bare id string, so an instance carries a resolutionStatus." .
 
-sgkg:invokedBy a owl:ObjectProperty ;
-  rdfs:label "invokedBy" ;
-  rdfs:comment "A decision table is invoked by a business rule task. Read from dmn:usingTask/@href, whose fragment is the URL-encoded task NAME rather than the task id -- in the BCG table it is '#if%20the%20client%20is%20due%20for%20a%20bacille%20Calmette%E2%80%93Gu%C3%A9rin...'. It therefore resolves only if that prose is byte-identical in the BPMN, punctuation included. Carries a resolutionStatus." .
+sgkg:involves a owl:ObjectProperty ;
+  rdfs:label "involves" ;
+  rdfs:comment "A user scenario involves a persona. From `personas 0..* id` on UserScenario -- again bare ids, again a resolutionStatus." .
 
-sgkg:reads a owl:ObjectProperty ;
-  rdfs:label "reads" ;
-  rdfs:comment "An input clause reads a data element. Recovered from the input expression's free text, where element names appear either bare ('HIV status') or quoted inside a larger expression ('Today's date - \"Date of birth\"'). Quoted tokens on the right of a comparison are values, not elements, so extraction is a heuristic and every instance carries a resolutionStatus and the rule that produced it." .
+sgkg:fulfilledBy a owl:ObjectProperty ;
+  rdfs:label "fulfilledBy" ;
+  rdfs:comment "A functional requirement is fulfilled by a persona. THE ONE JOIN IN THIS LAYER THAT IS NOT STRING MATCHING: the committed instances write `actor[+] = Canonical(SGAuthoring.Persona.BusinessAnalyst)`, a canonical reference that resolves without guessing. It is the counter-example that shows the other joins are a choice, not a necessity." .
 
-sgkg:citesSource a owl:ObjectProperty ;
-  rdfs:label "citesSource" ;
-  rdfs:comment "A decision rule cites an L1 source. The target is an l1:citation, so this is the edge that joins the L2 and L1 graphs. Grounded, though sparsely: of the BCG table's 25 rules exactly 1 carries a citation in its second annotation entry. The sparseness is the point -- a rule with no citesSource edge is a rule with no stated source, and counting those is the coverage question." .
+sgkg:hasStatement a owl:ObjectProperty ;
+  rdfs:label "hasStatement" ;
+  rdfs:comment "A requirement carries numbered, labelled statements with a conformance verb. 170 of them exist today." .
 
-sgkg:definedBy a owl:ObjectProperty ;
-  rdfs:label "definedBy" ;
-  rdfs:comment "A data element is defined by a FHIR canonical -- a ValueSet, CodeSystem, ConceptMap or logical model, as CoreDataElement.fsh declares. The target is an l1:external-artifact holding the URL. Nothing about the target's contents is copied here; FHIR is its own query layer." .
+sgkg:listsTask a owl:ObjectProperty ;
+  rdfs:label "listsTask" ;
+  rdfs:comment "BusinessProcessWorkflow declares `task 0..*` with identifier, name and description -- the same tasks the BPMN file draws. Two representations of one list, joined by identifier, which is why dak-task exists as a node rather than a property." .
+
+sgkg:references a owl:ObjectProperty ;
+  rdfs:label "references" ;
+  rdfs:comment "A program indicator names the health interventions that give it context. From `references 0..* id` on ProgramIndicator -- bare id strings again, so an instance carries a resolutionStatus. Distinct from derivedFrom: referencing an intervention for context is not the same claim as restating a normative indicator." .
+
+sgkg:describes a owl:ObjectProperty ;
+  rdfs:label "describes" ;
+  rdfs:comment "A DAK-level task entry describes an element of a BPMN file. Declared here and licensed in l2-bpmn, where the target class lives. -- declared but unused by the current model" .
 
 ### Licensed edges, as qualified sub-properties
 # One per (source class, predicate, target class) triple the ArchiMate model licenses.
@@ -122,183 +132,205 @@ sgkg:definedBy a owl:ObjectProperty ;
 # domain/range on sgkg:associatedWith would be a union of everything and would permit
 # Business Process aggregates Data Element, which the model does not.
 
-sgkg:contains_BusinessProcess_ProcessParticipant a owl:ObjectProperty ;
-  rdfs:subPropertyOf sgkg:contains ;
-  rdfs:domain sgkg:BusinessProcess ;
-  rdfs:range sgkg:ProcessParticipant ;
-  rdfs:label "Business Process contains Process Participant" .
+sgkg:hasComponent_DigitalAdaptationKit_HealthIntervention a owl:ObjectProperty ;
+  rdfs:subPropertyOf sgkg:hasComponent ;
+  rdfs:domain sgkg:DigitalAdaptationKit ;
+  rdfs:range sgkg:HealthIntervention ;
+  skos:note "qualifier: healthInterventions" ;
+  rdfs:label "Digital Adaptation Kit healthInterventions Health intervention" .
 
-sgkg:contains_BusinessProcess_ProcessTask a owl:ObjectProperty ;
-  rdfs:subPropertyOf sgkg:contains ;
-  rdfs:domain sgkg:BusinessProcess ;
-  rdfs:range sgkg:ProcessTask ;
-  rdfs:label "Business Process contains Process Task" .
+sgkg:hasComponent_DigitalAdaptationKit_GenericPersona a owl:ObjectProperty ;
+  rdfs:subPropertyOf sgkg:hasComponent ;
+  rdfs:domain sgkg:DigitalAdaptationKit ;
+  rdfs:range sgkg:GenericPersona ;
+  skos:note "qualifier: personas" ;
+  rdfs:label "Digital Adaptation Kit personas Generic Persona" .
 
-sgkg:contains_BusinessProcess_ProcessGateway a owl:ObjectProperty ;
-  rdfs:subPropertyOf sgkg:contains ;
-  rdfs:domain sgkg:BusinessProcess ;
-  rdfs:range sgkg:ProcessGateway ;
-  rdfs:label "Business Process contains Process Gateway" .
+sgkg:hasComponent_DigitalAdaptationKit_UserScenario a owl:ObjectProperty ;
+  rdfs:subPropertyOf sgkg:hasComponent ;
+  rdfs:domain sgkg:DigitalAdaptationKit ;
+  rdfs:range sgkg:UserScenario ;
+  skos:note "qualifier: userScenarios" ;
+  rdfs:label "Digital Adaptation Kit userScenarios User Scenario" .
 
-sgkg:contains_BusinessProcess_ProcessEvent a owl:ObjectProperty ;
-  rdfs:subPropertyOf sgkg:contains ;
-  rdfs:domain sgkg:BusinessProcess ;
-  rdfs:range sgkg:ProcessEvent ;
-  rdfs:label "Business Process contains Process Event" .
+sgkg:hasComponent_DigitalAdaptationKit_BusinessProcessWorkflow a owl:ObjectProperty ;
+  rdfs:subPropertyOf sgkg:hasComponent ;
+  rdfs:domain sgkg:DigitalAdaptationKit ;
+  rdfs:range sgkg:BusinessProcessWorkflow ;
+  skos:note "qualifier: businessProcesses" ;
+  rdfs:label "Digital Adaptation Kit businessProcesses Business Process Workflow" .
 
-sgkg:contains_ProcessParticipant_ProcessTask a owl:ObjectProperty ;
-  rdfs:subPropertyOf sgkg:contains ;
-  rdfs:domain sgkg:ProcessParticipant ;
-  rdfs:range sgkg:ProcessTask ;
-  rdfs:label "Process Participant contains Process Task" .
+sgkg:hasComponent_DigitalAdaptationKit_CoreDataElement a owl:ObjectProperty ;
+  rdfs:subPropertyOf sgkg:hasComponent ;
+  rdfs:domain sgkg:DigitalAdaptationKit ;
+  rdfs:range sgkg:CoreDataElement ;
+  skos:note "qualifier: dataElements" ;
+  rdfs:label "Digital Adaptation Kit dataElements Core Data Element" .
 
-sgkg:contains_ProcessParticipant_ProcessGateway a owl:ObjectProperty ;
-  rdfs:subPropertyOf sgkg:contains ;
-  rdfs:domain sgkg:ProcessParticipant ;
-  rdfs:range sgkg:ProcessGateway ;
-  rdfs:label "Process Participant contains Process Gateway" .
+sgkg:hasComponent_DigitalAdaptationKit_DecisionSupportLogic a owl:ObjectProperty ;
+  rdfs:subPropertyOf sgkg:hasComponent ;
+  rdfs:domain sgkg:DigitalAdaptationKit ;
+  rdfs:range sgkg:DecisionSupportLogic ;
+  skos:note "qualifier: decisionLogic" ;
+  rdfs:label "Digital Adaptation Kit decisionLogic Decision-Support Logic" .
 
-sgkg:contains_ProcessParticipant_ProcessEvent a owl:ObjectProperty ;
-  rdfs:subPropertyOf sgkg:contains ;
-  rdfs:domain sgkg:ProcessParticipant ;
-  rdfs:range sgkg:ProcessEvent ;
-  rdfs:label "Process Participant contains Process Event" .
+sgkg:hasComponent_DigitalAdaptationKit_ProgramIndicator a owl:ObjectProperty ;
+  rdfs:subPropertyOf sgkg:hasComponent ;
+  rdfs:domain sgkg:DigitalAdaptationKit ;
+  rdfs:range sgkg:ProgramIndicator ;
+  skos:note "qualifier: indicators" ;
+  rdfs:label "Digital Adaptation Kit indicators Program Indicator" .
 
-sgkg:contains_ProcessTask_ProcessTask a owl:ObjectProperty ;
-  rdfs:subPropertyOf sgkg:contains ;
-  rdfs:domain sgkg:ProcessTask ;
-  rdfs:range sgkg:ProcessTask ;
-  rdfs:label "Process Task contains Process Task" .
+sgkg:hasComponent_DigitalAdaptationKit_FunctionalRequirement a owl:ObjectProperty ;
+  rdfs:subPropertyOf sgkg:hasComponent ;
+  rdfs:domain sgkg:DigitalAdaptationKit ;
+  rdfs:range sgkg:FunctionalRequirement ;
+  skos:note "qualifier: requirements" ;
+  rdfs:label "Digital Adaptation Kit requirements Functional Requirement" .
 
-sgkg:contains_DecisionTable_InputClause a owl:ObjectProperty ;
-  rdfs:subPropertyOf sgkg:contains ;
-  rdfs:domain sgkg:DecisionTable ;
-  rdfs:range sgkg:InputClause ;
-  rdfs:label "Decision Table contains Input Clause" .
+sgkg:hasComponent_DigitalAdaptationKit_NonFunctionalRequirement a owl:ObjectProperty ;
+  rdfs:subPropertyOf sgkg:hasComponent ;
+  rdfs:domain sgkg:DigitalAdaptationKit ;
+  rdfs:range sgkg:NonFunctionalRequirement ;
+  skos:note "qualifier: requirements" ;
+  rdfs:label "Digital Adaptation Kit requirements Non-Functional Requirement" .
 
-sgkg:contains_DecisionTable_OutputClause a owl:ObjectProperty ;
-  rdfs:subPropertyOf sgkg:contains ;
-  rdfs:domain sgkg:DecisionTable ;
-  rdfs:range sgkg:OutputClause ;
-  rdfs:label "Decision Table contains Output Clause" .
+sgkg:hasComponent_DigitalAdaptationKit_TestScenario a owl:ObjectProperty ;
+  rdfs:subPropertyOf sgkg:hasComponent ;
+  rdfs:domain sgkg:DigitalAdaptationKit ;
+  rdfs:range sgkg:TestScenario ;
+  skos:note "qualifier: testScenarios" ;
+  rdfs:label "Digital Adaptation Kit testScenarios Test Scenario" .
 
-sgkg:contains_DecisionTable_DecisionRule a owl:ObjectProperty ;
-  rdfs:subPropertyOf sgkg:contains ;
-  rdfs:domain sgkg:DecisionTable ;
-  rdfs:range sgkg:DecisionRule ;
-  rdfs:label "Decision Table contains Decision Rule" .
-
-sgkg:flowsTo_ProcessEvent_ProcessTask a owl:ObjectProperty ;
-  rdfs:subPropertyOf sgkg:flowsTo ;
-  rdfs:domain sgkg:ProcessEvent ;
-  rdfs:range sgkg:ProcessTask ;
-  rdfs:label "Process Event flowsTo Process Task" .
-
-sgkg:flowsTo_ProcessEvent_ProcessGateway a owl:ObjectProperty ;
-  rdfs:subPropertyOf sgkg:flowsTo ;
-  rdfs:domain sgkg:ProcessEvent ;
-  rdfs:range sgkg:ProcessGateway ;
-  rdfs:label "Process Event flowsTo Process Gateway" .
-
-sgkg:flowsTo_ProcessTask_ProcessTask a owl:ObjectProperty ;
-  rdfs:subPropertyOf sgkg:flowsTo ;
-  rdfs:domain sgkg:ProcessTask ;
-  rdfs:range sgkg:ProcessTask ;
-  rdfs:label "Process Task flowsTo Process Task" .
-
-sgkg:flowsTo_ProcessTask_ProcessGateway a owl:ObjectProperty ;
-  rdfs:subPropertyOf sgkg:flowsTo ;
-  rdfs:domain sgkg:ProcessTask ;
-  rdfs:range sgkg:ProcessGateway ;
-  rdfs:label "Process Task flowsTo Process Gateway" .
-
-sgkg:flowsTo_ProcessTask_ProcessEvent a owl:ObjectProperty ;
-  rdfs:subPropertyOf sgkg:flowsTo ;
-  rdfs:domain sgkg:ProcessTask ;
-  rdfs:range sgkg:ProcessEvent ;
-  rdfs:label "Process Task flowsTo Process Event" .
-
-sgkg:flowsTo_ProcessGateway_ProcessTask a owl:ObjectProperty ;
-  rdfs:subPropertyOf sgkg:flowsTo ;
-  rdfs:domain sgkg:ProcessGateway ;
-  rdfs:range sgkg:ProcessTask ;
-  rdfs:label "Process Gateway flowsTo Process Task" .
-
-sgkg:flowsTo_ProcessGateway_ProcessGateway a owl:ObjectProperty ;
-  rdfs:subPropertyOf sgkg:flowsTo ;
-  rdfs:domain sgkg:ProcessGateway ;
-  rdfs:range sgkg:ProcessGateway ;
-  rdfs:label "Process Gateway flowsTo Process Gateway" .
-
-sgkg:flowsTo_ProcessGateway_ProcessEvent a owl:ObjectProperty ;
-  rdfs:subPropertyOf sgkg:flowsTo ;
-  rdfs:domain sgkg:ProcessGateway ;
-  rdfs:range sgkg:ProcessEvent ;
-  rdfs:label "Process Gateway flowsTo Process Event" .
-
-sgkg:messageTo_ProcessTask_ProcessTask a owl:ObjectProperty ;
-  rdfs:subPropertyOf sgkg:messageTo ;
-  rdfs:domain sgkg:ProcessTask ;
-  rdfs:range sgkg:ProcessTask ;
-  rdfs:label "Process Task messageTo Process Task" .
-
-sgkg:messageTo_ProcessTask_ProcessEvent a owl:ObjectProperty ;
-  rdfs:subPropertyOf sgkg:messageTo ;
-  rdfs:domain sgkg:ProcessTask ;
-  rdfs:range sgkg:ProcessEvent ;
-  rdfs:label "Process Task messageTo Process Event" .
-
-sgkg:messageTo_ProcessEvent_ProcessTask a owl:ObjectProperty ;
-  rdfs:subPropertyOf sgkg:messageTo ;
-  rdfs:domain sgkg:ProcessEvent ;
-  rdfs:range sgkg:ProcessTask ;
-  rdfs:label "Process Event messageTo Process Task" .
-
-sgkg:performedBy_ProcessParticipant_Persona a owl:ObjectProperty ;
-  rdfs:subPropertyOf sgkg:performedBy ;
-  rdfs:domain sgkg:ProcessParticipant ;
-  rdfs:range sgkg:Persona ;
-  rdfs:label "Process Participant performedBy Persona" .
-
-sgkg:invokedBy_DecisionTable_ProcessTask a owl:ObjectProperty ;
-  rdfs:subPropertyOf sgkg:invokedBy ;
-  rdfs:domain sgkg:DecisionTable ;
-  rdfs:range sgkg:ProcessTask ;
-  rdfs:label "Decision Table invokedBy Process Task" .
-
-sgkg:invokedBy_DecisionTable_ExternalArtefact a owl:ObjectProperty ;
-  rdfs:subPropertyOf sgkg:invokedBy ;
-  rdfs:domain sgkg:DecisionTable ;
+sgkg:sourcedFrom_BusinessProcessWorkflow_ExternalArtefact a owl:ObjectProperty ;
+  rdfs:subPropertyOf sgkg:sourcedFrom ;
+  rdfs:domain sgkg:BusinessProcessWorkflow ;
   rdfs:range sgkg:ExternalArtefact ;
-  rdfs:label "Decision Table invokedBy External artefact" .
+  rdfs:label "Business Process Workflow sourcedFrom External artefact" .
 
-sgkg:reads_InputClause_DataElement a owl:ObjectProperty ;
-  rdfs:subPropertyOf sgkg:reads ;
-  rdfs:domain sgkg:InputClause ;
-  rdfs:range sgkg:DataElement ;
-  rdfs:label "Input Clause reads Data Element" .
-
-sgkg:citesSource_DecisionRule_Citation a owl:ObjectProperty ;
-  rdfs:subPropertyOf sgkg:citesSource ;
-  rdfs:domain sgkg:DecisionRule ;
-  rdfs:range sgkg:Citation ;
-  rdfs:label "Decision Rule citesSource Citation" .
-
-sgkg:definedBy_DataElement_ExternalArtefact a owl:ObjectProperty ;
-  rdfs:subPropertyOf sgkg:definedBy ;
-  rdfs:domain sgkg:DataElement ;
+sgkg:sourcedFrom_DecisionSupportLogic_ExternalArtefact a owl:ObjectProperty ;
+  rdfs:subPropertyOf sgkg:sourcedFrom ;
+  rdfs:domain sgkg:DecisionSupportLogic ;
   rdfs:range sgkg:ExternalArtefact ;
-  rdfs:label "Data Element definedBy External artefact" .
+  rdfs:label "Decision-Support Logic sourcedFrom External artefact" .
 
-sgkg:crossReferences_DataElement_TerminologyCode a owl:ObjectProperty ;
-  rdfs:subPropertyOf sgkg:crossReferences ;
-  rdfs:domain sgkg:DataElement ;
-  rdfs:range sgkg:TerminologyCode ;
-  rdfs:label "Data Element crossReferences Terminology code" .
+sgkg:sourcedFrom_TestScenario_ExternalArtefact a owl:ObjectProperty ;
+  rdfs:subPropertyOf sgkg:sourcedFrom ;
+  rdfs:domain sgkg:TestScenario ;
+  rdfs:range sgkg:ExternalArtefact ;
+  rdfs:label "Test Scenario sourcedFrom External artefact" .
 
-sgkg:crossReferences_Persona_TerminologyCode a owl:ObjectProperty ;
+sgkg:sourcedFrom_CoreDataElement_ExternalArtefact a owl:ObjectProperty ;
+  rdfs:subPropertyOf sgkg:sourcedFrom ;
+  rdfs:domain sgkg:CoreDataElement ;
+  rdfs:range sgkg:ExternalArtefact ;
+  rdfs:label "Core Data Element sourcedFrom External artefact" .
+
+sgkg:sourcedFrom_GenericPersona_ExternalArtefact a owl:ObjectProperty ;
+  rdfs:subPropertyOf sgkg:sourcedFrom ;
+  rdfs:domain sgkg:GenericPersona ;
+  rdfs:range sgkg:ExternalArtefact ;
+  rdfs:label "Generic Persona sourcedFrom External artefact" .
+
+sgkg:sourcedFrom_UserScenario_ExternalArtefact a owl:ObjectProperty ;
+  rdfs:subPropertyOf sgkg:sourcedFrom ;
+  rdfs:domain sgkg:UserScenario ;
+  rdfs:range sgkg:ExternalArtefact ;
+  rdfs:label "User Scenario sourcedFrom External artefact" .
+
+sgkg:sourcedFrom_ProgramIndicator_ExternalArtefact a owl:ObjectProperty ;
+  rdfs:subPropertyOf sgkg:sourcedFrom ;
+  rdfs:domain sgkg:ProgramIndicator ;
+  rdfs:range sgkg:ExternalArtefact ;
+  rdfs:label "Program Indicator sourcedFrom External artefact" .
+
+sgkg:sourcedFrom_FunctionalRequirement_ExternalArtefact a owl:ObjectProperty ;
+  rdfs:subPropertyOf sgkg:sourcedFrom ;
+  rdfs:domain sgkg:FunctionalRequirement ;
+  rdfs:range sgkg:ExternalArtefact ;
+  rdfs:label "Functional Requirement sourcedFrom External artefact" .
+
+sgkg:sourcedFrom_NonFunctionalRequirement_ExternalArtefact a owl:ObjectProperty ;
+  rdfs:subPropertyOf sgkg:sourcedFrom ;
+  rdfs:domain sgkg:NonFunctionalRequirement ;
+  rdfs:range sgkg:ExternalArtefact ;
+  rdfs:label "Non-Functional Requirement sourcedFrom External artefact" .
+
+sgkg:realises_BusinessProcessWorkflow_UserScenario a owl:ObjectProperty ;
+  rdfs:subPropertyOf sgkg:realises ;
+  rdfs:domain sgkg:BusinessProcessWorkflow ;
+  rdfs:range sgkg:UserScenario ;
+  rdfs:label "Business Process Workflow realises User Scenario" .
+
+sgkg:involves_UserScenario_GenericPersona a owl:ObjectProperty ;
+  rdfs:subPropertyOf sgkg:involves ;
+  rdfs:domain sgkg:UserScenario ;
+  rdfs:range sgkg:GenericPersona ;
+  rdfs:label "User Scenario involves Generic Persona" .
+
+sgkg:fulfilledBy_FunctionalRequirement_GenericPersona a owl:ObjectProperty ;
+  rdfs:subPropertyOf sgkg:fulfilledBy ;
+  rdfs:domain sgkg:FunctionalRequirement ;
+  rdfs:range sgkg:GenericPersona ;
+  rdfs:label "Functional Requirement fulfilledBy Generic Persona" .
+
+sgkg:hasStatement_FunctionalRequirement_RequirementStatement a owl:ObjectProperty ;
+  rdfs:subPropertyOf sgkg:hasStatement ;
+  rdfs:domain sgkg:FunctionalRequirement ;
+  rdfs:range sgkg:RequirementStatement ;
+  rdfs:label "Functional Requirement hasStatement Requirement Statement" .
+
+sgkg:hasStatement_NonFunctionalRequirement_RequirementStatement a owl:ObjectProperty ;
+  rdfs:subPropertyOf sgkg:hasStatement ;
+  rdfs:domain sgkg:NonFunctionalRequirement ;
+  rdfs:range sgkg:RequirementStatement ;
+  rdfs:label "Non-Functional Requirement hasStatement Requirement Statement" .
+
+sgkg:listsTask_BusinessProcessWorkflow_TaskEntry a owl:ObjectProperty ;
+  rdfs:subPropertyOf sgkg:listsTask ;
+  rdfs:domain sgkg:BusinessProcessWorkflow ;
+  rdfs:range sgkg:TaskEntry ;
+  rdfs:label "Business Process Workflow listsTask Task Entry" .
+
+sgkg:references_ProgramIndicator_HealthIntervention a owl:ObjectProperty ;
+  rdfs:subPropertyOf sgkg:references ;
+  rdfs:domain sgkg:ProgramIndicator ;
+  rdfs:range sgkg:HealthIntervention ;
+  rdfs:label "Program Indicator references Health intervention" .
+
+sgkg:derivedFrom_ProgramIndicator_Indicator a owl:ObjectProperty ;
+  rdfs:subPropertyOf sgkg:derivedFrom ;
+  rdfs:domain sgkg:ProgramIndicator ;
+  rdfs:range sgkg:Indicator ;
+  rdfs:label "Program Indicator derivedFrom Indicator" .
+
+sgkg:crossReferences_GenericPersona_TerminologyCode a owl:ObjectProperty ;
   rdfs:subPropertyOf sgkg:crossReferences ;
-  rdfs:domain sgkg:Persona ;
+  rdfs:domain sgkg:GenericPersona ;
   rdfs:range sgkg:TerminologyCode ;
-  rdfs:label "Persona crossReferences Terminology code" .
+  rdfs:label "Generic Persona crossReferences Terminology code" .
+
+sgkg:crossReferences_CoreDataElement_TerminologyCode a owl:ObjectProperty ;
+  rdfs:subPropertyOf sgkg:crossReferences ;
+  rdfs:domain sgkg:CoreDataElement ;
+  rdfs:range sgkg:TerminologyCode ;
+  rdfs:label "Core Data Element crossReferences Terminology code" .
+
+sgkg:crossReferences_ProgramIndicator_TerminologyCode a owl:ObjectProperty ;
+  rdfs:subPropertyOf sgkg:crossReferences ;
+  rdfs:domain sgkg:ProgramIndicator ;
+  rdfs:range sgkg:TerminologyCode ;
+  rdfs:label "Program Indicator crossReferences Terminology code" .
+
+sgkg:crossReferences_FunctionalRequirement_TerminologyCode a owl:ObjectProperty ;
+  rdfs:subPropertyOf sgkg:crossReferences ;
+  rdfs:domain sgkg:FunctionalRequirement ;
+  rdfs:range sgkg:TerminologyCode ;
+  rdfs:label "Functional Requirement crossReferences Terminology code" .
+
+sgkg:crossReferences_NonFunctionalRequirement_TerminologyCode a owl:ObjectProperty ;
+  rdfs:subPropertyOf sgkg:crossReferences ;
+  rdfs:domain sgkg:NonFunctionalRequirement ;
+  rdfs:range sgkg:TerminologyCode ;
+  rdfs:label "Non-Functional Requirement crossReferences Terminology code" .
 

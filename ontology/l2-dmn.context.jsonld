@@ -72,6 +72,42 @@
     "ontologyVersion": {
       "@id": "sgkg:ontologyVersion"
     },
+    "flowsTo": {
+      "@id": "sgkg:flowsTo"
+    },
+    "messageTo": {
+      "@id": "sgkg:messageTo"
+    },
+    "performedBy": {
+      "@id": "sgkg:performedBy"
+    },
+    "hasComponent": {
+      "@id": "sgkg:hasComponent"
+    },
+    "sourcedFrom": {
+      "@id": "sgkg:sourcedFrom"
+    },
+    "realises": {
+      "@id": "sgkg:realises"
+    },
+    "involves": {
+      "@id": "sgkg:involves"
+    },
+    "fulfilledBy": {
+      "@id": "sgkg:fulfilledBy"
+    },
+    "hasStatement": {
+      "@id": "sgkg:hasStatement"
+    },
+    "listsTask": {
+      "@id": "sgkg:listsTask"
+    },
+    "references": {
+      "@id": "sgkg:references"
+    },
+    "describes": {
+      "@id": "sgkg:describes"
+    },
     "contains": {
       "@id": "sgkg:contains"
     },
@@ -129,33 +165,33 @@
     "implementedBy": {
       "@id": "sgkg:implementedBy"
     },
-    "hasComponent": {
-      "@id": "sgkg:hasComponent"
+    "invokedBy": {
+      "@id": "sgkg:invokedBy"
     },
-    "sourcedFrom": {
-      "@id": "sgkg:sourcedFrom"
+    "reads": {
+      "@id": "sgkg:reads"
     },
-    "realises": {
-      "@id": "sgkg:realises"
+    "citesSource": {
+      "@id": "sgkg:citesSource"
     },
-    "involves": {
-      "@id": "sgkg:involves"
-    },
-    "fulfilledBy": {
-      "@id": "sgkg:fulfilledBy"
-    },
-    "hasStatement": {
-      "@id": "sgkg:hasStatement"
-    },
-    "listsTask": {
-      "@id": "sgkg:listsTask"
-    },
-    "references": {
-      "@id": "sgkg:references"
-    },
-    "describes": {
-      "@id": "sgkg:describes"
-    },
+    "BPMNFile": "sgkg:bpmn-definitions",
+    "BPMNProcess": "sgkg:bpmn-process",
+    "BPMNParticipant": "sgkg:bpmn-participant",
+    "BPMNTask": "sgkg:bpmn-task",
+    "BPMNGateway": "sgkg:bpmn-gateway",
+    "BPMNEvent": "sgkg:bpmn-event",
+    "DigitalAdaptationKit": "sgkg:dak",
+    "GenericPersona": "sgkg:persona",
+    "UserScenario": "sgkg:user-scenario",
+    "BusinessProcessWorkflow": "sgkg:business-process",
+    "TaskEntry": "sgkg:dak-task",
+    "CoreDataElement": "sgkg:data-element",
+    "DecisionSupportLogic": "sgkg:decision-support-logic",
+    "ProgramIndicator": "sgkg:program-indicator",
+    "FunctionalRequirement": "sgkg:functional-requirement",
+    "NonFunctionalRequirement": "sgkg:non-functional-requirement",
+    "RequirementStatement": "sgkg:requirement-statement",
+    "TestScenario": "sgkg:test-scenario",
     "Publication": "sgkg:publication",
     "PublicationSection": "sgkg:publication-section",
     "Recommendation": "sgkg:recommendation",
@@ -172,17 +208,11 @@
     "TerminologyCode": "sgkg:terminology-code",
     "Citation": "sgkg:citation",
     "ExternalArtefact": "sgkg:external-artifact",
-    "DigitalAdaptationKit": "sgkg:dak",
-    "GenericPersona": "sgkg:persona",
-    "UserScenario": "sgkg:user-scenario",
-    "BusinessProcessWorkflow": "sgkg:business-process",
-    "TaskEntry": "sgkg:dak-task",
-    "CoreDataElement": "sgkg:data-element",
-    "DecisionSupportLogic": "sgkg:decision-support-logic",
-    "ProgramIndicator": "sgkg:program-indicator",
-    "FunctionalRequirement": "sgkg:functional-requirement",
-    "NonFunctionalRequirement": "sgkg:non-functional-requirement",
-    "RequirementStatement": "sgkg:requirement-statement",
-    "TestScenario": "sgkg:test-scenario"
+    "DMNFile": "sgkg:dmn-definitions",
+    "DMNDecision": "sgkg:dmn-decision",
+    "DMNDecisionTable": "sgkg:dmn-decision-table",
+    "DMNInputClause": "sgkg:dmn-input-clause",
+    "DMNOutputClause": "sgkg:dmn-output-clause",
+    "DMNRule": "sgkg:dmn-rule"
   }
 }

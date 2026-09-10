@@ -10,7 +10,7 @@ That is the one rule this document exists to state, and everything below is why.
 
 | Layer | What it is | Size | Changes | Lives in |
 |---|---|---|---|---|
-| **T-Box** — ontology | Classes and the relationships permitted between them | L1: 16 classes, 35 edges · L2: 11 classes, 30 edges | When the model does — rarely, with review | **here**, `ontology/` |
+| **T-Box** — ontology | Classes and the relationships permitted between them | 40 classes, 95 edges across 4 layers (l1, l2, l2-bpmn, l2-dmn) | When the model does — rarely, with review | **here**, `ontology/` |
 | **Shapes** — constraints | What a graph document must satisfy to be valid | 1 file | With the T-Box | **here**, `shapes/` |
 | **A-Box** — instances | The recommendations of one guideline; the processes, decisions and personas of one DAK | Hundreds of nodes per publication or DAK | Every guideline revision, every DAK release | **published with its source** |
 
@@ -50,7 +50,7 @@ committed. A DAK graph is the same kind of artifact and should travel the same p
 
 ```
                         smart-kg  (here)
-                          ontology/   T-Box — the L1 and L2 models
+                          ontology/   T-Box — l1, l2, l2-bpmn, l2-dmn
                           shapes/     constraints
                           docs/  tools/  examples/   one fixture
                              │
@@ -59,8 +59,10 @@ committed. A DAK graph is the same kind of artifact and should travel the same p
               ▼                              ▼
   ┌───────────────────────┐    ┌──────────────────────────────┐
   │ a guideline           │    │ a DAK IG build               │
-  │  PDF → recommendations│    │  DMN → citations (L1)        │   ← the A-Box,
-  │                       │    │  BPMN+DMN+FSH → L2 joins     │     published not committed
+  │  PDF → recommendations│    │  DMN  → citations      (l1)  │   ← the A-Box,
+  │                       │    │  FSH  → nine components(l2)  │     published not committed
+  │                       │    │  BPMN → interiors (l2-bpmn)  │
+  │                       │    │  DMN  → interiors  (l2-dmn)  │
   └───────────────────────┘    └──────────────────────────────┘
               │                              │
               └──────────────┬───────────────┘
