@@ -129,3 +129,9 @@ sgkg:citesSource_DMNRule_Citation a owl:ObjectProperty ;
   rdfs:range sgkg:Citation ;
   rdfs:label "DMN Rule citesSource Citation" .
 
+sgkg:sourcedFrom_DecisionSupportLogic_DMNFile a owl:ObjectProperty ;
+  rdfs:subPropertyOf sgkg:sourcedFrom ;
+  rdfs:domain sgkg:DecisionSupportLogic ;
+  rdfs:range sgkg:DMNFile ;
+  rdfs:label "Decision-Support Logic sourcedFrom DMN File" .
+

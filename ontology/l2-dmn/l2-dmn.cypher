@@ -14,7 +14,7 @@
 //     cypher-shell -d neo4j -f <this file>           (shell)
 //
 // REQUIRES l2-bpmn.cypher and l2.cypher and l1.cypher TO BE LOADED FIRST.
-// This layer licenses edges onto imported classes (bpmn-task, citation, data-element, external-artifact). The MATCH
+// This layer licenses edges onto imported classes (bpmn-task, citation, data-element, decision-support-logic, external-artifact). The MATCH
 // statements below find nothing if those classes are absent, and Cypher does not treat
 // that as an error -- the edges would simply be missing. Verify with the query at the
 // end of this file.
@@ -29,6 +29,8 @@ MERGE (:KGClass:Structure {id:'dmn-input-clause', name:'DMN Input Clause', kind:
 MERGE (:KGClass:Structure {id:'dmn-output-clause', name:'DMN Output Clause', kind:'Structure', layer:'l2-dmn', iri:'http://smart.who.int/kg/dmn-output-clause'});
 MERGE (:KGClass:Structure {id:'dmn-rule', name:'DMN Rule', kind:'Structure', layer:'l2-dmn', iri:'http://smart.who.int/kg/dmn-rule'});
 
+MATCH (s:KGClass {id:'dmn-definitions'}), (t:KGClass {id:'external-artifact'}) MERGE (s)-[:ELABORATES {predicate:'elaborates', note:'One artefact, one IRI: instances of these two classes are the same node, described at two layers.'}]->(t);
+
 MATCH (s:KGClass {id:'dmn-definitions'}), (t:KGClass {id:'dmn-decision'}) MERGE (s)-[:CONTAINS {predicate:'contains'}]->(t);
 MATCH (s:KGClass {id:'dmn-decision'}), (t:KGClass {id:'dmn-decision-table'}) MERGE (s)-[:CONTAINS {predicate:'contains'}]->(t);
 MATCH (s:KGClass {id:'dmn-decision-table'}), (t:KGClass {id:'dmn-input-clause'}) MERGE (s)-[:CONTAINS {predicate:'contains'}]->(t);
@@ -38,7 +40,8 @@ MATCH (s:KGClass {id:'dmn-decision'}), (t:KGClass {id:'bpmn-task'}) MERGE (s)-[:
 MATCH (s:KGClass {id:'dmn-decision'}), (t:KGClass {id:'external-artifact'}) MERGE (s)-[:INVOKEDBY {predicate:'invokedBy'}]->(t);
 MATCH (s:KGClass {id:'dmn-input-clause'}), (t:KGClass {id:'data-element'}) MERGE (s)-[:READS {predicate:'reads'}]->(t);
 MATCH (s:KGClass {id:'dmn-rule'}), (t:KGClass {id:'citation'}) MERGE (s)-[:CITESSOURCE {predicate:'citesSource'}]->(t);
+MATCH (s:KGClass {id:'decision-support-logic'}), (t:KGClass {id:'dmn-definitions'}) MERGE (s)-[:SOURCEDFROM {predicate:'sourcedFrom'}]->(t);
 
-// Verification. Must return 4 rows -- one per imported class this layer
+// Verification. Must return 5 rows -- one per imported class this layer
 // builds on. Fewer means an imported layer was not loaded and edges above are missing.
-// MATCH (c:KGClass) WHERE c.id IN ['bpmn-task', 'citation', 'data-element', 'external-artifact'] RETURN c.id;
+// MATCH (c:KGClass) WHERE c.id IN ['bpmn-task', 'citation', 'data-element', 'decision-support-logic', 'external-artifact'] RETURN c.id;

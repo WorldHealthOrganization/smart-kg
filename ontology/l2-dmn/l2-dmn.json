@@ -96,7 +96,9 @@
     { "predicate": "invokedBy", "source": "dmn-decision", "target": "external-artifact" },
 
     { "predicate": "reads", "source": "dmn-input-clause", "target": "data-element" },
-    { "predicate": "citesSource", "source": "dmn-rule", "target": "citation" }
+    { "predicate": "citesSource", "source": "dmn-rule", "target": "citation" },
+
+    { "predicate": "sourcedFrom", "source": "decision-support-logic", "target": "dmn-definitions" }
   ],
 
   "deliberatelyOmitted": [

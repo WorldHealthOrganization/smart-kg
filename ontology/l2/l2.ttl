@@ -96,7 +96,7 @@ sgkg:hasComponent a owl:ObjectProperty ;
 
 sgkg:sourcedFrom a owl:ObjectProperty ;
   rdfs:label "sourcedFrom" ;
-  rdfs:comment "A component points at the file that defines it -- a BPMN, a DMN, a Gherkin feature, a FHIR canonical. The target is an l1:external-artifact addressed by URI, and this graph asserts nothing about its interior. The BPMN and DMN subgraphs supply that interior at the same IRI." .
+  rdfs:comment "A component points at the file that defines it. TWO TARGETS ARE LICENSED, and which one an instance uses says how much is known about the file. Where a subgraph models that file type, the target is the file itself -- `business-process sourcedFrom bpmn-definitions`, licensed in l2-bpmn -- and the graph walks straight on into the file's contents. Where none does (a Gherkin feature, a FHIR canonical, or a BPMN this graph simply does not hold), the target is an l1:external-artifact carrying a URI and nothing else. Prefer the first: routing through external-artifact when the file IS modelled adds a hop through a node that, at instance level, is the same node." .
 
 sgkg:realises a owl:ObjectProperty ;
   rdfs:label "realises" ;

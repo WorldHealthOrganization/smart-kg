@@ -4,7 +4,7 @@
   "namespace": "http://smart.who.int/kg/",
   "source": "authored",
   "imports": ["l2"],
-  "note": "The interior of a BPMN file, as its own subgraph. Separate from the DAK component layer because the vocabulary here is OMG's rather than WHO's, the extractor reads XML rather than FSH, and the failure modes are different: a DAK component is wrong when it points at a file that does not exist, a BPMN subgraph is wrong when it misreads the file it did find. A l2:business-process points at a file; this describes what is in it, at the same IRI L1 uses for that file.",
+  "note": "The interior of a BPMN file, as its own subgraph. Separate from the DAK component layer because the vocabulary here is OMG's rather than WHO's, the extractor reads XML rather than FSH, and the failure modes are different: a DAK component is wrong when it points at a file that does not exist, a BPMN subgraph is wrong when it misreads the file it did find. The edge that joins the two -- `business-process sourcedFrom bpmn-definitions` -- is declared HERE rather than in l2, because l2 must not import this layer (l2-bpmn already imports l2 for persona, and the reverse would be circular). Declaring an edge in the layer that can see both ends is the same thing `dak-task describes bpmn-task` does.",
 
   "groundedIn": [
     {
@@ -104,7 +104,9 @@
     { "predicate": "messageTo", "source": "bpmn-event", "target": "bpmn-task" },
 
     { "predicate": "performedBy", "source": "bpmn-participant", "target": "persona" },
-    { "predicate": "describes", "source": "dak-task", "target": "bpmn-task" }
+    { "predicate": "describes", "source": "dak-task", "target": "bpmn-task" },
+
+    { "predicate": "sourcedFrom", "source": "business-process", "target": "bpmn-definitions" }
   ],
 
   "deliberatelyOmitted": [

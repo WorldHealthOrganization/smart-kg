@@ -75,6 +75,20 @@ export function buildCypher(ont, layer = { own: ont, imported: { classes: [], pr
       `kind:'${c.kind}', layer:'${cy((ont.layer ?? "").toLowerCase())}', iri:'${c.iri}'` +
       (c.archimateType ? `, archimateType:'${c.archimateType}'` : "") + `});`);
   }
+  // `elaborates` is a class-level declaration, not a licensed edge -- two classes describing one
+  // artefact at different layers, sharing its IRI at instance level. The Turtle carries it as
+  // rdfs:subClassOf; without it in Cypher the graph simply stops at external-artifact, and the
+  // traversal from a DAK component into the file it names cannot be walked at all.
+  const scopeClasses = scopeOf(layer).classes;
+  for (const c of ont.classes) {
+    if (!c.elaborates || !scopeClasses.has(c.elaborates)) continue;
+    L.push("");
+    L.push(`MATCH (s:KGClass {id:'${cy(c.id)}'}), (t:KGClass {id:'${cy(c.elaborates)}'}) ` +
+           `MERGE (s)-[:ELABORATES {predicate:'elaborates', ` +
+           `note:'One artefact, one IRI: instances of these two classes are the same node, ` +
+           `described at two layers.'}]->(t);`);
+  }
+
   L.push("");
   for (const e of ont.edges) {
     const props = [`predicate:'${e.predicate}'`];

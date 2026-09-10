@@ -7,7 +7,7 @@
   owl:imports <http://smart.who.int/kg/l2> ;
   owl:imports <http://smart.who.int/kg/l1> ;
   rdfs:label "WHO SMART Guidelines L2-BPMN ontology" ;
-  rdfs:comment "The interior of a BPMN file, as its own subgraph. Separate from the DAK component layer because the vocabulary here is OMG's rather than WHO's, the extractor reads XML rather than FSH, and the failure modes are different: a DAK component is wrong when it points at a file that does not exist, a BPMN subgraph is wrong when it misreads the file it did find. A l2:business-process points at a file; this describes what is in it, at the same IRI L1 uses for that file. Pairwise licensing is carried as sub-properties, because a relationship is licensed between specific class pairs while an OWL object property has one global domain and range." .
+  rdfs:comment "The interior of a BPMN file, as its own subgraph. Separate from the DAK component layer because the vocabulary here is OMG's rather than WHO's, the extractor reads XML rather than FSH, and the failure modes are different: a DAK component is wrong when it points at a file that does not exist, a BPMN subgraph is wrong when it misreads the file it did find. The edge that joins the two -- `business-process sourcedFrom bpmn-definitions` -- is declared HERE rather than in l2, because l2 must not import this layer (l2-bpmn already imports l2 for persona, and the reverse would be circular). Declaring an edge in the layer that can see both ends is the same thing `dak-task describes bpmn-task` does. Pairwise licensing is carried as sub-properties, because a relationship is licensed between specific class pairs while an OWL object property has one global domain and range." .
 
 ### Node kinds
 
@@ -187,4 +187,10 @@ sgkg:describes_TaskEntry_BPMNTask a owl:ObjectProperty ;
   rdfs:domain sgkg:TaskEntry ;
   rdfs:range sgkg:BPMNTask ;
   rdfs:label "Task Entry describes BPMN Task" .
+
+sgkg:sourcedFrom_BusinessProcessWorkflow_BPMNFile a owl:ObjectProperty ;
+  rdfs:subPropertyOf sgkg:sourcedFrom ;
+  rdfs:domain sgkg:BusinessProcessWorkflow ;
+  rdfs:range sgkg:BPMNFile ;
+  rdfs:label "Business Process Workflow sourcedFrom BPMN File" .
 

@@ -14,7 +14,7 @@
 //     cypher-shell -d neo4j -f <this file>           (shell)
 //
 // REQUIRES l2.cypher and l1.cypher TO BE LOADED FIRST.
-// This layer licenses edges onto imported classes (dak-task, persona). The MATCH
+// This layer licenses edges onto imported classes (business-process, dak-task, persona). The MATCH
 // statements below find nothing if those classes are absent, and Cypher does not treat
 // that as an error -- the edges would simply be missing. Verify with the query at the
 // end of this file.
@@ -28,6 +28,8 @@ MERGE (:KGClass:Structure {id:'bpmn-participant', name:'BPMN Participant', kind:
 MERGE (:KGClass:Structure {id:'bpmn-task', name:'BPMN Task', kind:'Structure', layer:'l2-bpmn', iri:'http://smart.who.int/kg/bpmn-task'});
 MERGE (:KGClass:Structure {id:'bpmn-gateway', name:'BPMN Gateway', kind:'Structure', layer:'l2-bpmn', iri:'http://smart.who.int/kg/bpmn-gateway'});
 MERGE (:KGClass:Structure {id:'bpmn-event', name:'BPMN Event', kind:'Structure', layer:'l2-bpmn', iri:'http://smart.who.int/kg/bpmn-event'});
+
+MATCH (s:KGClass {id:'bpmn-definitions'}), (t:KGClass {id:'external-artifact'}) MERGE (s)-[:ELABORATES {predicate:'elaborates', note:'One artefact, one IRI: instances of these two classes are the same node, described at two layers.'}]->(t);
 
 MATCH (s:KGClass {id:'bpmn-definitions'}), (t:KGClass {id:'bpmn-process'}) MERGE (s)-[:CONTAINS {predicate:'contains'}]->(t);
 MATCH (s:KGClass {id:'bpmn-definitions'}), (t:KGClass {id:'bpmn-participant'}) MERGE (s)-[:CONTAINS {predicate:'contains'}]->(t);
@@ -48,7 +50,8 @@ MATCH (s:KGClass {id:'bpmn-task'}), (t:KGClass {id:'bpmn-event'}) MERGE (s)-[:ME
 MATCH (s:KGClass {id:'bpmn-event'}), (t:KGClass {id:'bpmn-task'}) MERGE (s)-[:MESSAGETO {predicate:'messageTo'}]->(t);
 MATCH (s:KGClass {id:'bpmn-participant'}), (t:KGClass {id:'persona'}) MERGE (s)-[:PERFORMEDBY {predicate:'performedBy'}]->(t);
 MATCH (s:KGClass {id:'dak-task'}), (t:KGClass {id:'bpmn-task'}) MERGE (s)-[:DESCRIBES {predicate:'describes'}]->(t);
+MATCH (s:KGClass {id:'business-process'}), (t:KGClass {id:'bpmn-definitions'}) MERGE (s)-[:SOURCEDFROM {predicate:'sourcedFrom'}]->(t);
 
-// Verification. Must return 2 rows -- one per imported class this layer
+// Verification. Must return 3 rows -- one per imported class this layer
 // builds on. Fewer means an imported layer was not loaded and edges above are missing.
-// MATCH (c:KGClass) WHERE c.id IN ['dak-task', 'persona'] RETURN c.id;
+// MATCH (c:KGClass) WHERE c.id IN ['business-process', 'dak-task', 'persona'] RETURN c.id;
