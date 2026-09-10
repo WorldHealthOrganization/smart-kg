@@ -58,8 +58,10 @@ L4 execution artefacts — `CarePlan`, `ServiceRequest`, `Observation`, `Patient
 The schema lives here. A DAK's own graph is produced by that DAK's Implementation Guide build and
 published with it. See [`STORAGE.md`](STORAGE.md).
 
-`examples/` holds fixtures small enough to read, exercised in CI. If a real DAK graph appears there,
-the fixture has become a dataset and this rule has quietly stopped holding.
+There are no fixtures either. `tools/negative-test.mjs` builds the smallest documents that exercise
+every rule, in memory, and CI checks those. A committed fixture large enough to be interesting is a
+dataset wearing a fixture's name, and this repository was rebuilt once already for keeping something
+nobody read.
 
 ---
 

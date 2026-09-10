@@ -13,7 +13,7 @@
 // requires a note and evidence for a judgement. An extractor that resolved silently would be
 // manufacturing provenance.
 //
-//   node tools/extract-citations.mjs <file.dmn> [--out examples/x.json]
+//   node tools/extract-citations.mjs <file.dmn> [--out /tmp/l1.json]
 
 import { readFileSync, writeFileSync } from "node:fs";
 import { basename } from "node:path";

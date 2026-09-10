@@ -50,10 +50,10 @@ committed. A DAK graph is the same kind of artifact and should travel the same p
 
 ```
                         smart-kg  (here)
-                          ontology/   T-Box — l1, l2, l2-bpmn, l2-dmn (authored)
-                          ontology/generated/   projections; never edited
+                          ontology/l1/  l2/  l2-bpmn/  l2-dmn/   T-Box
+                          ontology/all.cypher  all.ttl        the lot, one file
                           shapes/     constraints
-                          docs/  tools/  examples/   one fixture
+                          docs/   tools/   shapes/
                              │
                              │  ontology + shapes, fetched by URL or pinned by version
               ┌──────────────┴───────────────┐
@@ -98,16 +98,18 @@ it as a system of record.
 
 ### For this repository
 
-Fixtures in [`examples/`](../examples/), small enough to read, exercised by
-[`tools/validate.mjs`](../tools/validate.mjs) in CI. They exist to prove the ontology and the shapes
-still agree with each other, not to be data — and, because they are extracted from real committed
-artefacts rather than invented, to prove the extractors still work on the shapes WHO actually ships.
+Nothing. Not even a fixture.
 
-They are also what makes the cross-layer join testable: the L1 and L2 fixtures come from the same
-DMN file, share one IRI for it, and are validated together as one graph.
+[`tools/negative-test.mjs`](../tools/negative-test.mjs) builds the smallest documents that exercise
+every rule — four of them, one per layer, a few nodes each — in memory, and CI checks those against
+both the shapes and the ontologies. `--emit <dir>` writes them out for the tier-1 run and nothing
+else. They are also what makes the cross-layer join testable: the L2-DMN document cites a citation
+the L1 document defines, and the two are validated together as one graph.
 
-If a real guideline or DAK graph ever appears in `examples/`, something has gone wrong: the fixture has become a
-dataset, and the rule at the top of this page has quietly stopped holding.
+A committed fixture large enough to be interesting is a dataset wearing a fixture's name.
+
+If a real guideline or DAK graph ever appears in this repository, the rule at the top of this page
+has quietly stopped holding.
 
 ---
 

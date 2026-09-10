@@ -16,9 +16,13 @@ import { fileURLToPath } from "node:url";
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 
 /** Read one ontology file. No import resolution. */
+export function layerDir(layer) {
+  return join(ROOT, "ontology", layer);
+}
+
 export function readLayer(layer) {
-  const src = join(ROOT, "ontology", `${layer}.json`);
-  if (!existsSync(src)) throw new Error(`ontology/${layer}.json is missing`);
+  const src = join(layerDir(layer), `${layer}.json`);
+  if (!existsSync(src)) throw new Error(`ontology/${layer}/${layer}.json is missing`);
   return JSON.parse(readFileSync(src, "utf8"));
 }
 

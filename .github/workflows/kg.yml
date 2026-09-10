@@ -1,17 +1,17 @@
 # Structural checks for the knowledge graph schemas: l1, l2, l2-bpmn, l2-dmn.
 #
-# Everything generated here is committed, so a consumer can fetch the ontology in the format their
-# tool reads without installing a toolchain. Committed generated files go stale silently, so each is
-# checked against its source on every push.
+# This repository holds the TYPE GRAPH and no DAK data (docs/STORAGE.md). Everything generated is
+# committed so a consumer can fetch the format their tool reads without installing a toolchain,
+# and committed generated files go stale silently, so each is checked against its source.
 
 name: Knowledge graph
 
 on:
   push:
     branches-ignore: ['gh-pages']
-    paths: ['ontology/**', 'shapes/**', 'examples/**', 'tools/**', '.github/workflows/kg.yml']
+    paths: ['ontology/**', 'shapes/**', 'tools/**', '.github/workflows/kg.yml']
   pull_request:
-    paths: ['ontology/**', 'shapes/**', 'examples/**', 'tools/**', '.github/workflows/kg.yml']
+    paths: ['ontology/**', 'shapes/**', 'tools/**', '.github/workflows/kg.yml']
   workflow_dispatch:
 
 permissions:
@@ -27,54 +27,59 @@ jobs:
         with:
           node-version: '20'
 
-      # The Turtle, Cypher and JSON-LD context are views of ontology/l1.json and ontology/l2.json.
+      # Turtle, Cypher and the JSON-LD context in each ontology/<layer>/, plus the combined
+      # ontology/all.{cypher,ttl}, are views of that layer's <layer>.json.
       - name: Check exports match the ontologies
         run: node tools/build-exports.mjs --check
 
-      # Tier 2: node types are declared classes, edges are licensed triples, references resolve
-      # across the whole document set, properties are declared, and a citation or cross-format
-      # join claiming resolution actually resolves.
-      - name: Validate examples against the ontologies
-        run: node tools/validate.mjs
-
-      # A validator is worth its output only if it fails on what it claims to catch. Two of these
-      # cases assert the opposite -- that a free-text BPMN branch label and an unresolved join are
-      # NOT findings -- because a check that fires on the normal case trains people to ignore it.
+      # A validator is worth its output only if it fails on what it claims to catch. Four of these
+      # cases assert the opposite -- a free-text BPMN branch label, an unresolved join, a reference
+      # into another layer's document -- because a check that fires on the normal case trains
+      # people to ignore it. The documents are built in the test, not committed.
       - name: Prove tier 2 rejects what it claims to
         run: node tools/negative-test.mjs
 
-      # The extractors must still work on the artefacts smart-base actually ships, not only on the
-      # fixtures committed here. Re-runs them against upstream and diffs the result, ignoring the
-      # source path and the timestamp -- everything else, the hashes included, must match. A change
-      # upstream shows up here as a diff rather than as a fixture that quietly describes an old file.
-      - name: Re-extract fixtures from upstream artefacts
+      # Tier 1: the same documents satisfy the document shape. Separate from the step above
+      # because a document can conform to the ontology and still be malformed.
+      - name: Validate documents against the shape schema
         run: |
-          if ! git clone --depth 1 https://github.com/WorldHealthOrganization/smart-base.git /tmp/smart-base; then
-            echo "::warning::smart-base could not be cloned; upstream re-extraction did not run"
-            exit 0
-          fi
-          node tools/extract-citations.mjs /tmp/smart-base/input/dmn/DAK.DT.IMMZ.D2.DT.BCG.dmn \
-            --out /tmp/l1.json
-          node tools/extract-dak.mjs \
-            --dak /tmp/smart-base/dak.json --fsh /tmp/smart-base/input/fsh \
-            --bpmn-dir /tmp/smart-base/input/bpmn --dmn-dir /tmp/smart-base/input/dmn \
-            --out /tmp/dak.json
-          node tools/extract-bpmn.mjs /tmp/smart-base/input/bpmn/SGAuthoring.DAKLifecycle.bpmn \
-            --personas /tmp/smart-base/input/fsh/actors --out /tmp/bpmn.json
-          node tools/extract-dmn.mjs /tmp/smart-base/input/dmn/DAK.DT.IMMZ.D2.DT.BCG.dmn \
-            --bpmn /tmp/smart-base/input/bpmn/SGAuthoring.DAKLifecycle.bpmn --out /tmp/dmn.json
-          node tools/validate.mjs /tmp/l1.json /tmp/dak.json /tmp/bpmn.json /tmp/dmn.json
-          node tools/compare-extract.mjs examples/immz-bcg-citations.json    /tmp/l1.json
-          node tools/compare-extract.mjs examples/l2-smart-base-dak.json     /tmp/dak.json
-          node tools/compare-extract.mjs examples/l2-bpmn-daklifecycle.json  /tmp/bpmn.json
-          node tools/compare-extract.mjs examples/l2-dmn-immz-bcg.json       /tmp/dmn.json
-
-      # Tier 1: the fixtures satisfy the document shape. Separate from the step above because a
-      # document can conform to the ontology and still be malformed, and the two need different fixes.
-      - name: Validate examples against the shape schema
-        run: |
+          node tools/negative-test.mjs --emit "$RUNNER_TEMP/fixtures"
           npm install --no-save --no-audit --no-fund ajv-cli@5 ajv-formats@2
           npx ajv compile --spec=draft2020 -c ajv-formats -s shapes/recommendation-graph.schema.json > /dev/null
-          for f in examples/*.json; do
+          for f in "$RUNNER_TEMP"/fixtures/*.json; do
             npx ajv validate --spec=draft2020 -c ajv-formats -s shapes/recommendation-graph.schema.json -d "$f"
           done
+          node tools/validate.mjs "$RUNNER_TEMP"/fixtures/*.json
+
+      # The Turtle must be parseable as RDF, and the merged file must parse as one document.
+      - name: Parse the Turtle
+        run: |
+          python3 -m pip install --quiet rdflib
+          python3 - <<'PY'
+          from rdflib import Graph
+          for f in ['l1/l1', 'l2/l2', 'l2-bpmn/l2-bpmn', 'l2-dmn/l2-dmn']:
+              g = Graph(); g.parse(f'ontology/{f}.ttl')
+              print(f, len(g), 'triples')
+          g = Graph(); g.parse('ontology/all.ttl')
+          print('all.ttl', len(g), 'triples')
+          PY
+
+      # Every Cypher line must be one terminated statement with balanced quotes. A file that looks
+      # fine and fails at load is the failure mode this catches.
+      - name: Check the Cypher is loadable
+        run: |
+          python3 - <<'PY'
+          import glob, re, sys
+          bad = 0
+          for f in glob.glob('ontology/**/*.cypher', recursive=True):
+              for i, line in enumerate(open(f, encoding='utf-8'), 1):
+                  line = line.rstrip('\n')
+                  if not line or line.startswith('//'): continue
+                  if line.startswith('CREATE CONSTRAINT') or line.startswith('FOR '): continue
+                  if not line.endswith(';'):
+                      print(f'{f}:{i} not a terminated statement: {line[:90]}'); bad += 1
+                  s = re.sub(r"\\'", '', re.sub(r'\\\\', '', line))
+                  if s.count("'") % 2:
+                      print(f'{f}:{i} unbalanced quotes: {line[:90]}'); bad += 1
+          sys.exit(1 if bad else 0)
+          PY

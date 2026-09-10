@@ -15,18 +15,17 @@
 // implementation, and it is here rather than there because it needs no third-party validator --
 // the ontology is the only input.
 //
-//   node tools/validate.mjs                    # every examples/*.kg.json
 //   node tools/validate.mjs path/to/graph.json
+//   node tools/validate.mjs l1.json l2.json bpmn.json     # references resolve across the set
 //
 // Plain Node, no dependencies.
 
-import { readFileSync, readdirSync, existsSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { join, dirname, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import { loadLayer, scopeOf } from "./ontology.mjs";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
-const EXAMPLES = join(ROOT, "examples");
 const DEFAULT_LAYER = "l1";
 
 /** Which ontology a document should be checked against. */
@@ -232,14 +231,14 @@ export function validateGraph(doc, loaded, external = new Map()) {
 }
 
 function main() {
-  const args = process.argv.slice(2).filter((a) => !a.startsWith("--"));
-  const files = args.length
-    ? args
-    : readdirSync(EXAMPLES).filter((f) => f.endsWith(".json")).map((f) => join(EXAMPLES, f));
-
+  const files = process.argv.slice(2).filter((a) => !a.startsWith("--"));
   if (!files.length) {
-    console.error("no graph documents to check");
-    process.exit(1);
+    // This repository holds the schema and no data, so there is nothing to check by default.
+    // Pass the documents to check; several at once resolves references that cross layers.
+    console.error("usage: validate.mjs <graph-document.json>...");
+    console.error("  Several documents may be given together; a reference from one to another");
+    console.error("  resolves across the set, which is how a graph split across layers is checked.");
+    process.exit(2);
   }
 
   // Every document in the run, indexed before any is checked. Documents of different layers
