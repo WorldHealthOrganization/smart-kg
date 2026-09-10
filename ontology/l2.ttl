@@ -1,0 +1,304 @@
+@prefix sgkg: <http://smart.who.int/kg/> .
+@prefix owl:  <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix skos: <http://www.w3.org/2004/02/skos/core#> .
+
+<http://smart.who.int/kg/l2> a owl:Ontology ;
+  owl:imports <http://smart.who.int/kg/l1> ;
+  rdfs:label "WHO SMART Guidelines L2 ontology" ;
+  rdfs:comment "The DAK layer. Every class below is grounded in an artefact committed to smart-base today; `groundedIn` names which, and each class note says what it was read from. L2 exists to hold the three joins that currently survive only as string equality across three file formats -- BPMN pool name to persona title, DMN usingTask href to BPMN task name, and DMN input expression to data dictionary element name. Those joins break silently on a rename. Nothing else here is modelled for its own sake: rule cells stay properties rather than nodes, FHIR canonicals stay URLs, and an edge with no instance in a real file was left out. Pairwise licensing is carried as sub-properties, because a relationship is licensed between specific class pairs while an OWL object property has one global domain and range." .
+
+### Node kinds
+
+sgkg:Artefact a owl:Class ; rdfs:label "Artefact" ; rdfs:comment "A file a DAK ships, addressed as a whole. Elaborates the L1 reference to the same file." .
+sgkg:Definition a owl:Class ; rdfs:label "Definition" ; rdfs:comment "Something defined once and referenced by name from many artefacts. Where the joins land, and where a rename breaks them." .
+sgkg:Structure a owl:Class ; rdfs:label "Structure" ; rdfs:comment "An element inside an artefact. It has no identity apart from the file that contains it." .
+
+### Classes
+
+sgkg:BusinessProcess a owl:Class ;
+  rdfs:subClassOf sgkg:Artefact ;
+  rdfs:label "Business Process" ;
+  skos:notation "business-process" ;
+  rdfs:subClassOf sgkg:ExternalArtefact ;
+  skos:note "Instances share the IRI of the External artefact they elaborate: one artefact, one address, described opaquely at the layer above and structurally here." ;
+  rdfs:comment "One BPMN file, as a unit. Corresponds to a BusinessProcessWorkflow instance, whose `source 1..1 uri` points at exactly this. Shares its IRI with the l1:external-artifact for the same file: L1 addresses the file and asserts nothing about the inside, L2 supplies the inside, and one artefact keeps one address." .
+
+sgkg:ProcessParticipant a owl:Class ;
+  rdfs:subClassOf sgkg:Structure ;
+  rdfs:label "Process Participant" ;
+  skos:notation "process-participant" ;
+  rdfs:comment "A BPMN pool: a role that owns part of the process. The lifecycle BPMN has 8 and no lanes at all, so the pool is the only unit of role assignment present. Its @name is the sole link to a persona." .
+
+sgkg:ProcessTask a owl:Class ;
+  rdfs:subClassOf sgkg:Structure ;
+  rdfs:label "Process Task" ;
+  skos:notation "process-task" ;
+  rdfs:comment "A BPMN task or sub-process. Present as a node because it is what a DMN usingTask href points at and what sequence flows connect; a task with neither would still be included, since omitting it would disconnect the flow graph around it. Sub-processes are tasks with isSubProcess true rather than a separate class -- the lifecycle BPMN has exactly one, 'For each business process'." .
+
+sgkg:ProcessGateway a owl:Class ;
+  rdfs:subClassOf sgkg:Structure ;
+  rdfs:label "Process Gateway" ;
+  skos:notation "process-gateway" ;
+  rdfs:comment "A branch or merge. Included for connectivity, not for a cross-model edge: a sequence flow through a gateway that had no node would have nothing to point at, and every reachability question over the process would break at the first decision point. The 3 in the lifecycle BPMN are all exclusive." .
+
+sgkg:ProcessEvent a owl:Class ;
+  rdfs:subClassOf sgkg:Structure ;
+  rdfs:label "Process Event" ;
+  skos:notation "process-event" ;
+  rdfs:comment "A start or end event. Same connectivity justification as gateway, plus one of its own: a process's entry and exit points are what make 'is this task reachable' and 'does this path terminate' answerable at all." .
+
+sgkg:DecisionTable a owl:Class ;
+  rdfs:subClassOf sgkg:Artefact ;
+  rdfs:label "Decision Table" ;
+  skos:notation "decision-table" ;
+  rdfs:subClassOf sgkg:ExternalArtefact ;
+  skos:note "Instances share the IRI of the External artefact they elaborate: one artefact, one address, described opaquely at the layer above and structurally here." ;
+  rdfs:comment "One DMN decision, as a unit. Corresponds to a DecisionSupportLogic instance, which carries an id, an optional description and `source 1..1 uri` -- and nothing whatsoever about the decision itself. Shares its IRI with the l1:external-artifact for the same file, on the same reasoning as business-process." .
+
+sgkg:InputClause a owl:Class ;
+  rdfs:subClassOf sgkg:Structure ;
+  rdfs:label "Input Clause" ;
+  skos:notation "input-clause" ;
+  rdfs:comment "A decision table input column. Its expression text is where data element names hide, which is the only reason this is a node rather than a property of the table." .
+
+sgkg:OutputClause a owl:Class ;
+  rdfs:subClassOf sgkg:Structure ;
+  rdfs:label "Output Clause" ;
+  skos:notation "output-clause" ;
+  rdfs:comment "A decision table output column. The BCG table's four are Care Plan, Guidance displayed to health worker, Annotations, and Reference(s) -- the last described 'Reference for the source content (L1)'. These are column definitions in a decision table, not clinical records: no output-clause edge reaches patient data, and none may. See docs/SCOPE.md." .
+
+sgkg:DecisionRule a owl:Class ;
+  rdfs:subClassOf sgkg:Structure ;
+  rdfs:label "Decision Rule" ;
+  skos:notation "decision-rule" ;
+  rdfs:comment "One row. Its input and output cells are carried as properties, not as nodes: 250 cells in the BCG table alone, none of them the target of a cross-model edge, and turning them into nodes would re-represent the table rather than join it. What the rule needs a node for is its citation edge into L1." .
+
+sgkg:Persona a owl:Class ;
+  rdfs:subClassOf sgkg:Definition ;
+  rdfs:label "Persona" ;
+  skos:notation "persona" ;
+  rdfs:comment "A role, defined once and referenced by name from every process that involves it. Read from ActorDefinition instances in input/fsh/actors, whose shape Persona.fsh governs. `title` is the field BPMN pools match on; `name` is the CamelCase identifier and does not match." .
+
+sgkg:DataElement a owl:Class ;
+  rdfs:subClassOf sgkg:Definition ;
+  rdfs:label "Data Element" ;
+  skos:notation "data-element" ;
+  rdfs:comment "A named item of information a decision reads -- the data dictionary row. Currently recovered from DMN input expressions, because smart-base ships no data dictionary instance to read from; a node here is therefore a name that was referenced, not a definition that was found. resolutionStatus says which. When a dictionary exists, resolution fills in the rest and the WHO-versus-country diff this class is for becomes possible." .
+
+### Object properties (the ArchiMate relationship vocabulary)
+
+sgkg:flowsTo a owl:ObjectProperty ;
+  rdfs:label "flowsTo" ;
+  rdfs:comment "A BPMN sequence flow, within one participant. The qualifier carries the flow's name where it has one -- 6 of the 70 flows in the lifecycle BPMN do, all of them gateway branches such as \"Yes - approved\". No flow in that file carries a conditionExpression, so the branch condition exists only as that label. `openQualifier` says the qualifier is free text authored in the BPMN rather than a term from a fixed vocabulary, so a value the ontology has not seen is not a finding." .
+
+sgkg:messageTo a owl:ObjectProperty ;
+  rdfs:label "messageTo" ;
+  rdfs:comment "A BPMN message flow, which by definition crosses participants. Kept distinct from flowsTo because a handoff between two roles is the thing governance and adaptation reviews look for, and burying it among 70 intra-pool flows loses it." .
+
+sgkg:performedBy a owl:ObjectProperty ;
+  rdfs:label "performedBy" ;
+  rdfs:comment "A participant pool is performed by a persona. TODAY THIS IS STRING EQUALITY between the BPMN participant's @name and an ActorDefinition's title, across two file formats with no shared identifier. Renaming either side breaks it silently and nothing reports it. Every instance of this edge must carry a resolutionStatus." .
+
+sgkg:invokedBy a owl:ObjectProperty ;
+  rdfs:label "invokedBy" ;
+  rdfs:comment "A decision table is invoked by a business rule task. Read from dmn:usingTask/@href, whose fragment is the URL-encoded task NAME rather than the task id -- in the BCG table it is '#if%20the%20client%20is%20due%20for%20a%20bacille%20Calmette%E2%80%93Gu%C3%A9rin...'. It therefore resolves only if that prose is byte-identical in the BPMN, punctuation included. Carries a resolutionStatus." .
+
+sgkg:reads a owl:ObjectProperty ;
+  rdfs:label "reads" ;
+  rdfs:comment "An input clause reads a data element. Recovered from the input expression's free text, where element names appear either bare ('HIV status') or quoted inside a larger expression ('Today's date - \"Date of birth\"'). Quoted tokens on the right of a comparison are values, not elements, so extraction is a heuristic and every instance carries a resolutionStatus and the rule that produced it." .
+
+sgkg:citesSource a owl:ObjectProperty ;
+  rdfs:label "citesSource" ;
+  rdfs:comment "A decision rule cites an L1 source. The target is an l1:citation, so this is the edge that joins the L2 and L1 graphs. Grounded, though sparsely: of the BCG table's 25 rules exactly 1 carries a citation in its second annotation entry. The sparseness is the point -- a rule with no citesSource edge is a rule with no stated source, and counting those is the coverage question." .
+
+sgkg:definedBy a owl:ObjectProperty ;
+  rdfs:label "definedBy" ;
+  rdfs:comment "A data element is defined by a FHIR canonical -- a ValueSet, CodeSystem, ConceptMap or logical model, as CoreDataElement.fsh declares. The target is an l1:external-artifact holding the URL. Nothing about the target's contents is copied here; FHIR is its own query layer." .
+
+### Licensed edges, as qualified sub-properties
+# One per (source class, predicate, target class) triple the ArchiMate model licenses.
+# Domain and range on the sub-property is what preserves pairwise licensing: a single global
+# domain/range on sgkg:associatedWith would be a union of everything and would permit
+# Business Process aggregates Data Element, which the model does not.
+
+sgkg:contains_BusinessProcess_ProcessParticipant a owl:ObjectProperty ;
+  rdfs:subPropertyOf sgkg:contains ;
+  rdfs:domain sgkg:BusinessProcess ;
+  rdfs:range sgkg:ProcessParticipant ;
+  rdfs:label "Business Process contains Process Participant" .
+
+sgkg:contains_BusinessProcess_ProcessTask a owl:ObjectProperty ;
+  rdfs:subPropertyOf sgkg:contains ;
+  rdfs:domain sgkg:BusinessProcess ;
+  rdfs:range sgkg:ProcessTask ;
+  rdfs:label "Business Process contains Process Task" .
+
+sgkg:contains_BusinessProcess_ProcessGateway a owl:ObjectProperty ;
+  rdfs:subPropertyOf sgkg:contains ;
+  rdfs:domain sgkg:BusinessProcess ;
+  rdfs:range sgkg:ProcessGateway ;
+  rdfs:label "Business Process contains Process Gateway" .
+
+sgkg:contains_BusinessProcess_ProcessEvent a owl:ObjectProperty ;
+  rdfs:subPropertyOf sgkg:contains ;
+  rdfs:domain sgkg:BusinessProcess ;
+  rdfs:range sgkg:ProcessEvent ;
+  rdfs:label "Business Process contains Process Event" .
+
+sgkg:contains_ProcessParticipant_ProcessTask a owl:ObjectProperty ;
+  rdfs:subPropertyOf sgkg:contains ;
+  rdfs:domain sgkg:ProcessParticipant ;
+  rdfs:range sgkg:ProcessTask ;
+  rdfs:label "Process Participant contains Process Task" .
+
+sgkg:contains_ProcessParticipant_ProcessGateway a owl:ObjectProperty ;
+  rdfs:subPropertyOf sgkg:contains ;
+  rdfs:domain sgkg:ProcessParticipant ;
+  rdfs:range sgkg:ProcessGateway ;
+  rdfs:label "Process Participant contains Process Gateway" .
+
+sgkg:contains_ProcessParticipant_ProcessEvent a owl:ObjectProperty ;
+  rdfs:subPropertyOf sgkg:contains ;
+  rdfs:domain sgkg:ProcessParticipant ;
+  rdfs:range sgkg:ProcessEvent ;
+  rdfs:label "Process Participant contains Process Event" .
+
+sgkg:contains_ProcessTask_ProcessTask a owl:ObjectProperty ;
+  rdfs:subPropertyOf sgkg:contains ;
+  rdfs:domain sgkg:ProcessTask ;
+  rdfs:range sgkg:ProcessTask ;
+  rdfs:label "Process Task contains Process Task" .
+
+sgkg:contains_DecisionTable_InputClause a owl:ObjectProperty ;
+  rdfs:subPropertyOf sgkg:contains ;
+  rdfs:domain sgkg:DecisionTable ;
+  rdfs:range sgkg:InputClause ;
+  rdfs:label "Decision Table contains Input Clause" .
+
+sgkg:contains_DecisionTable_OutputClause a owl:ObjectProperty ;
+  rdfs:subPropertyOf sgkg:contains ;
+  rdfs:domain sgkg:DecisionTable ;
+  rdfs:range sgkg:OutputClause ;
+  rdfs:label "Decision Table contains Output Clause" .
+
+sgkg:contains_DecisionTable_DecisionRule a owl:ObjectProperty ;
+  rdfs:subPropertyOf sgkg:contains ;
+  rdfs:domain sgkg:DecisionTable ;
+  rdfs:range sgkg:DecisionRule ;
+  rdfs:label "Decision Table contains Decision Rule" .
+
+sgkg:flowsTo_ProcessEvent_ProcessTask a owl:ObjectProperty ;
+  rdfs:subPropertyOf sgkg:flowsTo ;
+  rdfs:domain sgkg:ProcessEvent ;
+  rdfs:range sgkg:ProcessTask ;
+  rdfs:label "Process Event flowsTo Process Task" .
+
+sgkg:flowsTo_ProcessEvent_ProcessGateway a owl:ObjectProperty ;
+  rdfs:subPropertyOf sgkg:flowsTo ;
+  rdfs:domain sgkg:ProcessEvent ;
+  rdfs:range sgkg:ProcessGateway ;
+  rdfs:label "Process Event flowsTo Process Gateway" .
+
+sgkg:flowsTo_ProcessTask_ProcessTask a owl:ObjectProperty ;
+  rdfs:subPropertyOf sgkg:flowsTo ;
+  rdfs:domain sgkg:ProcessTask ;
+  rdfs:range sgkg:ProcessTask ;
+  rdfs:label "Process Task flowsTo Process Task" .
+
+sgkg:flowsTo_ProcessTask_ProcessGateway a owl:ObjectProperty ;
+  rdfs:subPropertyOf sgkg:flowsTo ;
+  rdfs:domain sgkg:ProcessTask ;
+  rdfs:range sgkg:ProcessGateway ;
+  rdfs:label "Process Task flowsTo Process Gateway" .
+
+sgkg:flowsTo_ProcessTask_ProcessEvent a owl:ObjectProperty ;
+  rdfs:subPropertyOf sgkg:flowsTo ;
+  rdfs:domain sgkg:ProcessTask ;
+  rdfs:range sgkg:ProcessEvent ;
+  rdfs:label "Process Task flowsTo Process Event" .
+
+sgkg:flowsTo_ProcessGateway_ProcessTask a owl:ObjectProperty ;
+  rdfs:subPropertyOf sgkg:flowsTo ;
+  rdfs:domain sgkg:ProcessGateway ;
+  rdfs:range sgkg:ProcessTask ;
+  rdfs:label "Process Gateway flowsTo Process Task" .
+
+sgkg:flowsTo_ProcessGateway_ProcessGateway a owl:ObjectProperty ;
+  rdfs:subPropertyOf sgkg:flowsTo ;
+  rdfs:domain sgkg:ProcessGateway ;
+  rdfs:range sgkg:ProcessGateway ;
+  rdfs:label "Process Gateway flowsTo Process Gateway" .
+
+sgkg:flowsTo_ProcessGateway_ProcessEvent a owl:ObjectProperty ;
+  rdfs:subPropertyOf sgkg:flowsTo ;
+  rdfs:domain sgkg:ProcessGateway ;
+  rdfs:range sgkg:ProcessEvent ;
+  rdfs:label "Process Gateway flowsTo Process Event" .
+
+sgkg:messageTo_ProcessTask_ProcessTask a owl:ObjectProperty ;
+  rdfs:subPropertyOf sgkg:messageTo ;
+  rdfs:domain sgkg:ProcessTask ;
+  rdfs:range sgkg:ProcessTask ;
+  rdfs:label "Process Task messageTo Process Task" .
+
+sgkg:messageTo_ProcessTask_ProcessEvent a owl:ObjectProperty ;
+  rdfs:subPropertyOf sgkg:messageTo ;
+  rdfs:domain sgkg:ProcessTask ;
+  rdfs:range sgkg:ProcessEvent ;
+  rdfs:label "Process Task messageTo Process Event" .
+
+sgkg:messageTo_ProcessEvent_ProcessTask a owl:ObjectProperty ;
+  rdfs:subPropertyOf sgkg:messageTo ;
+  rdfs:domain sgkg:ProcessEvent ;
+  rdfs:range sgkg:ProcessTask ;
+  rdfs:label "Process Event messageTo Process Task" .
+
+sgkg:performedBy_ProcessParticipant_Persona a owl:ObjectProperty ;
+  rdfs:subPropertyOf sgkg:performedBy ;
+  rdfs:domain sgkg:ProcessParticipant ;
+  rdfs:range sgkg:Persona ;
+  rdfs:label "Process Participant performedBy Persona" .
+
+sgkg:invokedBy_DecisionTable_ProcessTask a owl:ObjectProperty ;
+  rdfs:subPropertyOf sgkg:invokedBy ;
+  rdfs:domain sgkg:DecisionTable ;
+  rdfs:range sgkg:ProcessTask ;
+  rdfs:label "Decision Table invokedBy Process Task" .
+
+sgkg:invokedBy_DecisionTable_ExternalArtefact a owl:ObjectProperty ;
+  rdfs:subPropertyOf sgkg:invokedBy ;
+  rdfs:domain sgkg:DecisionTable ;
+  rdfs:range sgkg:ExternalArtefact ;
+  rdfs:label "Decision Table invokedBy External artefact" .
+
+sgkg:reads_InputClause_DataElement a owl:ObjectProperty ;
+  rdfs:subPropertyOf sgkg:reads ;
+  rdfs:domain sgkg:InputClause ;
+  rdfs:range sgkg:DataElement ;
+  rdfs:label "Input Clause reads Data Element" .
+
+sgkg:citesSource_DecisionRule_Citation a owl:ObjectProperty ;
+  rdfs:subPropertyOf sgkg:citesSource ;
+  rdfs:domain sgkg:DecisionRule ;
+  rdfs:range sgkg:Citation ;
+  rdfs:label "Decision Rule citesSource Citation" .
+
+sgkg:definedBy_DataElement_ExternalArtefact a owl:ObjectProperty ;
+  rdfs:subPropertyOf sgkg:definedBy ;
+  rdfs:domain sgkg:DataElement ;
+  rdfs:range sgkg:ExternalArtefact ;
+  rdfs:label "Data Element definedBy External artefact" .
+
+sgkg:crossReferences_DataElement_TerminologyCode a owl:ObjectProperty ;
+  rdfs:subPropertyOf sgkg:crossReferences ;
+  rdfs:domain sgkg:DataElement ;
+  rdfs:range sgkg:TerminologyCode ;
+  rdfs:label "Data Element crossReferences Terminology code" .
+
+sgkg:crossReferences_Persona_TerminologyCode a owl:ObjectProperty ;
+  rdfs:subPropertyOf sgkg:crossReferences ;
+  rdfs:domain sgkg:Persona ;
+  rdfs:range sgkg:TerminologyCode ;
+  rdfs:label "Persona crossReferences Terminology code" .
+

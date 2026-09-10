@@ -3,7 +3,7 @@
   "id": "http://smart.who.int/immunizations/kg/l1",
   "type": "Entity",
   "ontologyVersion": "1.0",
-  "generatedAt": "2026-09-09T15:01:59Z",
+  "generatedAt": "2026-09-10T07:53:55Z",
   "wasDerivedFrom": [
     {
       "path": "../smart-base/input/dmn/DAK.DT.IMMZ.D2.DT.BCG.dmn",

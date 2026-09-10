@@ -1,4 +1,4 @@
-# Structural checks for the L1 knowledge graph schema.
+# Structural checks for the L1 and L2 knowledge graph schemas.
 #
 # Everything generated here is committed, so a consumer can fetch the ontology in the format their
 # tool reads without installing a toolchain. Committed generated files go stale silently, so each is
@@ -19,7 +19,7 @@ permissions:
 
 jobs:
   check:
-    name: Validate L1 schema package
+    name: Validate schema package
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -27,14 +27,42 @@ jobs:
         with:
           node-version: '20'
 
-      # The Turtle, Cypher and JSON-LD context are views of ontology/l1.json.
-      - name: Check exports match the ontology
+      # The Turtle, Cypher and JSON-LD context are views of ontology/l1.json and ontology/l2.json.
+      - name: Check exports match the ontologies
         run: node tools/build-exports.mjs --check
 
-      # Tier 2: node types are declared classes, edges are licensed triples, references resolve,
-      # properties are declared, and a citation claiming resolution actually resolves.
-      - name: Validate examples against the ontology
+      # Tier 2: node types are declared classes, edges are licensed triples, references resolve
+      # across the whole document set, properties are declared, and a citation or cross-format
+      # join claiming resolution actually resolves.
+      - name: Validate examples against the ontologies
         run: node tools/validate.mjs
+
+      # A validator is worth its output only if it fails on what it claims to catch. Two of these
+      # cases assert the opposite -- that a free-text BPMN branch label and an unresolved join are
+      # NOT findings -- because a check that fires on the normal case trains people to ignore it.
+      - name: Prove tier 2 rejects what it claims to
+        run: node tools/negative-test.mjs
+
+      # The extractors must still work on the artefacts smart-base actually ships, not only on the
+      # fixtures committed here. Re-runs them against upstream and diffs the result, ignoring the
+      # source path and the timestamp -- everything else, the hashes included, must match. A change
+      # upstream shows up here as a diff rather than as a fixture that quietly describes an old file.
+      - name: Re-extract fixtures from upstream artefacts
+        run: |
+          if ! git clone --depth 1 https://github.com/WorldHealthOrganization/smart-base.git /tmp/smart-base; then
+            echo "::warning::smart-base could not be cloned; upstream re-extraction did not run"
+            exit 0
+          fi
+          node tools/extract-citations.mjs /tmp/smart-base/input/dmn/DAK.DT.IMMZ.D2.DT.BCG.dmn \
+            --out /tmp/l1.json
+          node tools/extract-l2.mjs \
+            --bpmn /tmp/smart-base/input/bpmn/SGAuthoring.DAKLifecycle.bpmn \
+            --dmn  /tmp/smart-base/input/dmn/DAK.DT.IMMZ.D2.DT.BCG.dmn \
+            --personas /tmp/smart-base/input/fsh/actors \
+            --out /tmp/l2.json
+          node tools/validate.mjs /tmp/l1.json /tmp/l2.json
+          node tools/compare-extract.mjs examples/immz-bcg-citations.json /tmp/l1.json
+          node tools/compare-extract.mjs examples/l2-daklifecycle-bcg.json /tmp/l2.json
 
       # Tier 1: the fixtures satisfy the document shape. Separate from the step above because a
       # document can conform to the ontology and still be malformed, and the two need different fixes.

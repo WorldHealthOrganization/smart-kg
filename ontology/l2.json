@@ -1,0 +1,197 @@
+{
+  "schemaVersion": "1.0",
+  "layer": "L2",
+  "namespace": "http://smart.who.int/kg/",
+  "source": "authored",
+  "imports": ["l1"],
+  "note": "The DAK layer. Every class below is grounded in an artefact committed to smart-base today; `groundedIn` names which, and each class note says what it was read from. L2 exists to hold the three joins that currently survive only as string equality across three file formats -- BPMN pool name to persona title, DMN usingTask href to BPMN task name, and DMN input expression to data dictionary element name. Those joins break silently on a rename. Nothing else here is modelled for its own sake: rule cells stay properties rather than nodes, FHIR canonicals stay URLs, and an edge with no instance in a real file was left out.",
+
+  "groundedIn": [
+    {
+      "what": "A real, committed BPMN collaboration",
+      "where": "smart-base input/bpmn/SGAuthoring.DAKLifecycle.bpmn",
+      "detail": "8 participants, 61 tasks, 3 exclusive gateways, 8 start and 8 end events, 70 sequence flows, 10 message flows, 1 sub-process, 0 lanes, 0 condition expressions. The process, participant, task, gateway, event, flowsTo and messageTo classes are the element types this file actually contains -- not the BPMN specification's full element set."
+    },
+    {
+      "what": "A real, committed DMN decision table",
+      "where": "smart-base input/dmn/DAK.DT.IMMZ.D2.DT.BCG.dmn",
+      "detail": "1 decision, 8 input clauses, 4 output clauses, 25 rules, 1 usingTask href into a BPMN. Two of the four outputs are serialised as outputEntry and two as annotationEntry (guidance text, then the L1 reference); trailing empty annotations are omitted rather than serialised empty, so of the 25 rules only 1 carries a citation, 8 carry guidance only and 16 carry no annotation at all. No hitPolicy attribute is present, so `hitPolicy` is optional on decision-table rather than required."
+    },
+    {
+      "what": "Personas as they already exist, and as the DAK model defines them",
+      "where": "smart-base input/fsh/actors/*.fsh and input/fsh/models/Persona.fsh",
+      "detail": "22 ActorDefinition instances carrying name, title, type and description. Persona.fsh adds id, ISCO (bound to urn:oid:2.16.840.1.113883.2.9.6.2.7) and a persona type value set. All 8 BPMN participant names match an ActorDefinition `title` exactly, so `performedBy` has a demonstrable instance -- and a demonstrable failure mode."
+    },
+    {
+      "what": "The two DAK logical models that point at these files and model nothing inside them",
+      "where": "smart-base input/fsh/models/BusinessProcessWorkflow.fsh and DecisionSupportLogic.fsh",
+      "detail": "Both declare `source 1..1 uri` -- a link to a BPMN or DMN file. DecisionSupportLogic carries nothing else at all. This is the gap L2 fills: WHO's own model addresses the file and stops at its boundary, so no query can cross it."
+    },
+    {
+      "what": "The rule that core data elements are referenced, not copied",
+      "where": "smart-base input/fsh/models/CoreDataElement.fsh",
+      "detail": "`canonical 1..1 uri` pointing at a ValueSet, CodeSystem, ConceptMap or logical model. FHIR already has a query layer and a validator for those, so `definedBy` records the canonical URL and this graph re-represents none of their contents."
+    }
+  ],
+
+  "predicates": [
+    { "predicate": "flowsTo", "iri": "http://smart.who.int/kg/flowsTo", "openQualifier": true, "note": "A BPMN sequence flow, within one participant. The qualifier carries the flow's name where it has one -- 6 of the 70 flows in the lifecycle BPMN do, all of them gateway branches such as \"Yes - approved\". No flow in that file carries a conditionExpression, so the branch condition exists only as that label. `openQualifier` says the qualifier is free text authored in the BPMN rather than a term from a fixed vocabulary, so a value the ontology has not seen is not a finding." },
+    { "predicate": "messageTo", "iri": "http://smart.who.int/kg/messageTo", "note": "A BPMN message flow, which by definition crosses participants. Kept distinct from flowsTo because a handoff between two roles is the thing governance and adaptation reviews look for, and burying it among 70 intra-pool flows loses it." },
+    { "predicate": "performedBy", "iri": "http://smart.who.int/kg/performedBy", "note": "A participant pool is performed by a persona. TODAY THIS IS STRING EQUALITY between the BPMN participant's @name and an ActorDefinition's title, across two file formats with no shared identifier. Renaming either side breaks it silently and nothing reports it. Every instance of this edge must carry a resolutionStatus." },
+    { "predicate": "invokedBy", "iri": "http://smart.who.int/kg/invokedBy", "note": "A decision table is invoked by a business rule task. Read from dmn:usingTask/@href, whose fragment is the URL-encoded task NAME rather than the task id -- in the BCG table it is '#if%20the%20client%20is%20due%20for%20a%20bacille%20Calmette%E2%80%93Gu%C3%A9rin...'. It therefore resolves only if that prose is byte-identical in the BPMN, punctuation included. Carries a resolutionStatus." },
+    { "predicate": "reads", "iri": "http://smart.who.int/kg/reads", "note": "An input clause reads a data element. Recovered from the input expression's free text, where element names appear either bare ('HIV status') or quoted inside a larger expression ('Today's date - \"Date of birth\"'). Quoted tokens on the right of a comparison are values, not elements, so extraction is a heuristic and every instance carries a resolutionStatus and the rule that produced it." },
+    { "predicate": "citesSource", "iri": "http://smart.who.int/kg/citesSource", "note": "A decision rule cites an L1 source. The target is an l1:citation, so this is the edge that joins the L2 and L1 graphs. Grounded, though sparsely: of the BCG table's 25 rules exactly 1 carries a citation in its second annotation entry. The sparseness is the point -- a rule with no citesSource edge is a rule with no stated source, and counting those is the coverage question." },
+    { "predicate": "definedBy", "iri": "http://smart.who.int/kg/definedBy", "note": "A data element is defined by a FHIR canonical -- a ValueSet, CodeSystem, ConceptMap or logical model, as CoreDataElement.fsh declares. The target is an l1:external-artifact holding the URL. Nothing about the target's contents is copied here; FHIR is its own query layer." }
+  ],
+
+  "classes": [
+    {
+      "id": "business-process",
+      "name": "Business Process",
+      "kind": "Artefact",
+      "iri": "http://smart.who.int/kg/business-process",
+      "elaborates": "external-artifact",
+      "note": "One BPMN file, as a unit. Corresponds to a BusinessProcessWorkflow instance, whose `source 1..1 uri` points at exactly this. Shares its IRI with the l1:external-artifact for the same file: L1 addresses the file and asserts nothing about the inside, L2 supplies the inside, and one artefact keeps one address.",
+      "properties": ["id", "name", "source", "sha256", "targetNamespace", "exporter", "isExecutable", "objectives"],
+      "propertyNote": "objectives is `1..1 markdown` on BusinessProcessWorkflow but absent from BPMN XML, so it is optional here and populated only when the FSH instance is read alongside the file."
+    },
+    {
+      "id": "process-participant",
+      "name": "Process Participant",
+      "kind": "Structure",
+      "iri": "http://smart.who.int/kg/process-participant",
+      "note": "A BPMN pool: a role that owns part of the process. The lifecycle BPMN has 8 and no lanes at all, so the pool is the only unit of role assignment present. Its @name is the sole link to a persona.",
+      "properties": ["id", "name", "processRef"]
+    },
+    {
+      "id": "process-task",
+      "name": "Process Task",
+      "kind": "Structure",
+      "iri": "http://smart.who.int/kg/process-task",
+      "note": "A BPMN task or sub-process. Present as a node because it is what a DMN usingTask href points at and what sequence flows connect; a task with neither would still be included, since omitting it would disconnect the flow graph around it. Sub-processes are tasks with isSubProcess true rather than a separate class -- the lifecycle BPMN has exactly one, 'For each business process'.",
+      "properties": ["id", "name", "taskType", "isSubProcess", "parent"]
+    },
+    {
+      "id": "process-gateway",
+      "name": "Process Gateway",
+      "kind": "Structure",
+      "iri": "http://smart.who.int/kg/process-gateway",
+      "note": "A branch or merge. Included for connectivity, not for a cross-model edge: a sequence flow through a gateway that had no node would have nothing to point at, and every reachability question over the process would break at the first decision point. The 3 in the lifecycle BPMN are all exclusive.",
+      "properties": ["id", "name", "gatewayType", "direction"]
+    },
+    {
+      "id": "process-event",
+      "name": "Process Event",
+      "kind": "Structure",
+      "iri": "http://smart.who.int/kg/process-event",
+      "note": "A start or end event. Same connectivity justification as gateway, plus one of its own: a process's entry and exit points are what make 'is this task reachable' and 'does this path terminate' answerable at all.",
+      "properties": ["id", "name", "eventType"]
+    },
+    {
+      "id": "decision-table",
+      "name": "Decision Table",
+      "kind": "Artefact",
+      "iri": "http://smart.who.int/kg/decision-table",
+      "elaborates": "external-artifact",
+      "note": "One DMN decision, as a unit. Corresponds to a DecisionSupportLogic instance, which carries an id, an optional description and `source 1..1 uri` -- and nothing whatsoever about the decision itself. Shares its IRI with the l1:external-artifact for the same file, on the same reasoning as business-process.",
+      "properties": ["id", "label", "question", "hitPolicy", "source", "sha256", "namespace"],
+      "propertyNote": "hitPolicy is optional: the BCG table declares none, and inventing a default would assert something the file does not say."
+    },
+    {
+      "id": "input-clause",
+      "name": "Input Clause",
+      "kind": "Structure",
+      "iri": "http://smart.who.int/kg/input-clause",
+      "note": "A decision table input column. Its expression text is where data element names hide, which is the only reason this is a node rather than a property of the table.",
+      "properties": ["id", "label", "expression", "typeRef", "ordinal"]
+    },
+    {
+      "id": "output-clause",
+      "name": "Output Clause",
+      "kind": "Structure",
+      "iri": "http://smart.who.int/kg/output-clause",
+      "note": "A decision table output column. The BCG table's four are Care Plan, Guidance displayed to health worker, Annotations, and Reference(s) -- the last described 'Reference for the source content (L1)'. These are column definitions in a decision table, not clinical records: no output-clause edge reaches patient data, and none may. See docs/SCOPE.md.",
+      "properties": ["id", "label", "description", "ordinal", "isReferenceColumn"],
+      "propertyNote": "isReferenceColumn marks the L1 reference column, identified by its description rather than its position -- column order is not stable across DAKs and indexing by it is how this breaks."
+    },
+    {
+      "id": "decision-rule",
+      "name": "Decision Rule",
+      "kind": "Structure",
+      "iri": "http://smart.who.int/kg/decision-rule",
+      "note": "One row. Its input and output cells are carried as properties, not as nodes: 250 cells in the BCG table alone, none of them the target of a cross-model edge, and turning them into nodes would re-represent the table rather than join it. What the rule needs a node for is its citation edge into L1.",
+      "properties": ["id", "ordinal", "conditions", "outputs", "annotations"],
+      "propertyNote": "conditions and outputs are arrays of {clause, description, text} preserving the cell's own two fields; DMN puts the formal expression in description and the human-readable gloss in text, and both are worth keeping."
+    },
+    {
+      "id": "persona",
+      "name": "Persona",
+      "kind": "Definition",
+      "iri": "http://smart.who.int/kg/persona",
+      "note": "A role, defined once and referenced by name from every process that involves it. Read from ActorDefinition instances in input/fsh/actors, whose shape Persona.fsh governs. `title` is the field BPMN pools match on; `name` is the CamelCase identifier and does not match.",
+      "properties": ["id", "name", "title", "personaType", "isco", "description", "source", "resolutionStatus"],
+      "propertyNote": "isco is a list of codes from urn:oid:2.16.840.1.113883.2.9.6.2.7. Persona.fsh declares `ISCO 0..* CodeableConcept`, but the committed ActorDefinition instances record ISCO in prose inside description instead, so this field is usually empty and should not be read as authoritative. resolutionStatus is `unresolved` on a persona that a process names but no ActorDefinition defines -- the node exists so that the gap is queryable, and carries a title and nothing else."
+    },
+    {
+      "id": "data-element",
+      "name": "Data Element",
+      "kind": "Definition",
+      "iri": "http://smart.who.int/kg/data-element",
+      "note": "A named item of information a decision reads -- the data dictionary row. Currently recovered from DMN input expressions, because smart-base ships no data dictionary instance to read from; a node here is therefore a name that was referenced, not a definition that was found. resolutionStatus says which. When a dictionary exists, resolution fills in the rest and the WHO-versus-country diff this class is for becomes possible.",
+      "properties": ["name", "elementId", "dataType", "cardinality", "canonical", "resolutionStatus", "extractionRule"],
+      "propertyNote": "extractionRule records how the name was recovered -- bare expression, or quoted token left of a comparison -- so a wrong guess is auditable rather than anonymous. resolutionStatus is unresolved | resolved | ambiguous, exactly as for an l1:citation, and for the same reason."
+    }
+  ],
+
+  "edges": [
+    { "predicate": "contains", "source": "business-process", "target": "process-participant" },
+    { "predicate": "contains", "source": "business-process", "target": "process-task" },
+    { "predicate": "contains", "source": "business-process", "target": "process-gateway" },
+    { "predicate": "contains", "source": "business-process", "target": "process-event" },
+    { "predicate": "contains", "source": "process-participant", "target": "process-task" },
+    { "predicate": "contains", "source": "process-participant", "target": "process-gateway" },
+    { "predicate": "contains", "source": "process-participant", "target": "process-event" },
+    { "predicate": "contains", "source": "process-task", "target": "process-task" },
+
+    { "predicate": "contains", "source": "decision-table", "target": "input-clause" },
+    { "predicate": "contains", "source": "decision-table", "target": "output-clause" },
+    { "predicate": "contains", "source": "decision-table", "target": "decision-rule" },
+
+    { "predicate": "flowsTo", "source": "process-event", "target": "process-task" },
+    { "predicate": "flowsTo", "source": "process-event", "target": "process-gateway" },
+    { "predicate": "flowsTo", "source": "process-task", "target": "process-task" },
+    { "predicate": "flowsTo", "source": "process-task", "target": "process-gateway" },
+    { "predicate": "flowsTo", "source": "process-task", "target": "process-event" },
+    { "predicate": "flowsTo", "source": "process-gateway", "target": "process-task" },
+    { "predicate": "flowsTo", "source": "process-gateway", "target": "process-gateway" },
+    { "predicate": "flowsTo", "source": "process-gateway", "target": "process-event" },
+
+    { "predicate": "messageTo", "source": "process-task", "target": "process-task" },
+    { "predicate": "messageTo", "source": "process-task", "target": "process-event" },
+    { "predicate": "messageTo", "source": "process-event", "target": "process-task" },
+
+    { "predicate": "performedBy", "source": "process-participant", "target": "persona" },
+
+    { "predicate": "invokedBy", "source": "decision-table", "target": "process-task" },
+    { "predicate": "invokedBy", "source": "decision-table", "target": "external-artifact" },
+
+    { "predicate": "reads", "source": "input-clause", "target": "data-element" },
+
+    { "predicate": "citesSource", "source": "decision-rule", "target": "citation" },
+
+    { "predicate": "definedBy", "source": "data-element", "target": "external-artifact" },
+
+    { "predicate": "crossReferences", "source": "data-element", "target": "terminology-code" },
+    { "predicate": "crossReferences", "source": "persona", "target": "terminology-code" }
+  ],
+
+  "deliberatelyOmitted": [
+    { "what": "A `writes` edge from output-clause to data-element", "why": "No instance exists. The BCG table's four outputs are Care Plan, Guidance displayed to health worker, Annotations and Reference(s) -- none of them a data dictionary element. Licensing an edge that no committed artefact exhibits would be inventing vocabulary, which is the failure this repository was rebuilt to avoid." },
+    { "what": "Nodes for input and output cells", "why": "250 in one table, none the target of a cross-model edge. They are carried as properties of decision-rule instead." },
+    { "what": "BPMN lanes", "why": "The class would have no instance: the lifecycle BPMN uses pools only and declares no laneSet. Add it when a DAK ships one." },
+    { "what": "Sequence flow conditions as structured expressions", "why": "The lifecycle BPMN has 70 sequence flows and 0 conditionExpression elements. The branch label carries all there is, so it is the flowsTo qualifier and nothing more is claimed." },
+    { "what": "BPMN diagram interchange (BPMNDI, DC, DI)", "why": "Presentation. Coordinates answer no question this graph exists to answer." },
+    { "what": "An `elaborates` instance edge", "why": "The relationship between an L1 external-artifact and its L2 elaboration is carried by the two sharing one IRI, and declared once on the class via its `elaborates` field (which the Turtle export renders as rdfs:subClassOf). An instance edge would have had the same node as its source and its target." },
+    { "what": "The contents of any FHIR canonical", "why": "ValueSets, CodeSystems, ConceptMaps and logical models have a validator, a publisher and canonical references already. definedBy records the URL. See the corollary in docs/SCOPE.md: graph what has no other query layer, index what does." }
+  ]
+}

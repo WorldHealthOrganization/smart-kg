@@ -10,9 +10,9 @@ That is the one rule this document exists to state, and everything below is why.
 
 | Layer | What it is | Size | Changes | Lives in |
 |---|---|---|---|---|
-| **T-Box** — ontology | Classes and the relationships permitted between them | 16 classes, 35 edges | When the L1 model does — rarely, with review | **here**, `ontology/` |
+| **T-Box** — ontology | Classes and the relationships permitted between them | L1: 16 classes, 35 edges · L2: 11 classes, 30 edges | When the model does — rarely, with review | **here**, `ontology/` |
 | **Shapes** — constraints | What a graph document must satisfy to be valid | 1 file | With the T-Box | **here**, `shapes/` |
-| **A-Box** — instances | The recommendations of one guideline, and the citations pointing at them | Tens to hundreds of nodes per publication | Every guideline revision | **published with its source** |
+| **A-Box** — instances | The recommendations of one guideline; the processes, decisions and personas of one DAK | Hundreds of nodes per publication or DAK | Every guideline revision, every DAK release | **published with its source** |
 
 The names come from description logic, where the terminological box holds what kinds of thing exist
 and the assertional box holds what is actually the case. The distinction is worth keeping because
@@ -50,7 +50,7 @@ committed. A DAK graph is the same kind of artifact and should travel the same p
 
 ```
                         smart-kg  (here)
-                          ontology/   T-Box — the L1 model
+                          ontology/   T-Box — the L1 and L2 models
                           shapes/     constraints
                           docs/  tools/  examples/   one fixture
                              │
@@ -59,8 +59,9 @@ committed. A DAK graph is the same kind of artifact and should travel the same p
               ▼                              ▼
   ┌───────────────────────┐    ┌──────────────────────────────┐
   │ a guideline           │    │ a DAK IG build               │
-  │  PDF → recommendations│    │  DMN → citation nodes        │   ← the A-Box,
-  └───────────────────────┘    └──────────────────────────────┘     published not committed
+  │  PDF → recommendations│    │  DMN → citations (L1)        │   ← the A-Box,
+  │                       │    │  BPMN+DMN+FSH → L2 joins     │     published not committed
+  └───────────────────────┘    └──────────────────────────────┘
               │                              │
               └──────────────┬───────────────┘
                              ▼
@@ -94,9 +95,13 @@ it as a system of record.
 
 ### For this repository
 
-One fixture in [`examples/`](../examples/), small enough to read, exercised by
-[`tools/validate.mjs`](../tools/validate.mjs) in CI. It exists to prove the ontology and the shapes
-still agree with each other, not to be data.
+Fixtures in [`examples/`](../examples/), small enough to read, exercised by
+[`tools/validate.mjs`](../tools/validate.mjs) in CI. They exist to prove the ontology and the shapes
+still agree with each other, not to be data — and, because they are extracted from real committed
+artefacts rather than invented, to prove the extractors still work on the shapes WHO actually ships.
+
+They are also what makes the cross-layer join testable: the L1 and L2 fixtures come from the same
+DMN file, share one IRI for it, and are validated together as one graph.
 
 If a real guideline or DAK graph ever appears in `examples/`, something has gone wrong: the fixture has become a
 dataset, and the rule at the top of this page has quietly stopped holding.

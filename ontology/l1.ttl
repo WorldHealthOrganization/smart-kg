@@ -3,7 +3,7 @@
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix skos: <http://www.w3.org/2004/02/skos/core#> .
 
-<http://smart.who.int/kg> a owl:Ontology ;
+<http://smart.who.int/kg/l1> a owl:Ontology ;
   rdfs:label "WHO SMART Guidelines L1 ontology" ;
   rdfs:comment "Authored, not generated. The ArchiMate model in smart-ig-starter-kit has no L1 layer, and extending it before this shape is proven would put a governance process in front of a draft. Every class and edge below is grounded in an artefact that exists today; the `grounding` field on each says which one. Nothing here is speculative vocabulary. Pairwise licensing is carried as sub-properties, because a relationship is licensed between specific class pairs while an OWL object property has one global domain and range." .
 
