@@ -14,7 +14,7 @@
 //     cypher-shell -d neo4j -f <this file>           (shell)
 //
 // REQUIRES l1.cypher TO BE LOADED FIRST.
-// This layer licenses edges onto imported classes (external-artifact, health-intervention, indicator, terminology-code). The MATCH
+// This layer licenses edges onto imported classes (external-artifact, health-intervention, indicator, recommendation, schedule, schedule-entry, terminology-code). The MATCH
 // statements below find nothing if those classes are absent, and Cypher does not treat
 // that as an error -- the edges would simply be missing. Verify with the query at the
 // end of this file.
@@ -29,6 +29,7 @@ MERGE (:KGClass:Component {id:'business-process', name:'Business Process Workflo
 MERGE (:KGClass:Element {id:'dak-task', name:'Task Entry', kind:'Element', layer:'l2', iri:'http://smart.who.int/kg/dak-task'});
 MERGE (:KGClass:Component {id:'data-element', name:'Core Data Element', kind:'Component', layer:'l2', iri:'http://smart.who.int/kg/data-element'});
 MERGE (:KGClass:Component {id:'decision-support-logic', name:'Decision-Support Logic', kind:'Component', layer:'l2', iri:'http://smart.who.int/kg/decision-support-logic'});
+MERGE (:KGClass:Component {id:'scheduling-logic', name:'Scheduling Logic', kind:'Component', layer:'l2', iri:'http://smart.who.int/kg/scheduling-logic'});
 MERGE (:KGClass:Component {id:'program-indicator', name:'Program Indicator', kind:'Component', layer:'l2', iri:'http://smart.who.int/kg/program-indicator'});
 MERGE (:KGClass:Component {id:'functional-requirement', name:'Functional Requirement', kind:'Component', layer:'l2', iri:'http://smart.who.int/kg/functional-requirement'});
 MERGE (:KGClass:Component {id:'non-functional-requirement', name:'Non-Functional Requirement', kind:'Component', layer:'l2', iri:'http://smart.who.int/kg/non-functional-requirement'});
@@ -45,6 +46,15 @@ MATCH (s:KGClass {id:'dak'}), (t:KGClass {id:'program-indicator'}) MERGE (s)-[:H
 MATCH (s:KGClass {id:'dak'}), (t:KGClass {id:'functional-requirement'}) MERGE (s)-[:HASCOMPONENT {predicate:'hasComponent', qualifier:'requirements'}]->(t);
 MATCH (s:KGClass {id:'dak'}), (t:KGClass {id:'non-functional-requirement'}) MERGE (s)-[:HASCOMPONENT {predicate:'hasComponent', qualifier:'requirements'}]->(t);
 MATCH (s:KGClass {id:'dak'}), (t:KGClass {id:'test-scenario'}) MERGE (s)-[:HASCOMPONENT {predicate:'hasComponent', qualifier:'testScenarios'}]->(t);
+MATCH (s:KGClass {id:'dak'}), (t:KGClass {id:'scheduling-logic'}) MERGE (s)-[:HASCOMPONENT {predicate:'hasComponent', qualifier:'schedulingLogic'}]->(t);
+MATCH (s:KGClass {id:'scheduling-logic'}), (t:KGClass {id:'external-artifact'}) MERGE (s)-[:SOURCEDFROM {predicate:'sourcedFrom'}]->(t);
+MATCH (s:KGClass {id:'recommendation'}), (t:KGClass {id:'business-process'}) MERGE (s)-[:IMPLEMENTEDBY {predicate:'implementedBy'}]->(t);
+MATCH (s:KGClass {id:'recommendation'}), (t:KGClass {id:'decision-support-logic'}) MERGE (s)-[:IMPLEMENTEDBY {predicate:'implementedBy'}]->(t);
+MATCH (s:KGClass {id:'recommendation'}), (t:KGClass {id:'persona'}) MERGE (s)-[:IMPLEMENTEDBY {predicate:'implementedBy'}]->(t);
+MATCH (s:KGClass {id:'recommendation'}), (t:KGClass {id:'user-scenario'}) MERGE (s)-[:IMPLEMENTEDBY {predicate:'implementedBy'}]->(t);
+MATCH (s:KGClass {id:'indicator'}), (t:KGClass {id:'program-indicator'}) MERGE (s)-[:IMPLEMENTEDBY {predicate:'implementedBy'}]->(t);
+MATCH (s:KGClass {id:'schedule-entry'}), (t:KGClass {id:'scheduling-logic'}) MERGE (s)-[:IMPLEMENTEDBY {predicate:'implementedBy'}]->(t);
+MATCH (s:KGClass {id:'schedule'}), (t:KGClass {id:'scheduling-logic'}) MERGE (s)-[:IMPLEMENTEDBY {predicate:'implementedBy'}]->(t);
 MATCH (s:KGClass {id:'business-process'}), (t:KGClass {id:'external-artifact'}) MERGE (s)-[:SOURCEDFROM {predicate:'sourcedFrom'}]->(t);
 MATCH (s:KGClass {id:'decision-support-logic'}), (t:KGClass {id:'external-artifact'}) MERGE (s)-[:SOURCEDFROM {predicate:'sourcedFrom'}]->(t);
 MATCH (s:KGClass {id:'test-scenario'}), (t:KGClass {id:'external-artifact'}) MERGE (s)-[:SOURCEDFROM {predicate:'sourcedFrom'}]->(t);
@@ -68,6 +78,6 @@ MATCH (s:KGClass {id:'program-indicator'}), (t:KGClass {id:'terminology-code'}) 
 MATCH (s:KGClass {id:'functional-requirement'}), (t:KGClass {id:'terminology-code'}) MERGE (s)-[:CROSSREFERENCES {predicate:'crossReferences'}]->(t);
 MATCH (s:KGClass {id:'non-functional-requirement'}), (t:KGClass {id:'terminology-code'}) MERGE (s)-[:CROSSREFERENCES {predicate:'crossReferences'}]->(t);
 
-// Verification. Must return 4 rows -- one per imported class this layer
+// Verification. Must return 7 rows -- one per imported class this layer
 // builds on. Fewer means an imported layer was not loaded and edges above are missing.
-// MATCH (c:KGClass) WHERE c.id IN ['external-artifact', 'health-intervention', 'indicator', 'terminology-code'] RETURN c.id;
+// MATCH (c:KGClass) WHERE c.id IN ['external-artifact', 'health-intervention', 'indicator', 'recommendation', 'schedule', 'schedule-entry', 'terminology-code'] RETURN c.id;

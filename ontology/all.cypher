@@ -8,7 +8,7 @@
 // In Neo4j Browser, turn on "Enable multi statement query editor" in Settings before
 // pasting -- otherwise only the first statement runs.
 //
-// l1 -> l2 -> l2-bpmn -> l2-dmn. Loading a layer before the ones it imports silently drops the
+// l1 -> l2 -> l2-bpmn -> l2-dmn -> l3. Loading a layer before the ones it imports silently drops the
 // edges that reach into them, because Cypher does not treat an empty MATCH as an error.
 
 // WHO SMART Guidelines knowledge graph -- L1 ONTOLOGY (type graph).
@@ -98,7 +98,7 @@ MATCH (s:KGClass {id:'health-intervention'}), (t:KGClass {id:'external-artifact'
 //     cypher-shell -d neo4j -f <this file>           (shell)
 //
 // REQUIRES l1.cypher TO BE LOADED FIRST.
-// This layer licenses edges onto imported classes (external-artifact, health-intervention, indicator, terminology-code). The MATCH
+// This layer licenses edges onto imported classes (external-artifact, health-intervention, indicator, recommendation, schedule, schedule-entry, terminology-code). The MATCH
 // statements below find nothing if those classes are absent, and Cypher does not treat
 // that as an error -- the edges would simply be missing. Verify with the query at the
 // end of this file.
@@ -110,6 +110,7 @@ MERGE (:KGClass:Component {id:'business-process', name:'Business Process Workflo
 MERGE (:KGClass:Element {id:'dak-task', name:'Task Entry', kind:'Element', layer:'l2', iri:'http://smart.who.int/kg/dak-task'});
 MERGE (:KGClass:Component {id:'data-element', name:'Core Data Element', kind:'Component', layer:'l2', iri:'http://smart.who.int/kg/data-element'});
 MERGE (:KGClass:Component {id:'decision-support-logic', name:'Decision-Support Logic', kind:'Component', layer:'l2', iri:'http://smart.who.int/kg/decision-support-logic'});
+MERGE (:KGClass:Component {id:'scheduling-logic', name:'Scheduling Logic', kind:'Component', layer:'l2', iri:'http://smart.who.int/kg/scheduling-logic'});
 MERGE (:KGClass:Component {id:'program-indicator', name:'Program Indicator', kind:'Component', layer:'l2', iri:'http://smart.who.int/kg/program-indicator'});
 MERGE (:KGClass:Component {id:'functional-requirement', name:'Functional Requirement', kind:'Component', layer:'l2', iri:'http://smart.who.int/kg/functional-requirement'});
 MERGE (:KGClass:Component {id:'non-functional-requirement', name:'Non-Functional Requirement', kind:'Component', layer:'l2', iri:'http://smart.who.int/kg/non-functional-requirement'});
@@ -126,6 +127,15 @@ MATCH (s:KGClass {id:'dak'}), (t:KGClass {id:'program-indicator'}) MERGE (s)-[:H
 MATCH (s:KGClass {id:'dak'}), (t:KGClass {id:'functional-requirement'}) MERGE (s)-[:HASCOMPONENT {predicate:'hasComponent', qualifier:'requirements'}]->(t);
 MATCH (s:KGClass {id:'dak'}), (t:KGClass {id:'non-functional-requirement'}) MERGE (s)-[:HASCOMPONENT {predicate:'hasComponent', qualifier:'requirements'}]->(t);
 MATCH (s:KGClass {id:'dak'}), (t:KGClass {id:'test-scenario'}) MERGE (s)-[:HASCOMPONENT {predicate:'hasComponent', qualifier:'testScenarios'}]->(t);
+MATCH (s:KGClass {id:'dak'}), (t:KGClass {id:'scheduling-logic'}) MERGE (s)-[:HASCOMPONENT {predicate:'hasComponent', qualifier:'schedulingLogic'}]->(t);
+MATCH (s:KGClass {id:'scheduling-logic'}), (t:KGClass {id:'external-artifact'}) MERGE (s)-[:SOURCEDFROM {predicate:'sourcedFrom'}]->(t);
+MATCH (s:KGClass {id:'recommendation'}), (t:KGClass {id:'business-process'}) MERGE (s)-[:IMPLEMENTEDBY {predicate:'implementedBy'}]->(t);
+MATCH (s:KGClass {id:'recommendation'}), (t:KGClass {id:'decision-support-logic'}) MERGE (s)-[:IMPLEMENTEDBY {predicate:'implementedBy'}]->(t);
+MATCH (s:KGClass {id:'recommendation'}), (t:KGClass {id:'persona'}) MERGE (s)-[:IMPLEMENTEDBY {predicate:'implementedBy'}]->(t);
+MATCH (s:KGClass {id:'recommendation'}), (t:KGClass {id:'user-scenario'}) MERGE (s)-[:IMPLEMENTEDBY {predicate:'implementedBy'}]->(t);
+MATCH (s:KGClass {id:'indicator'}), (t:KGClass {id:'program-indicator'}) MERGE (s)-[:IMPLEMENTEDBY {predicate:'implementedBy'}]->(t);
+MATCH (s:KGClass {id:'schedule-entry'}), (t:KGClass {id:'scheduling-logic'}) MERGE (s)-[:IMPLEMENTEDBY {predicate:'implementedBy'}]->(t);
+MATCH (s:KGClass {id:'schedule'}), (t:KGClass {id:'scheduling-logic'}) MERGE (s)-[:IMPLEMENTEDBY {predicate:'implementedBy'}]->(t);
 MATCH (s:KGClass {id:'business-process'}), (t:KGClass {id:'external-artifact'}) MERGE (s)-[:SOURCEDFROM {predicate:'sourcedFrom'}]->(t);
 MATCH (s:KGClass {id:'decision-support-logic'}), (t:KGClass {id:'external-artifact'}) MERGE (s)-[:SOURCEDFROM {predicate:'sourcedFrom'}]->(t);
 MATCH (s:KGClass {id:'test-scenario'}), (t:KGClass {id:'external-artifact'}) MERGE (s)-[:SOURCEDFROM {predicate:'sourcedFrom'}]->(t);
@@ -149,9 +159,9 @@ MATCH (s:KGClass {id:'program-indicator'}), (t:KGClass {id:'terminology-code'}) 
 MATCH (s:KGClass {id:'functional-requirement'}), (t:KGClass {id:'terminology-code'}) MERGE (s)-[:CROSSREFERENCES {predicate:'crossReferences'}]->(t);
 MATCH (s:KGClass {id:'non-functional-requirement'}), (t:KGClass {id:'terminology-code'}) MERGE (s)-[:CROSSREFERENCES {predicate:'crossReferences'}]->(t);
 
-// Verification. Must return 4 rows -- one per imported class this layer
+// Verification. Must return 7 rows -- one per imported class this layer
 // builds on. Fewer means an imported layer was not loaded and edges above are missing.
-// MATCH (c:KGClass) WHERE c.id IN ['external-artifact', 'health-intervention', 'indicator', 'terminology-code'] RETURN c.id;
+// MATCH (c:KGClass) WHERE c.id IN ['external-artifact', 'health-intervention', 'indicator', 'recommendation', 'schedule', 'schedule-entry', 'terminology-code'] RETURN c.id;
 
 // WHO SMART Guidelines knowledge graph -- L2-BPMN ONTOLOGY (type graph).
 // Generated by tools/build-exports.mjs. Do not edit; edit the ontology JSON.
@@ -252,3 +262,109 @@ MATCH (s:KGClass {id:'decision-support-logic'}), (t:KGClass {id:'dmn-definitions
 // Verification. Must return 5 rows -- one per imported class this layer
 // builds on. Fewer means an imported layer was not loaded and edges above are missing.
 // MATCH (c:KGClass) WHERE c.id IN ['bpmn-task', 'citation', 'data-element', 'decision-support-logic', 'external-artifact'] RETURN c.id;
+
+// WHO SMART Guidelines knowledge graph -- L3 ONTOLOGY (type graph).
+// Generated by tools/build-exports.mjs. Do not edit; edit the ontology JSON.
+//
+// These are CLASSES and LICENSED EDGES, not DAK instance data. Loading this gives you the
+// schema to explore; a DAK's own graph is generated by that DAK's IG build. See docs/STORAGE.md.
+//
+// Every statement is MERGE, so re-running is safe.
+//
+// RUN THIS AGAINST A USER DATABASE, NOT `system`. The CREATE CONSTRAINT below is rejected
+// with "can only be executed in a user database" if `system` is selected, which is where
+// Neo4j Browser can land you after connecting. Switch first:
+//
+//     :use neo4j                                    (Browser, or your database's name)
+//     cypher-shell -d neo4j -f <this file>           (shell)
+//
+// REQUIRES l2-dmn.cypher and l2-bpmn.cypher and l2.cypher and l1.cypher TO BE LOADED FIRST.
+// This layer licenses edges onto imported classes (bpmn-process, bpmn-task, business-process, citation, data-element, decision-support-logic, dmn-decision, functional-requirement, non-functional-requirement, persona, program-indicator, scheduling-logic, terminology-code). The MATCH
+// statements below find nothing if those classes are absent, and Cypher does not treat
+// that as an error -- the edges would simply be missing. Verify with the query at the
+// end of this file.
+
+MERGE (:KGClass:Knowledge {id:'plan-definition', name:'Plan Definition', kind:'Knowledge', layer:'l3', iri:'http://smart.who.int/kg/plan-definition'});
+MERGE (:KGClass:Knowledge {id:'activity-definition', name:'Activity Definition', kind:'Knowledge', layer:'l3', iri:'http://smart.who.int/kg/activity-definition'});
+MERGE (:KGClass:Knowledge {id:'library', name:'Library', kind:'Knowledge', layer:'l3', iri:'http://smart.who.int/kg/library'});
+MERGE (:KGClass:Knowledge {id:'cql-library', name:'CQL File', kind:'Knowledge', layer:'l3', iri:'http://smart.who.int/kg/cql-library'});
+MERGE (:KGClass:Knowledge {id:'measure', name:'Measure', kind:'Knowledge', layer:'l3', iri:'http://smart.who.int/kg/measure'});
+MERGE (:KGClass:Knowledge {id:'questionnaire', name:'Questionnaire', kind:'Knowledge', layer:'l3', iri:'http://smart.who.int/kg/questionnaire'});
+MERGE (:KGClass:Conformance {id:'structure-map', name:'Structure Map', kind:'Conformance', layer:'l3', iri:'http://smart.who.int/kg/structure-map'});
+MERGE (:KGClass:Conformance {id:'structure-definition', name:'Logical Model', kind:'Conformance', layer:'l3', iri:'http://smart.who.int/kg/structure-definition'});
+MERGE (:KGClass:Conformance {id:'profile', name:'Profile', kind:'Conformance', layer:'l3', iri:'http://smart.who.int/kg/profile'});
+MERGE (:KGClass:Conformance {id:'value-set', name:'Value Set', kind:'Conformance', layer:'l3', iri:'http://smart.who.int/kg/value-set'});
+MERGE (:KGClass:Conformance {id:'code-system', name:'Code System', kind:'Conformance', layer:'l3', iri:'http://smart.who.int/kg/code-system'});
+MERGE (:KGClass:Conformance {id:'concept-map', name:'Concept Map', kind:'Conformance', layer:'l3', iri:'http://smart.who.int/kg/concept-map'});
+MERGE (:KGClass:Conformance {id:'actor-definition', name:'Actor Definition', kind:'Conformance', layer:'l3', iri:'http://smart.who.int/kg/actor-definition'});
+MERGE (:KGClass:Conformance {id:'requirements', name:'Requirements', kind:'Conformance', layer:'l3', iri:'http://smart.who.int/kg/requirements'});
+
+MATCH (s:KGClass {id:'plan-definition'}), (t:KGClass {id:'external-artifact'}) MERGE (s)-[:ELABORATES {predicate:'elaborates', note:'One artefact, one IRI: instances of these two classes are the same node, described at two layers.'}]->(t);
+
+MATCH (s:KGClass {id:'activity-definition'}), (t:KGClass {id:'external-artifact'}) MERGE (s)-[:ELABORATES {predicate:'elaborates', note:'One artefact, one IRI: instances of these two classes are the same node, described at two layers.'}]->(t);
+
+MATCH (s:KGClass {id:'library'}), (t:KGClass {id:'external-artifact'}) MERGE (s)-[:ELABORATES {predicate:'elaborates', note:'One artefact, one IRI: instances of these two classes are the same node, described at two layers.'}]->(t);
+
+MATCH (s:KGClass {id:'measure'}), (t:KGClass {id:'external-artifact'}) MERGE (s)-[:ELABORATES {predicate:'elaborates', note:'One artefact, one IRI: instances of these two classes are the same node, described at two layers.'}]->(t);
+
+MATCH (s:KGClass {id:'questionnaire'}), (t:KGClass {id:'external-artifact'}) MERGE (s)-[:ELABORATES {predicate:'elaborates', note:'One artefact, one IRI: instances of these two classes are the same node, described at two layers.'}]->(t);
+
+MATCH (s:KGClass {id:'structure-map'}), (t:KGClass {id:'external-artifact'}) MERGE (s)-[:ELABORATES {predicate:'elaborates', note:'One artefact, one IRI: instances of these two classes are the same node, described at two layers.'}]->(t);
+
+MATCH (s:KGClass {id:'structure-definition'}), (t:KGClass {id:'external-artifact'}) MERGE (s)-[:ELABORATES {predicate:'elaborates', note:'One artefact, one IRI: instances of these two classes are the same node, described at two layers.'}]->(t);
+
+MATCH (s:KGClass {id:'profile'}), (t:KGClass {id:'external-artifact'}) MERGE (s)-[:ELABORATES {predicate:'elaborates', note:'One artefact, one IRI: instances of these two classes are the same node, described at two layers.'}]->(t);
+
+MATCH (s:KGClass {id:'value-set'}), (t:KGClass {id:'external-artifact'}) MERGE (s)-[:ELABORATES {predicate:'elaborates', note:'One artefact, one IRI: instances of these two classes are the same node, described at two layers.'}]->(t);
+
+MATCH (s:KGClass {id:'code-system'}), (t:KGClass {id:'external-artifact'}) MERGE (s)-[:ELABORATES {predicate:'elaborates', note:'One artefact, one IRI: instances of these two classes are the same node, described at two layers.'}]->(t);
+
+MATCH (s:KGClass {id:'concept-map'}), (t:KGClass {id:'external-artifact'}) MERGE (s)-[:ELABORATES {predicate:'elaborates', note:'One artefact, one IRI: instances of these two classes are the same node, described at two layers.'}]->(t);
+
+MATCH (s:KGClass {id:'actor-definition'}), (t:KGClass {id:'external-artifact'}) MERGE (s)-[:ELABORATES {predicate:'elaborates', note:'One artefact, one IRI: instances of these two classes are the same node, described at two layers.'}]->(t);
+
+MATCH (s:KGClass {id:'requirements'}), (t:KGClass {id:'external-artifact'}) MERGE (s)-[:ELABORATES {predicate:'elaborates', note:'One artefact, one IRI: instances of these two classes are the same node, described at two layers.'}]->(t);
+
+MATCH (s:KGClass {id:'business-process'}), (t:KGClass {id:'plan-definition'}) MERGE (s)-[:IMPLEMENTEDBY {predicate:'implementedBy'}]->(t);
+MATCH (s:KGClass {id:'business-process'}), (t:KGClass {id:'activity-definition'}) MERGE (s)-[:IMPLEMENTEDBY {predicate:'implementedBy'}]->(t);
+MATCH (s:KGClass {id:'bpmn-process'}), (t:KGClass {id:'plan-definition'}) MERGE (s)-[:IMPLEMENTEDBY {predicate:'implementedBy'}]->(t);
+MATCH (s:KGClass {id:'bpmn-task'}), (t:KGClass {id:'activity-definition'}) MERGE (s)-[:IMPLEMENTEDBY {predicate:'implementedBy'}]->(t);
+MATCH (s:KGClass {id:'decision-support-logic'}), (t:KGClass {id:'plan-definition'}) MERGE (s)-[:IMPLEMENTEDBY {predicate:'implementedBy'}]->(t);
+MATCH (s:KGClass {id:'decision-support-logic'}), (t:KGClass {id:'activity-definition'}) MERGE (s)-[:IMPLEMENTEDBY {predicate:'implementedBy'}]->(t);
+MATCH (s:KGClass {id:'decision-support-logic'}), (t:KGClass {id:'library'}) MERGE (s)-[:IMPLEMENTEDBY {predicate:'implementedBy'}]->(t);
+MATCH (s:KGClass {id:'decision-support-logic'}), (t:KGClass {id:'cql-library'}) MERGE (s)-[:IMPLEMENTEDBY {predicate:'implementedBy'}]->(t);
+MATCH (s:KGClass {id:'dmn-decision'}), (t:KGClass {id:'plan-definition'}) MERGE (s)-[:IMPLEMENTEDBY {predicate:'implementedBy'}]->(t);
+MATCH (s:KGClass {id:'scheduling-logic'}), (t:KGClass {id:'plan-definition'}) MERGE (s)-[:IMPLEMENTEDBY {predicate:'implementedBy'}]->(t);
+MATCH (s:KGClass {id:'scheduling-logic'}), (t:KGClass {id:'cql-library'}) MERGE (s)-[:IMPLEMENTEDBY {predicate:'implementedBy'}]->(t);
+MATCH (s:KGClass {id:'persona'}), (t:KGClass {id:'actor-definition'}) MERGE (s)-[:IMPLEMENTEDBY {predicate:'implementedBy'}]->(t);
+MATCH (s:KGClass {id:'program-indicator'}), (t:KGClass {id:'measure'}) MERGE (s)-[:IMPLEMENTEDBY {predicate:'implementedBy'}]->(t);
+MATCH (s:KGClass {id:'program-indicator'}), (t:KGClass {id:'cql-library'}) MERGE (s)-[:IMPLEMENTEDBY {predicate:'implementedBy'}]->(t);
+MATCH (s:KGClass {id:'data-element'}), (t:KGClass {id:'structure-definition'}) MERGE (s)-[:IMPLEMENTEDBY {predicate:'implementedBy'}]->(t);
+MATCH (s:KGClass {id:'data-element'}), (t:KGClass {id:'questionnaire'}) MERGE (s)-[:IMPLEMENTEDBY {predicate:'implementedBy'}]->(t);
+MATCH (s:KGClass {id:'data-element'}), (t:KGClass {id:'structure-map'}) MERGE (s)-[:IMPLEMENTEDBY {predicate:'implementedBy'}]->(t);
+MATCH (s:KGClass {id:'data-element'}), (t:KGClass {id:'value-set'}) MERGE (s)-[:IMPLEMENTEDBY {predicate:'implementedBy'}]->(t);
+MATCH (s:KGClass {id:'data-element'}), (t:KGClass {id:'code-system'}) MERGE (s)-[:IMPLEMENTEDBY {predicate:'implementedBy'}]->(t);
+MATCH (s:KGClass {id:'data-element'}), (t:KGClass {id:'profile'}) MERGE (s)-[:IMPLEMENTEDBY {predicate:'implementedBy'}]->(t);
+MATCH (s:KGClass {id:'data-element'}), (t:KGClass {id:'concept-map'}) MERGE (s)-[:IMPLEMENTEDBY {predicate:'implementedBy'}]->(t);
+MATCH (s:KGClass {id:'data-element'}), (t:KGClass {id:'cql-library'}) MERGE (s)-[:IMPLEMENTEDBY {predicate:'implementedBy'}]->(t);
+MATCH (s:KGClass {id:'functional-requirement'}), (t:KGClass {id:'requirements'}) MERGE (s)-[:IMPLEMENTEDBY {predicate:'implementedBy'}]->(t);
+MATCH (s:KGClass {id:'non-functional-requirement'}), (t:KGClass {id:'requirements'}) MERGE (s)-[:IMPLEMENTEDBY {predicate:'implementedBy'}]->(t);
+MATCH (s:KGClass {id:'plan-definition'}), (t:KGClass {id:'library'}) MERGE (s)-[:USES {predicate:'uses'}]->(t);
+MATCH (s:KGClass {id:'plan-definition'}), (t:KGClass {id:'activity-definition'}) MERGE (s)-[:USES {predicate:'uses'}]->(t);
+MATCH (s:KGClass {id:'measure'}), (t:KGClass {id:'library'}) MERGE (s)-[:USES {predicate:'uses'}]->(t);
+MATCH (s:KGClass {id:'library'}), (t:KGClass {id:'cql-library'}) MERGE (s)-[:USES {predicate:'uses'}]->(t);
+MATCH (s:KGClass {id:'questionnaire'}), (t:KGClass {id:'structure-map'}) MERGE (s)-[:USES {predicate:'uses'}]->(t);
+MATCH (s:KGClass {id:'questionnaire'}), (t:KGClass {id:'structure-definition'}) MERGE (s)-[:USES {predicate:'uses'}]->(t);
+MATCH (s:KGClass {id:'structure-map'}), (t:KGClass {id:'structure-definition'}) MERGE (s)-[:USES {predicate:'uses'}]->(t);
+MATCH (s:KGClass {id:'profile'}), (t:KGClass {id:'structure-definition'}) MERGE (s)-[:USES {predicate:'uses'}]->(t);
+MATCH (s:KGClass {id:'value-set'}), (t:KGClass {id:'code-system'}) MERGE (s)-[:USES {predicate:'uses'}]->(t);
+MATCH (s:KGClass {id:'concept-map'}), (t:KGClass {id:'code-system'}) MERGE (s)-[:USES {predicate:'uses'}]->(t);
+MATCH (s:KGClass {id:'plan-definition'}), (t:KGClass {id:'citation'}) MERGE (s)-[:CITESSOURCE {predicate:'citesSource'}]->(t);
+MATCH (s:KGClass {id:'library'}), (t:KGClass {id:'citation'}) MERGE (s)-[:CITESSOURCE {predicate:'citesSource'}]->(t);
+MATCH (s:KGClass {id:'measure'}), (t:KGClass {id:'citation'}) MERGE (s)-[:CITESSOURCE {predicate:'citesSource'}]->(t);
+MATCH (s:KGClass {id:'structure-definition'}), (t:KGClass {id:'terminology-code'}) MERGE (s)-[:CROSSREFERENCES {predicate:'crossReferences'}]->(t);
+MATCH (s:KGClass {id:'measure'}), (t:KGClass {id:'terminology-code'}) MERGE (s)-[:CROSSREFERENCES {predicate:'crossReferences'}]->(t);
+
+// Verification. Must return 13 rows -- one per imported class this layer
+// builds on. Fewer means an imported layer was not loaded and edges above are missing.
+// MATCH (c:KGClass) WHERE c.id IN ['bpmn-process', 'bpmn-task', 'business-process', 'citation', 'data-element', 'decision-support-logic', 'dmn-decision', 'functional-requirement', 'non-functional-requirement', 'persona', 'program-indicator', 'scheduling-logic', 'terminology-code'] RETURN c.id;

@@ -142,7 +142,36 @@ const L2_DMN = doc("l2-dmn", [
   }),
 ]);
 
-const ALL = [L1, L2, L2_BPMN, L2_DMN];
+const DSL = `${NS}/decision-support-logic/ex-d2`;
+const PLANDEF = `${NS}/PlanDefinition/EXD2DTExample`;
+const LIB = `${NS}/Library/EXD2DTExampleLogic`;
+
+const L3 = doc("l3", [
+  n(DSL, "decision-support-logic", "EX.D2", { id: "EX.D2", sourceKind: "url", source: "fixture" }),
+  n(PLANDEF, "plan-definition", "EX.D2.DT.Example", {
+    canonical: PLANDEF, resourceType: "PlanDefinition",
+    // Read off the artefact, never asserted by the ontology: smart-base defines SG* profiles, the
+    // published SOP names CRMI/CPG, and the immunizations IG uses CPG exclusively.
+    profile: "http://hl7.org/fhir/uv/cpg/StructureDefinition/cpg-recommendationdefinition",
+    status: "draft", version: "0.1.0", title: "EX.D2.DT.Example", name: "EXD2DTExample",
+    publisher: "World Health Organization (WHO)", experimental: false }),
+  n(LIB, "library", "EXD2DTExampleLogic", {
+    canonical: LIB, resourceType: "Library", status: "draft", version: "0.1.0",
+    name: "EXD2DTExampleLogic", publisher: "World Health Organization (WHO)" }),
+], [
+  e("implementedBy", DSL, PLANDEF, {
+    properties: { resolutionStatus: "unresolved", extractionRule: "title == L2 decision table id",
+                  targetPath: "PlanDefinition.action[0]" },
+    ...inferred("matched by the SOP id convention; no back-pointer extension exists in the estate"),
+  }),
+  e("uses", PLANDEF, LIB),
+  e("citesSource", PLANDEF, CITATION, {
+    properties: { text: "Example guideline (1)" },
+    evidence: { location: "fixture#relatedArtifact", quote: "Example guideline (1)" },
+  }),
+]);
+
+const ALL = [L1, L2, L2_BPMN, L2_DMN, L3];
 
 // --------------------------------------------------------------------------------------------
 if (process.argv.includes("--emit")) {
@@ -214,6 +243,25 @@ const cases = [
   ["a reference into another layer's document resolves across the set", L2_DMN, null, null],
   ["the DAK component layer conforms", L2, null, null],
   ["L1 conforms", L1, null, null],
+
+  // --- L3: the thin index ------------------------------------------------------------------------
+  ["an unlicensed L3 edge is rejected", L3, (d) => {
+    // A Library does not implement a decision-support-logic component; a PlanDefinition does.
+    d.edges.push(e("implementedBy", find(d, "library").id, find(d, "plan-definition").id));
+  }, /is not licensed by the ontology/],
+  ["an L3 class may not reach a persona", L3, (d) => {
+    d.edges.push(e("uses", find(d, "plan-definition").id, PERSONA));
+  }, /is not licensed by the ontology/],
+  ["a convention-matched implementedBy claiming resolution needs evidence", L3, (d) => {
+    const x = findEdge(d, "implementedBy");
+    x.properties.resolutionStatus = "resolved";
+    delete x.evidence;
+  }, /points at no evidence|carries no evidence/],
+  ["an undeclared property on an L3 node is rejected", L3, (d) => {
+    find(d, "plan-definition").properties.actionCount = 3;
+  }, /does not declare/],
+  ["an unresolved implementedBy is a legitimate state", L3, null, null],
+  ["the L3 index conforms, and cites L1 across documents", L3, null, null],
 ];
 
 let failures = 0;

@@ -72,6 +72,24 @@
     "ontologyVersion": {
       "@id": "sgkg:ontologyVersion"
     },
+    "invokedBy": {
+      "@id": "sgkg:invokedBy"
+    },
+    "reads": {
+      "@id": "sgkg:reads"
+    },
+    "citesSource": {
+      "@id": "sgkg:citesSource"
+    },
+    "flowsTo": {
+      "@id": "sgkg:flowsTo"
+    },
+    "messageTo": {
+      "@id": "sgkg:messageTo"
+    },
+    "performedBy": {
+      "@id": "sgkg:performedBy"
+    },
     "hasComponent": {
       "@id": "sgkg:hasComponent"
     },
@@ -156,15 +174,21 @@
     "resolvesTo": {
       "@id": "sgkg:resolvesTo"
     },
-    "flowsTo": {
-      "@id": "sgkg:flowsTo"
+    "uses": {
+      "@id": "sgkg:uses"
     },
-    "messageTo": {
-      "@id": "sgkg:messageTo"
-    },
-    "performedBy": {
-      "@id": "sgkg:performedBy"
-    },
+    "DMNFile": "sgkg:dmn-definitions",
+    "DMNDecision": "sgkg:dmn-decision",
+    "DMNDecisionTable": "sgkg:dmn-decision-table",
+    "DMNInputClause": "sgkg:dmn-input-clause",
+    "DMNOutputClause": "sgkg:dmn-output-clause",
+    "DMNRule": "sgkg:dmn-rule",
+    "BPMNFile": "sgkg:bpmn-definitions",
+    "BPMNProcess": "sgkg:bpmn-process",
+    "BPMNParticipant": "sgkg:bpmn-participant",
+    "BPMNTask": "sgkg:bpmn-task",
+    "BPMNGateway": "sgkg:bpmn-gateway",
+    "BPMNEvent": "sgkg:bpmn-event",
     "DigitalAdaptationKit": "sgkg:dak",
     "GenericPersona": "sgkg:persona",
     "UserScenario": "sgkg:user-scenario",
@@ -194,11 +218,19 @@
     "TerminologyCode": "sgkg:terminology-code",
     "Citation": "sgkg:citation",
     "ExternalArtefact": "sgkg:external-artifact",
-    "BPMNFile": "sgkg:bpmn-definitions",
-    "BPMNProcess": "sgkg:bpmn-process",
-    "BPMNParticipant": "sgkg:bpmn-participant",
-    "BPMNTask": "sgkg:bpmn-task",
-    "BPMNGateway": "sgkg:bpmn-gateway",
-    "BPMNEvent": "sgkg:bpmn-event"
+    "PlanDefinition": "sgkg:plan-definition",
+    "ActivityDefinition": "sgkg:activity-definition",
+    "Library": "sgkg:library",
+    "CQLFile": "sgkg:cql-library",
+    "Measure": "sgkg:measure",
+    "Questionnaire": "sgkg:questionnaire",
+    "StructureMap": "sgkg:structure-map",
+    "LogicalModel": "sgkg:structure-definition",
+    "Profile": "sgkg:profile",
+    "ValueSet": "sgkg:value-set",
+    "CodeSystem": "sgkg:code-system",
+    "ConceptMap": "sgkg:concept-map",
+    "ActorDefinition": "sgkg:actor-definition",
+    "Requirements": "sgkg:requirements"
   }
 }

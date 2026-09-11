@@ -6,9 +6,10 @@ so a file stays identifiable once downloaded and handed to a tool.
 ```
 ontology/
   l1/        l1.json  l1.ttl  l1.cypher  l1.context.jsonld      16 classes · 35 edges
-  l2/        …                                                  12 classes · 32 edges
-  l2-bpmn/   …                                                   6 classes · 19 edges
-  l2-dmn/    …                                                   6 classes ·  9 edges
+  l2/        …                                                  13 classes · 41 edges
+  l2-bpmn/   …                                                   6 classes · 20 edges
+  l2-dmn/    …                                                   6 classes · 10 edges
+  l3/        …                                                  14 classes · 39 edges
   all.cypher   every layer, in dependency order
   all.ttl      every layer, merged into one document
 ```
@@ -27,9 +28,17 @@ and there should not be.** See [`../docs/STORAGE.md`](../docs/STORAGE.md).
 | `l2` | the nine DAK components and their cross-references | WHO's, from `DAK.fsh` | `l1` |
 | `l2-bpmn` | one BPMN file's interior | OMG's | `l2` |
 | `l2-dmn` | one DMN file's interior | OMG's | `l2-bpmn` |
+| `l3` | FHIR artefacts, indexed by canonical URL | HL7's | `l2-dmn` |
 
-The import chain is `l1 → l2 → l2-bpmn → l2-dmn`. It follows the artefacts: `dmn:usingTask` names
-the BPMN task that invokes a decision, so DMN depends on BPMN and not the reverse.
+The import chain is `l1 → l2 → l2-bpmn → l2-dmn → l3`. It follows the artefacts: `dmn:usingTask`
+names the BPMN task that invokes a decision, so DMN depends on BPMN and not the reverse; and an L3
+artefact implements an L2 component, so L3 sits at the end.
+
+`l3` is an **index, not a model**. Each class carries a canonical URL, a resource type, the profile
+the artefact declares and status metadata — no action trees, no element definitions, no CQL. It
+asserts no profile as correct, because WHO's sources disagree: smart-base defines 15 `SG*` profiles,
+the published SOP names CRMI/CPG/CQFM/SDC instead, and the immunizations IG uses CPG and CQFM
+exclusively. `profile` records what the artefact carries.
 
 ## Loading
 

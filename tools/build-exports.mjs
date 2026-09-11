@@ -29,7 +29,7 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 // Which ontology files to export. Each is authored or generated elsewhere; this only projects.
 // A layer that imports another is exported on its own: l2.ttl declares L2's classes and references
 // L1's through owl:imports, rather than restating them.
-const LAYERS = ["l1", "l2", "l2-bpmn", "l2-dmn"];
+const LAYERS = ["l1", "l2", "l2-bpmn", "l2-dmn", "l3"];
 
 const camel = (name) =>
   name.split(/[^A-Za-z0-9]+/).filter(Boolean)
@@ -194,6 +194,9 @@ export function buildTurtle(ont, layer = { own: ont, imported: { classes: [], pr
     // L2-BPMN and L2-DMN -- the file-interior subgraphs
     Artefact: "A file, addressed as a whole. Shares its IRI with the L1 reference to the same file, so opening a file does not create a second name for it.",
     Structure: "An element inside a file. It has no identity apart from the file that contains it, and its vocabulary is the file format's, not WHO's.",
+    // L3 -- the FHIR index. FHIR's own split between knowledge artefacts and conformance resources.
+    Knowledge: "A FHIR knowledge artefact: something that encodes clinical or operational logic. Indexed by canonical URL; its interior stays in FHIR.",
+    Conformance: "A FHIR conformance or definitional resource: something that constrains or defines structure and terminology. Indexed by canonical URL; its interior stays in FHIR.",
   };
   const kinds = [...new Set(ont.classes.map((c) => c.kind))].sort();
   const undescribed = kinds.filter((k) => !(k in KIND_NOTES));

@@ -48,9 +48,10 @@ cross-model edge everyone wants **already exists in the artefact** — it just h
 | Path | Contents |
 |---|---|
 | [`ontology/l1/`](ontology/l1/) | **L1** — recommendations, evidence, PICO, citations. 16 classes, 35 edges |
-| [`ontology/l2/`](ontology/l2/) | **DAK components** — all nine. 12 classes, 32 edges. Imports L1 |
-| [`ontology/l2-bpmn/`](ontology/l2-bpmn/) | **BPMN interiors.** 6 classes, 19 edges. Imports L2 |
-| [`ontology/l2-dmn/`](ontology/l2-dmn/) | **DMN interiors.** 6 classes, 9 edges. Imports L2-BPMN |
+| [`ontology/l2/`](ontology/l2/) | **DAK components** — nine, plus scheduling. 13 classes, 41 edges. Imports L1 |
+| [`ontology/l2-bpmn/`](ontology/l2-bpmn/) | **BPMN interiors.** 6 classes, 20 edges. Imports L2 |
+| [`ontology/l2-dmn/`](ontology/l2-dmn/) | **DMN interiors.** 6 classes, 10 edges. Imports L2-BPMN |
+| [`ontology/l3/`](ontology/l3/) | **FHIR index.** 14 classes, 39 edges. Imports L2-DMN |
 | `ontology/all.cypher` · `all.ttl` | Every layer, in dependency order / merged |
 | [`ontology/README.md`](ontology/README.md) | The layout, and how to load it |
 | [`docs/VISUALIZING.md`](docs/VISUALIZING.md) | Reading the model in Neo4j and Protégé |
@@ -184,6 +185,9 @@ input tree with no component declaring them. Nothing else in the estate reports 
 **The schema:**
 
 ```bash
+# a published IG -> the L3 index, with coverage across every artefact type
+node tools/extract-l3.mjs --ig <path-to-IG> --out /tmp/l3.json
+
 node tools/build-exports.mjs          # regenerate every ontology/<layer>/ projection,
                                       # plus ontology/all.{cypher,ttl}
 node tools/build-exports.mjs --check  # fail if any of it is stale

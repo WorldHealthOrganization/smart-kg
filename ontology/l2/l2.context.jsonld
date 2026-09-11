@@ -179,6 +179,7 @@
     "TaskEntry": "sgkg:dak-task",
     "CoreDataElement": "sgkg:data-element",
     "DecisionSupportLogic": "sgkg:decision-support-logic",
+    "SchedulingLogic": "sgkg:scheduling-logic",
     "ProgramIndicator": "sgkg:program-indicator",
     "FunctionalRequirement": "sgkg:functional-requirement",
     "NonFunctionalRequirement": "sgkg:non-functional-requirement",

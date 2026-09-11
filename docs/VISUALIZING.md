@@ -1,6 +1,6 @@
 # Seeing the graphs in Neo4j
 
-`ontology/` holds the **type graph**: 40 classes and the 95 edges licensed between them. It answers
+`ontology/` holds the **type graph**: 55 classes and the 145 edges licensed between them. It answers
 *what may exist*. There is no DAK data in this repository and there should not be — see
 [`STORAGE.md`](STORAGE.md) — so everything below is about the model, not about instances.
 
@@ -47,9 +47,10 @@ MATCH (c:KGClass) RETURN c.layer AS layer, count(*) AS classes ORDER BY layer;
 
 ```
 l1        │ 16
-l2        │ 12
+l2        │ 13
 l2-bpmn   │  6
 l2-dmn    │  6
+l3        │ 14
 ```
 
 Every class node carries `layer`, which is what makes one subgraph selectable on its own.
@@ -94,6 +95,22 @@ ORDER BY from, to;
 ```cypher
 MATCH (dak:KGClass {id:'dak'})-[r:HASCOMPONENT]->(c)
 RETURN r.qualifier AS component, c.name AS class, c.layer AS declared_in
+ORDER BY component;
+```
+
+**L1 all the way to L3** — the path the layers exist to make walkable:
+
+```cypher
+MATCH path = (:KGClass {id:'recommendation'})
+             -[:IMPLEMENTEDBY]->(:KGClass)-[:IMPLEMENTEDBY]->(:KGClass {layer:'l3'})
+RETURN path;
+```
+
+**Everything a DAK component reaches at L3:**
+
+```cypher
+MATCH (c:KGClass {layer:'l2'})-[r:IMPLEMENTEDBY]->(a:KGClass {layer:'l3'})
+RETURN c.name AS component, collect(a.name) AS fhir_artefacts
 ORDER BY component;
 ```
 
