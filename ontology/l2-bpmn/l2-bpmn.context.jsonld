@@ -105,23 +105,29 @@
     "contains": {
       "@id": "sgkg:contains"
     },
+    "hasSupplement": {
+      "@id": "sgkg:hasSupplement"
+    },
     "supersedes": {
       "@id": "sgkg:supersedes"
     },
     "refines": {
       "@id": "sgkg:refines"
     },
-    "hasPopulation": {
-      "@id": "sgkg:hasPopulation"
+    "restates": {
+      "@id": "sgkg:restates"
     },
-    "hasIntervention": {
-      "@id": "sgkg:hasIntervention"
+    "answers": {
+      "@id": "sgkg:answers"
     },
-    "hasComparator": {
-      "@id": "sgkg:hasComparator"
+    "addresses": {
+      "@id": "sgkg:addresses"
     },
-    "hasOutcome": {
-      "@id": "sgkg:hasOutcome"
+    "aboutIntervention": {
+      "@id": "sgkg:aboutIntervention"
+    },
+    "reportedIn": {
+      "@id": "sgkg:reportedIn"
     },
     "supportedBy": {
       "@id": "sgkg:supportedBy"
@@ -182,11 +188,8 @@
     "PublicationSection": "sgkg:publication-section",
     "Recommendation": "sgkg:recommendation",
     "Remark": "sgkg:remark",
+    "KeyQuestion": "sgkg:key-question",
     "Evidence": "sgkg:evidence",
-    "Population": "sgkg:population",
-    "Intervention": "sgkg:intervention",
-    "Comparator": "sgkg:comparator",
-    "Outcome": "sgkg:outcome",
     "HealthIntervention": "sgkg:health-intervention",
     "Schedule": "sgkg:schedule",
     "ScheduleEntry": "sgkg:schedule-entry",

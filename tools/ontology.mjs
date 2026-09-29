@@ -39,7 +39,7 @@ export function loadLayer(layer, seen = new Set()) {
   seen.add(layer);
 
   const own = readLayer(layer);
-  const imported = { classes: [], predicates: [], edges: [], layers: [] };
+  const imported = { classes: [], predicates: [], edges: [], layers: [], valueSets: [] };
 
   for (const dep of own.imports ?? []) {
     const sub = loadLayer(dep, seen);
@@ -73,6 +73,10 @@ export function loadLayer(layer, seen = new Set()) {
       const k = `${e.predicate}|${e.source}|${e.target}|${e.qualifier ?? ""}`;
       if (!seenEdge.has(k)) { seenEdge.add(k); imported.edges.push(e); }
     }
+    const seenSet = new Set(imported.valueSets.map((v) => v.id));
+    for (const v of [...(sub.own.valueSets ?? []), ...sub.imported.valueSets]) {
+      if (!seenSet.has(v.id)) { seenSet.add(v.id); imported.valueSets.push(v); }
+    }
   }
 
   // An imported id that the layer also declares is a genuine conflict, not an override: two
@@ -104,6 +108,31 @@ export function loadLayer(layer, seen = new Set()) {
                     `"${e.predicate}", which is not declared in ${layer}.json or its imports`);
     }
   }
+  // A value-set binding is checked the same way. A binding naming a property the class does not
+  // declare, or a value set nothing declares, would otherwise leave that property unconstrained
+  // while reading as if it were -- the prose-only vocabulary this mechanism replaced, with a
+  // false sense of enforcement on top.
+  const sets = new Map();
+  for (const v of [...imported.valueSets, ...(own.valueSets ?? [])]) {
+    if (sets.has(v.id) && (own.valueSets ?? []).includes(v)) {
+      problems.push(`value set "${v.id}" is declared twice in scope`);
+    }
+    sets.set(v.id, v);
+    const codes = (v.codes ?? []).map((c) => c.code);
+    if (!codes.length) problems.push(`value set "${v.id}" declares no codes`);
+    if (new Set(codes).size !== codes.length) problems.push(`value set "${v.id}" repeats a code`);
+  }
+  for (const c of own.classes) {
+    for (const [prop, set] of Object.entries(c.valueSets ?? {})) {
+      if (!(c.properties ?? []).includes(prop)) {
+        problems.push(`class "${c.id}" binds property "${prop}" to a value set but does not declare it`);
+      }
+      if (!sets.has(set)) {
+        problems.push(`class "${c.id}" binds "${prop}" to value set "${set}", which neither ` +
+                      `${layer}.json nor anything it imports declares`);
+      }
+    }
+  }
   if (problems.length) throw new Error(`${layer}.json:\n  - ${problems.join("\n  - ")}`);
 
   return { own, imported };
@@ -115,7 +144,9 @@ export function scopeOf({ own, imported }) {
   for (const c of [...imported.classes, ...own.classes]) classes.set(c.id, c);
   const predicates = new Map();
   for (const p of [...imported.predicates, ...own.predicates]) predicates.set(p.predicate, p);
-  return { classes, predicates, edges: [...imported.edges, ...own.edges] };
+  const valueSets = new Map();
+  for (const v of [...(imported.valueSets ?? []), ...(own.valueSets ?? [])]) valueSets.set(v.id, v);
+  return { classes, predicates, edges: [...imported.edges, ...own.edges], valueSets };
 }
 
 /** Which class ids a layer's own edges borrow from an import. */

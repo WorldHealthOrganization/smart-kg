@@ -173,3 +173,16 @@ and `evidence`, and `tools/validate.mjs` rejects a `citation` that claims `resol
 `resolvesTo` edge. `ambiguous` is a legitimate terminal state for a citation and must never be
 collapsed to `resolved` — two publications with similar titles is a question for a person, not a
 tie-break for a matcher.
+
+### Vocabularies are closed, and inline for now
+
+GRADE strength, certainty and direction, the handbook's guideline types, recommendation status and
+citation resolution are **value sets** in `l1.json`, each code with a definition and a source.
+`tools/validate.mjs` rejects any other value — `"Strong"` is not `strong`, and a coverage query
+filtering on one silently misses the other. It also enforces GRADE's own pairing: a recommendation
+states direction and strength together, and a good practice statement or a decision to make no
+recommendation carries no grade.
+
+The GRADE lists are copied here rather than referenced. folio-assistant publishes the same
+vocabularies as SKOS code lists; pointing at those, pinned by hash, is deliberately deferred so
+this repository takes on no external dependency yet.

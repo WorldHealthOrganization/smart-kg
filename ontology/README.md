@@ -5,7 +5,7 @@ so a file stays identifiable once downloaded and handed to a tool.
 
 ```
 ontology/
-  l1/        l1.json  l1.ttl  l1.cypher  l1.context.jsonld      16 classes · 35 edges
+  l1/        l1.json  l1.ttl  l1.cypher  l1.context.jsonld      13 classes · 37 edges
   l2/        …                                                  13 classes · 41 edges
   l2-bpmn/   …                                                   6 classes · 20 edges
   l2-dmn/    …                                                   6 classes · 10 edges
@@ -24,7 +24,7 @@ and there should not be.** See [`../docs/STORAGE.md`](../docs/STORAGE.md).
 
 | Layer | Holds | Vocabulary | Imports |
 |---|---|---|---|
-| `l1` | WHO recommendations, evidence, PICO, citations | authored for this estate | — |
+| `l1` | WHO publications, recommendations, key questions (PICO), GRADE evidence, citations | authored for this estate | — |
 | `l2` | the nine DAK components and their cross-references | WHO's, from `DAK.fsh` | `l1` |
 | `l2-bpmn` | one BPMN file's interior | OMG's | `l2` |
 | `l2-dmn` | one DMN file's interior | OMG's | `l2-bpmn` |
@@ -73,7 +73,7 @@ verification query returning the imported classes it expects to find.
 
 **Protégé** — open `all.ttl` for the whole model, or a single `<layer>/<layer>.ttl`. The per-layer
 files declare `owl:imports`, which a reasoner can follow only if the IRIs resolve; `all.ttl` is the
-offline merge, and parses as one 835-triple document.
+offline merge, and parses as one 1409-triple document.
 
 **JSON-LD** — `<layer>.context.jsonld` expands a graph document of that layer. It covers imported
 terms too, so an L2-DMN document naming an `l1:citation` still expands.

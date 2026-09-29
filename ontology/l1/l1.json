@@ -1,9 +1,9 @@
 {
-  "schemaVersion": "1.0",
+  "schemaVersion": "2.0",
   "layer": "L1",
   "namespace": "http://smart.who.int/kg/",
   "source": "authored",
-  "note": "Authored, not generated. The ArchiMate model in smart-ig-starter-kit has no L1 layer, and extending it before this shape is proven would put a governance process in front of a draft. Every class and edge below is grounded in an artefact that exists today; the `grounding` field on each says which one. Nothing here is speculative vocabulary.",
+  "note": "Authored, not generated. The ArchiMate model in smart-ig-starter-kit has no L1 layer, and extending it before this shape is proven would put a governance process in front of a draft. Every class and edge below is grounded in an artefact that exists today; the `groundedIn` list says which, and each class `note` cites the part it rests on. Nothing here is speculative vocabulary.",
   "groundedIn": [
     {
       "what": "The citation format L1 references already use",
@@ -24,18 +24,135 @@
       "what": "An existing L1-ward link from a DAK component",
       "where": "smart-base input/fsh/models/ProgramIndicator.fsh",
       "detail": "`references 0..* id` — \"References to Health Intervention IDs providing additional context\"."
+    },
+    {
+      "what": "What a WHO guideline must contain, and how it is built",
+      "where": "WHO handbook for guideline development, 2nd edition (2014). ISBN 978-92-4-154896-0. sha256 bfcd856e3ad7ab20408ee2fb097c6e9cb5c826f0926bccee4ebd708af924a651",
+      "detail": "The Guideline Review Committee's own rulebook, and the grounding for the normative half of this layer. Guideline types: Table 1.2 and §1.7 (p5–8); products that are not guidelines: §1.9 (p11); GRC approval of every publication containing recommendations: §1.10.1 (p12). Key questions in PICO format, and \"a one-to-one relationship between recommendations and key questions does not exist\": §7.2–7.4 (p79–87). Outcomes rated critical / important / unimportant: §7.6 (p87–88). GRADE evidence profiles per key question and per outcome: §9.2 (p110). Overall certainty is the lowest across critical outcomes, per recommendation: §9.6 (p120). Direction and strength: §10.1, §10.4 (p123–129). A recommendation carries a justification and remarks, reflects PICO but does not name outcomes, and links to the evidence profiles and evidence-to-decision tables: §10.6 (p130–131). \"No recommendation can be made\": §10.7 (p131). Evidence profiles and EtD tables published in annexes: §12.1 (p157). Review-by dates, and recommendations updated individually: §1.7.2 (p7), §12.5 (p163–164). Page numbers are the printed ones."
+    },
+    {
+      "what": "Recommendation categories later than the 2014 handbook",
+      "where": "WHO recommendations on antenatal care for a positive pregnancy experience (2016), ISBN 978-92-4-154991-2; Guyatt et al., GRADE guidelines: 15 — good practice statements, J Clin Epidemiol 2016;80:3–7",
+      "detail": "The 2014 handbook knows only graded recommendations and 'no recommendation'. Current WHO guidelines also issue context-specific recommendations, recommendations only in the context of rigorous research, and ungraded good practice statements; the ANC guideline uses the first two as categories beside 'recommended' and 'not recommended'. NOT YET CHECKED against the source PDFs: the `recommendation-kind` value set cites these, and should be re-verified when the first guideline is extracted."
+    }
+  ],
+
+  "valueSets": [
+    {
+      "id": "publication-type",
+      "note": "What kind of publication this is. The distinction that matters most for provenance is guideline versus not: a summary table or position paper restates recommendations made elsewhere, and a §1.9 product makes none of its own. Conflating them makes a citation resolve to the wrong authority.",
+      "source": "WHO handbook for guideline development (2014), Table 1.2 and §1.7–1.9; the BCG decision table's citation for summary-table; CDHIv2.fsh for classification",
+      "codes": [
+        { "code": "standard-guideline", "definition": "Recommendations on a specific topic or condition, usually new. Most WHO guidelines. Handbook §1.7.1." },
+        { "code": "consolidated-guideline", "definition": "Aggregates existing recommendations on a disease or condition, evaluated as up to date; may add new ones. Existing recommendations must be explicitly cross-referenced. Handbook §1.7.2." },
+        { "code": "interim-guideline", "definition": "Guidance when data are incomplete and more are expected; short shelf-life, states when an update is anticipated. Handbook §1.7.3." },
+        { "code": "rapid-advice-guideline", "definition": "Produced in one to three months in a public health emergency, with a review-by date. Handbook §1.7.4, chapter 11." },
+        { "code": "emergency-guideline", "definition": "Rapid response guidance within hours to days; may rest on expert opinion only. Handbook §1.7.4." },
+        { "code": "collaborative-guideline", "definition": "Developed with one or more external organizations sharing the remit. Handbook §1.8.1." },
+        { "code": "external-guideline", "definition": "Developed by an external organization and adopted by WHO. Handbook §1.8.2." },
+        { "code": "adapted-guideline", "definition": "An existing WHO guideline adapted to a local context by a Member State. Handbook §1.8.3, §13.1." },
+        { "code": "position-paper", "definition": "A WHO position paper — for vaccines, the SAGE-reviewed statement of WHO's position published in the Weekly Epidemiological Record. States recommendations; the immunization summary tables are drawn from these." },
+        { "code": "summary-table", "definition": "A tabular restatement of recommendations made in other publications — e.g. \"WHO recommendations for routine immunization – summary tables\". Cite-worthy, but not the originating authority: a citation resolving here should normally be followed on to the recommendation it restates." },
+        { "code": "classification", "definition": "A WHO classification, such as the Classification of Digital Health Interventions (CDHI). Its codes are cross-referenced through terminology-code, never modelled here." },
+        { "code": "implementation-guidance", "definition": "An operational manual, implementation guide or tool based on approved guidelines — a \"how to\" document. Makes no recommendations of its own. Handbook §1.9. A DAK is one of these." },
+        { "code": "methodology", "definition": "A document describing how guidance is produced — the guideline development handbook itself. Handbook §1.9 (standard operating procedures)." },
+        { "code": "supplement", "definition": "A web annex or supplementary document of another publication, typically holding systematic reviews, GRADE evidence profiles and evidence-to-decision tables. Handbook §12.1. Reached by hasSupplement." }
+      ]
+    },
+    {
+      "id": "grc-status",
+      "note": "Whether the Guideline Review Committee approved the publication. All WHO publications containing recommendations must be approved (handbook §1.10.1); a consolidated guideline whose recommendations were all previously approved and unchanged does not require review (§1.7.2). Absent means not recorded — not the same as not reviewed.",
+      "source": "WHO handbook for guideline development (2014), §1.7.2, §1.10.1",
+      "codes": [
+        { "code": "approved", "definition": "Approved by the GRC." },
+        { "code": "not-required", "definition": "GRC review was not required — a §1.9 product, or a consolidation of previously approved, unchanged recommendations." },
+        { "code": "not-reviewed", "definition": "Contains recommendations and was not reviewed by the GRC — including those published before the GRC was established in 2007, which the handbook says should be updated (§12.5.2)." }
+      ]
+    },
+    {
+      "id": "recommendation-kind",
+      "note": "What sort of normative statement this is. Kind `recommendation` is graded and must carry both direction and strength; any kind that states one must state the other. A good practice statement is ungraded by definition, and `no-recommendation` records a decision not to recommend — a real outcome for a key question, which coverage must be able to count.",
+      "source": "WHO handbook for guideline development (2014) §10.4, §10.7; WHO ANC guideline (2016); Guyatt et al. 2016 on good practice statements — see groundedIn",
+      "codes": [
+        { "code": "recommendation", "definition": "A graded recommendation, with a direction and a strength. Handbook §10.4." },
+        { "code": "context-specific", "definition": "Recommended only in specified contexts or settings, stated in the recommendation. WHO ANC guideline (2016)." },
+        { "code": "research-context", "definition": "Recommended only in the context of rigorous research. WHO ANC guideline (2016)." },
+        { "code": "good-practice-statement", "definition": "An ungraded statement whose benefit is so clear that grading the evidence is not a useful exercise. Carries no strength or certainty. Guyatt et al. 2016." },
+        { "code": "no-recommendation", "definition": "\"No recommendation can be made because…\" — the guideline development group decided the evidence could not support one. Handbook §10.7. Distinct from very-low certainty: absent evidence and weak evidence are different findings." }
+      ]
+    },
+    {
+      "id": "recommendation-direction",
+      "note": "For or against. The handbook prefers \"we recommend against X\" to \"X is not recommended\", which is ambiguous between against and no recommendation (§10.6).",
+      "source": "WHO handbook for guideline development (2014) §10.1, §10.6",
+      "codes": [
+        { "code": "for", "definition": "The recommendation is in favour of the intervention." },
+        { "code": "against", "definition": "The recommendation is against the intervention." }
+      ]
+    },
+    {
+      "id": "recommendation-strength",
+      "note": "GRADE strength. Strength is not certainty: a strong recommendation can rest on low-certainty evidence and a conditional one on high. Record \"weak\" as conditional; the handbook treats them as synonyms (§10.4).",
+      "source": "WHO handbook for guideline development (2014) §10.4",
+      "codes": [
+        { "code": "strong", "definition": "The desirable effects of adherence clearly outweigh the undesirable. Handbook §10.4.1." },
+        { "code": "conditional", "definition": "Less certain about the balance of benefits and harms; generally states the conditions under which to implement. Also called weak. Handbook §10.4.2." }
+      ]
+    },
+    {
+      "id": "certainty",
+      "note": "GRADE certainty of evidence. The 2014 handbook calls it quality of evidence and names certainty as a synonym (§9.1). Rated per outcome on evidence; the overall certainty on a recommendation is the lowest across its critical outcomes (§9.6).",
+      "source": "WHO handbook for guideline development (2014) §9.1, §9.5–9.6",
+      "codes": [
+        { "code": "high", "definition": "Very confident the true effect lies close to the estimate." },
+        { "code": "moderate", "definition": "Moderately confident; the true effect is likely close to the estimate but may be substantially different." },
+        { "code": "low", "definition": "Limited confidence; the true effect may be substantially different." },
+        { "code": "very-low", "definition": "Very little confidence; the true effect is likely substantially different. Not the same as no evidence — that is kind no-recommendation." }
+      ]
+    },
+    {
+      "id": "outcome-importance",
+      "note": "How the guideline development group rated an outcome on the 1–9 scale: 7–9 critical, 4–6 important. Unimportant outcomes are not carried into evidence profiles, so they have no code here.",
+      "source": "WHO handbook for guideline development (2014) §7.6, Fig. 7.1",
+      "codes": [
+        { "code": "critical", "definition": "Rated 7–9: critical for decision-making. Only critical outcomes determine overall certainty." },
+        { "code": "important", "definition": "Rated 4–6: important but not critical for decision-making." }
+      ]
+    },
+    {
+      "id": "recommendation-status",
+      "note": "Whether a recommendation is still in force. Recommendations in one guideline go out of date at different times (§1.7.2), and a department that doubts a recommendation's validity should say so before the update is done (§12.5.4). This is what impact analysis filters on.",
+      "source": "WHO handbook for guideline development (2014) §1.7.2, §12.5",
+      "codes": [
+        { "code": "current", "definition": "In force." },
+        { "code": "under-review", "definition": "Flagged as possibly out of date, with an update planned. Handbook §12.5.4." },
+        { "code": "superseded", "definition": "Replaced by another recommendation, reached by supersedes." },
+        { "code": "withdrawn", "definition": "Withdrawn without replacement." }
+      ]
+    },
+    {
+      "id": "resolution-status",
+      "note": "Whether a citation string has been matched to what it cites. `ambiguous` is a legitimate terminal state — two publications with similar titles is a question for a person — and must not be collapsed to resolved.",
+      "source": "docs/SCOPE.md",
+      "codes": [
+        { "code": "unresolved", "definition": "Not yet matched." },
+        { "code": "resolved", "definition": "Matched; a resolvesTo edge says to what." },
+        { "code": "ambiguous", "definition": "More than one candidate, and choosing is a judgement for a person." }
+      ]
     }
   ],
 
   "predicates": [
-    { "predicate": "contains", "iri": "http://smart.who.int/kg/contains", "note": "Structural containment. A publication contains sections; a section contains recommendations." },
-    { "predicate": "supersedes", "iri": "http://smart.who.int/kg/supersedes", "note": "This publication replaces that one. Guideline updates are the reason impact analysis matters." },
+    { "predicate": "contains", "iri": "http://smart.who.int/kg/contains", "note": "Structural containment. A publication contains sections; a section contains subsections and recommendations." },
+    { "predicate": "hasSupplement", "iri": "http://smart.who.int/kg/hasSupplement", "note": "A guideline to its web annex or supplementary document — where the systematic reviews, GRADE evidence profiles and evidence-to-decision tables usually are (handbook §12.1)." },
+    { "predicate": "supersedes", "iri": "http://smart.who.int/kg/supersedes", "note": "This replaces that. Between publications, and between individual recommendations, because recommendations are updated one at a time (handbook §1.7.2, §12.5). Guideline updates are the reason impact analysis matters." },
     { "predicate": "refines", "iri": "http://smart.who.int/kg/refines", "note": "A recommendation narrows or conditions another, rather than replacing it." },
-    { "predicate": "hasPopulation", "iri": "http://smart.who.int/kg/hasPopulation", "note": "PICO." },
-    { "predicate": "hasIntervention", "iri": "http://smart.who.int/kg/hasIntervention", "note": "PICO." },
-    { "predicate": "hasComparator", "iri": "http://smart.who.int/kg/hasComparator", "note": "PICO." },
-    { "predicate": "hasOutcome", "iri": "http://smart.who.int/kg/hasOutcome", "note": "PICO." },
-    { "predicate": "supportedBy", "iri": "http://smart.who.int/kg/supportedBy", "note": "Recommendation to its body of evidence, carrying GRADE certainty." },
+    { "predicate": "restates", "iri": "http://smart.who.int/kg/restates", "note": "A recommendation carried unchanged from another publication — a consolidated guideline, a position paper or a summary table repeating a recommendation made elsewhere. The handbook requires such recommendations to be explicitly cross-referenced (§1.7.2). Distinct from supersedes (replaces) and refines (narrows)." },
+    { "predicate": "answers", "iri": "http://smart.who.int/kg/answers", "note": "A recommendation answers a key question. Many-to-many: \"a one-to-one relationship between recommendations and key questions does not exist\" (handbook §7.4)." },
+    { "predicate": "addresses", "iri": "http://smart.who.int/kg/addresses", "note": "A body of evidence addresses a key question." },
+    { "predicate": "aboutIntervention", "iri": "http://smart.who.int/kg/aboutIntervention", "note": "The I of a key question's PICO, as the health intervention it concerns — so the question joins the same node its recommendations recommend." },
+    { "predicate": "reportedIn", "iri": "http://smart.who.int/kg/reportedIn", "note": "Where a body of evidence is published — usually a web annex holding the GRADE evidence profile (handbook §10.6, §12.1)." },
+    { "predicate": "supportedBy", "iri": "http://smart.who.int/kg/supportedBy", "note": "Recommendation to the evidence it rests on, one edge per outcome." },
     { "predicate": "hasRemark", "iri": "http://smart.who.int/kg/hasRemark", "note": "Implementation consideration. Often the part a DAK author actually acts on." },
     { "predicate": "recommends", "iri": "http://smart.who.int/kg/recommends", "note": "A recommendation is about a health intervention. The hinge to L2." },
     { "predicate": "definedIn", "iri": "http://smart.who.int/kg/definedIn", "note": "A schedule or indicator is normatively defined in a publication." },
@@ -55,16 +172,17 @@
       "name": "Publication",
       "kind": "Source",
       "iri": "http://smart.who.int/kg/publication",
-      "note": "A WHO normative publication: a guideline, guidance, recommendation summary, or classification. Metadata follows Dublin Core, which HealthInterventions already uses.",
-      "properties": ["title", "creator", "publisher", "date", "version", "identifier", "language", "rights", "url", "sha256", "publicationType"],
-      "propertyNote": "publicationType distinguishes normative guideline from guidance from summary table — a summary table restates recommendations made elsewhere, and conflating the two makes provenance wrong. identifier holds ISBN/ISSN/DOI, as CDHIv2 already does. sha256 pins the PDF."
+      "note": "A WHO publication: a guideline of any of the handbook's types, a position paper, a summary table, a classification, implementation guidance, or a supplement to one of these. Metadata follows Dublin Core, which HealthInterventions already uses.",
+      "properties": ["title", "creator", "publisher", "issued", "modified", "version", "identifier", "language", "rights", "url", "sha256", "publicationType", "grcStatus", "reviewBy"],
+      "valueSets": { "publicationType": "publication-type", "grcStatus": "grc-status" },
+      "propertyNote": "issued and modified are Dublin Core: the publication date and the date of the latest correction or update, kept apart because an erratum changes the PDF and so its sha256. reviewBy is the date by which the handbook requires the guideline to be re-examined (§12.5.1). identifier holds ISBN/ISSN/DOI, as CDHIv2 already does. sha256 pins the PDF."
     },
     {
       "id": "publication-section",
       "name": "Publication section",
       "kind": "Source",
       "iri": "http://smart.who.int/kg/publication-section",
-      "note": "A chapter, annex or numbered section. Recommendations are located by section and page, which is what makes an extraction checkable.",
+      "note": "A chapter, annex or numbered section, at any depth. Recommendations are located by section and page, which is what makes an extraction checkable; they often sit in a subsection, so sections nest.",
       "properties": ["heading", "number", "pageRange"]
     },
     {
@@ -72,37 +190,45 @@
       "name": "Recommendation",
       "kind": "Concept",
       "iri": "http://smart.who.int/kg/recommendation",
-      "note": "The atomic normative statement. This is the node nothing in the WHO estate currently makes addressable.",
-      "properties": ["identifier", "statement", "strength", "certainty", "conditionality", "status"],
-      "propertyNote": "statement is a VERBATIM quote, never a paraphrase — a paraphrased recommendation is a new recommendation. strength is GRADE (strong | conditional); certainty is GRADE (high | moderate | low | very-low); conditionality records the 'in settings where…' qualifier that decides whether a DAK can adopt it unchanged."
+      "note": "The atomic normative statement. This is the node nothing in the WHO estate currently makes addressable. Kinds other than a graded recommendation — good practice statements, context-specific and research-only recommendations, and the decision to make none — are the same node with a different `kind`, because each answers a key question and each is what a DAK would trace to.",
+      "properties": ["identifier", "statement", "kind", "direction", "strength", "overallCertainty", "justification", "conditionality", "status"],
+      "valueSets": { "kind": "recommendation-kind", "direction": "recommendation-direction", "strength": "recommendation-strength", "overallCertainty": "certainty", "status": "recommendation-status" },
+      "propertyNote": "statement is a VERBATIM quote, never a paraphrase — a paraphrased recommendation is a new recommendation. direction and strength are GRADE and come as a pair: one without the other is rejected. overallCertainty is the certainty printed with the recommendation — the lowest across its critical outcomes (handbook §9.6); per-outcome certainty lives on evidence. justification is the stated reason for the direction and strength (§10.6). conditionality records the 'in settings where…' qualifier that decides whether a DAK can adopt it unchanged. Outcomes are deliberately absent: the handbook says a recommendation should not name them (§10.6), so they belong to the key question."
     },
     {
       "id": "remark",
       "name": "Remark",
       "kind": "Concept",
       "iri": "http://smart.who.int/kg/remark",
-      "note": "An implementation consideration attached to a recommendation. Grounded: the BCG table's first annotationEntry carries exactly this — \"Neonates born to women of unknown HIV status should be vaccinated as the benefits…\" — clinical nuance that shapes the decision logic but is not the recommendation itself.",
+      "note": "An implementation consideration attached to a recommendation — the handbook requires \"a set of remarks explaining the conditions and context in which the recommendation applies\" (§10.6). Grounded in the estate too: the BCG table's first annotationEntry carries exactly this — \"Neonates born to women of unknown HIV status should be vaccinated as the benefits…\" — clinical nuance that shapes the decision logic but is not the recommendation itself.",
       "properties": ["text"]
+    },
+    {
+      "id": "key-question",
+      "name": "Key question",
+      "kind": "Concept",
+      "iri": "http://smart.who.int/kg/key-question",
+      "note": "A foreground question in PICO format, framed before the evidence search and answered by one or more recommendations (handbook §7.1–7.4). PICO lives here rather than on the recommendation for three reasons: questions and recommendations are many-to-many; certainty is graded per question and outcome, not per recommendation; and the comparator and outcomes are written in the question and its evidence profile, not in the recommendation text — putting them on the recommendation would make an extractor invent them. P, I, C and O are verbatim text properties; I is also joined to a health-intervention through aboutIntervention, and codes are reached through crossReferences.",
+      "properties": ["identifier", "text", "population", "intervention", "comparator", "outcomes", "setting"],
+      "propertyNote": "text is the question verbatim. population, intervention and comparator are verbatim PICO elements; setting is carried separately where the source states one, though the handbook folds it into P or I (§7.2). comparator is often absent, and absence is recorded, not invented. outcomes lists the outcomes the question names, as text — outcome is not a node (see deliberatelyOmitted)."
     },
     {
       "id": "evidence",
       "name": "Evidence",
       "kind": "Concept",
       "iri": "http://smart.who.int/kg/evidence",
-      "note": "The body of evidence behind a recommendation, with its GRADE certainty rating.",
-      "properties": ["summary", "certainty", "studyCount", "citation"]
+      "note": "One row of a GRADE evidence profile: the body of evidence for one outcome of one key question, with its certainty (handbook §9.2). Certainty attaches to a body of evidence per outcome, never to a single study.",
+      "properties": ["outcome", "outcomeImportance", "certainty", "summary", "studyCount", "citation"],
+      "valueSets": { "outcomeImportance": "outcome-importance", "certainty": "certainty" },
+      "propertyNote": "outcome names the outcome this row is about, as the profile writes it. citation is the systematic review it comes from, as text."
     },
-    { "id": "population", "name": "Population", "kind": "Concept", "iri": "http://smart.who.int/kg/population", "note": "PICO P.", "properties": ["description", "ageRange", "qualifier"] },
-    { "id": "intervention", "name": "Intervention", "kind": "Concept", "iri": "http://smart.who.int/kg/intervention", "note": "PICO I. The clinical or public-health action, distinct from health-intervention, which is the DAK-facing component.", "properties": ["description"] },
-    { "id": "comparator", "name": "Comparator", "kind": "Concept", "iri": "http://smart.who.int/kg/comparator", "note": "PICO C. Frequently absent in WHO recommendations; absence is recorded rather than invented.", "properties": ["description"] },
-    { "id": "outcome", "name": "Outcome", "kind": "Concept", "iri": "http://smart.who.int/kg/outcome", "note": "PICO O.", "properties": ["description"] },
 
     {
       "id": "health-intervention",
       "name": "Health intervention",
       "kind": "Concept",
       "iri": "http://smart.who.int/kg/health-intervention",
-      "note": "What a recommendation is about, and the hinge to L2. Corresponds to the DAK component smart-base defines as HealthInterventions — today `id`, `description[x]` and `reference 1..* DublinCore`, i.e. a bibliographic citation with no recommendation behind it. This class is what that citation should resolve to.",
+      "note": "What a recommendation is about, and the hinge to L2. Also the I of a key question's PICO, reached by aboutIntervention. Corresponds to the DAK component smart-base defines as HealthInterventions — today `id`, `description[x]` and `reference 1..* DublinCore`, i.e. a bibliographic citation with no recommendation behind it. This class is what that citation should resolve to.",
       "properties": ["identifier", "name", "description"]
     },
     {
@@ -146,7 +272,8 @@
       "iri": "http://smart.who.int/kg/citation",
       "note": "A citation string exactly as it appears in an L2 or L3 artefact, together with what it was resolved to. Grounded directly in the BCG table, where every rule's annotationEntry[1] reads \"WHO recommendations for routine immunization – summary tables (March 2023) (1)\" — a citation that no tool can currently follow. This class is where that string becomes a link, and where the fact that resolving it was a judgement gets recorded.",
       "properties": ["text", "location", "numbering", "resolutionStatus"],
-      "propertyNote": "text is verbatim. location is the artefact path plus the element id — e.g. the DMN rule id. numbering preserves the \"(1)\" back-reference into the source document's own bibliography. resolutionStatus is unresolved | resolved | ambiguous; ambiguous is a legitimate terminal state and must not be collapsed to resolved."
+      "valueSets": { "resolutionStatus": "resolution-status" },
+      "propertyNote": "text is verbatim. location is the artefact path plus the element id — e.g. the DMN rule id. numbering preserves the \"(1)\" back-reference into the source document's own bibliography."
     },
     {
       "id": "external-artifact",
@@ -160,15 +287,19 @@
 
   "edges": [
     { "predicate": "contains", "source": "publication", "target": "publication-section" },
+    { "predicate": "contains", "source": "publication-section", "target": "publication-section", "qualifier": "subsection" },
     { "predicate": "contains", "source": "publication-section", "target": "recommendation" },
     { "predicate": "contains", "source": "publication", "target": "recommendation", "qualifier": "unsectioned", "note": "A short publication may carry recommendations directly." },
+    { "predicate": "hasSupplement", "source": "publication", "target": "publication" },
     { "predicate": "supersedes", "source": "publication", "target": "publication" },
+    { "predicate": "supersedes", "source": "recommendation", "target": "recommendation" },
     { "predicate": "refines", "source": "recommendation", "target": "recommendation" },
+    { "predicate": "restates", "source": "recommendation", "target": "recommendation" },
 
-    { "predicate": "hasPopulation", "source": "recommendation", "target": "population" },
-    { "predicate": "hasIntervention", "source": "recommendation", "target": "intervention" },
-    { "predicate": "hasComparator", "source": "recommendation", "target": "comparator" },
-    { "predicate": "hasOutcome", "source": "recommendation", "target": "outcome" },
+    { "predicate": "answers", "source": "recommendation", "target": "key-question" },
+    { "predicate": "aboutIntervention", "source": "key-question", "target": "health-intervention" },
+    { "predicate": "addresses", "source": "evidence", "target": "key-question" },
+    { "predicate": "reportedIn", "source": "evidence", "target": "publication" },
     { "predicate": "supportedBy", "source": "recommendation", "target": "evidence" },
     { "predicate": "hasRemark", "source": "recommendation", "target": "remark" },
 
@@ -184,9 +315,7 @@
     { "predicate": "derivedFrom", "source": "indicator", "target": "recommendation" },
 
     { "predicate": "crossReferences", "source": "recommendation", "target": "terminology-code" },
-    { "predicate": "crossReferences", "source": "population", "target": "terminology-code" },
-    { "predicate": "crossReferences", "source": "intervention", "target": "terminology-code" },
-    { "predicate": "crossReferences", "source": "outcome", "target": "terminology-code" },
+    { "predicate": "crossReferences", "source": "key-question", "target": "terminology-code" },
     { "predicate": "crossReferences", "source": "schedule-entry", "target": "terminology-code" },
     { "predicate": "crossReferences", "source": "indicator", "target": "terminology-code" },
     { "predicate": "crossReferences", "source": "health-intervention", "target": "terminology-code" },
@@ -201,5 +330,40 @@
     { "predicate": "implementedBy", "source": "schedule-entry", "target": "external-artifact" },
     { "predicate": "implementedBy", "source": "indicator", "target": "external-artifact" },
     { "predicate": "implementedBy", "source": "health-intervention", "target": "external-artifact" }
+  ],
+
+  "deliberatelyOmitted": [
+    {
+      "what": "Population, intervention, comparator and outcome as classes, with hasPopulation / hasIntervention / hasComparator / hasOutcome from the recommendation",
+      "why": "Removed in 2.0. They hung PICO off the wrong node. The handbook frames PICO on the key question (§7.2), makes questions and recommendations many-to-many (§7.4), and says a recommendation should not name outcomes (§10.6) — so an extractor filling hasOutcome or hasComparator from a recommendation's text would be inventing them. PICO is now properties of key-question, and I is joined to health-intervention."
+    },
+    {
+      "what": "Outcome as a node",
+      "why": "Would make per-outcome certainty and the critical/important rating traversable. None of L1's three questions — impact, coverage, citation resolution — traverses an outcome, and evidence rows carry the outcome as text. Add it when the first guideline's evidence annex is extracted and a consumer needs to join across outcomes."
+    },
+    {
+      "what": "Evidence-to-decision criteria as properties or nodes",
+      "why": "The judgement a DAK adapter would most like to read, and no L1 question needs it. The vocabulary is also unsettled: the 2014 handbook lists eight factors (Table 10.1), the GRADE EtD framework for clinical and public-health recommendations has twelve (Alonso-Coello et al., BMJ 2016). Choosing one is a decision to make with a consumer in hand."
+    },
+    {
+      "what": "The reasons certainty was rated down or up",
+      "why": "Risk of bias, inconsistency, indirectness, imprecision, publication bias; large effect, dose-response, confounding (handbook §9.5). They live in the evidence profile, which evidence points at through reportedIn. Nothing here re-examines a grade."
+    },
+    {
+      "what": "Research gaps and future-research questions",
+      "why": "The handbook asks for them in PICO form (§10.8). They are unanswered key questions with no recommendation, and nothing in the DAK estate reads them."
+    },
+    {
+      "what": "Contributors, the guideline development group, declarations of interest, funding",
+      "why": "Required in the guideline document (§12.1) and irrelevant to impact, coverage or citation resolution."
+    },
+    {
+      "what": "Translations as linked publications",
+      "why": "Handbook §12.4.3. No citation in the DAK estate is known to point at a translated edition. Add a translationOf edge when one does."
+    },
+    {
+      "what": "Typed identifiers (ISBN, IRIS handle, DOI as separate fields)",
+      "why": "On hold. identifier stays one field for now."
+    }
   ]
 }

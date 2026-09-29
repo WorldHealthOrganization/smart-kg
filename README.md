@@ -47,7 +47,7 @@ cross-model edge everyone wants **already exists in the artefact** — it just h
 
 | Path | Contents |
 |---|---|
-| [`ontology/l1/`](ontology/l1/) | **L1** — recommendations, evidence, PICO, citations. 16 classes, 35 edges |
+| [`ontology/l1/`](ontology/l1/) | **L1** — publications, recommendations, key questions (PICO), GRADE evidence, citations. 13 classes, 37 edges, 9 value sets |
 | [`ontology/l2/`](ontology/l2/) | **DAK components** — nine, plus scheduling. 13 classes, 41 edges. Imports L1 |
 | [`ontology/l2-bpmn/`](ontology/l2-bpmn/) | **BPMN interiors.** 6 classes, 20 edges. Imports L2 |
 | [`ontology/l2-dmn/`](ontology/l2-dmn/) | **DMN interiors.** 6 classes, 10 edges. Imports L2-BPMN |
@@ -71,16 +71,27 @@ produce documents; those belong with that DAK's build, not here. See
 
 ## The L1 model
 
-Sixteen classes in four groups. Every one is grounded in an artefact that exists today —
-`ontology/l1.json` records which, per class, in its `groundedIn` and `note` fields.
+Thirteen classes in four groups, and nine closed value sets. Every class is grounded in an artefact
+that exists today — `ontology/l1/l1.json` records which in its `groundedIn` and `note` fields. The
+normative half follows the *WHO handbook for guideline development* (2nd ed., 2014), the Guideline
+Review Committee's own rulebook for what a WHO guideline must contain, cited by section and page.
 
 **Source** — `publication`, `publication-section`. Dublin Core metadata, because
-`HealthInterventions.fsh` already carries `reference 1..* DublinCore`. `identifier` holds ISBN/DOI,
-as `CDHIv2.fsh` already does with `ISBN 978-92-4-008194-9`.
+`HealthInterventions.fsh` already carries `reference 1..* DublinCore`: `issued` and `modified`
+kept apart, `identifier` for ISBN/DOI as `CDHIv2.fsh` already does. `publicationType` separates the
+handbook's guideline types from position papers, summary tables, classifications and
+implementation guidance — a summary table restates recommendations made elsewhere, and citing it
+as the authority gets provenance wrong. `grcStatus` and `reviewBy` say whether it is approved and
+when it must be re-examined. Sections nest; a guideline reaches its web annex by `hasSupplement`.
 
-**Normative content** — `recommendation` (verbatim statement, GRADE strength and certainty,
-conditionality), `remark`, `evidence`, and PICO as `population` / `intervention` / `comparator` /
-`outcome`.
+**Normative content** — `recommendation` (verbatim statement, `kind`, GRADE `direction` and
+`strength`, `overallCertainty`, `justification`, `conditionality`, `status`), `remark`,
+`key-question` and `evidence`. PICO belongs to the **key question**, not the recommendation: the
+handbook makes questions and recommendations many-to-many (§7.4) and says a recommendation should
+not name its outcomes (§10.6), so hanging a comparator off a recommendation would make an extractor
+invent it. `evidence` is one row of a GRADE evidence profile — one outcome of one question, with
+its certainty. Recommendations can `supersede`, `refine` or `restate` each other individually,
+because WHO updates them one at a time.
 
 **What DAKs consume** — `health-intervention` (the hinge to L2), `schedule` and `schedule-entry`
 (antigen, dose, target age, minimum interval — the granularity BCG's rules actually turn on), and
@@ -223,7 +234,7 @@ classes from the ones it imports, and Cypher does not treat an empty `MATCH` as 
 out of order silently drops those edges. Every class node carries `layer`, so one subgraph is
 selectable on its own. See [`docs/VISUALIZING.md`](docs/VISUALIZING.md).
 
-**Protégé** — `ontology/all.ttl` is the whole model merged, 835 triples, and parses as one document.
+**Protégé** — `ontology/all.ttl` is the whole model merged, 1409 triples, and parses as one document.
 Pairwise edge licensing is carried as qualified sub-properties, since licensing here is per
 class-pair while an OWL object property has one global domain and range.
 
@@ -234,21 +245,24 @@ class-pair while an OWL object property has one global domain and range.
 | Tier | Checks | By |
 |---|---|---|
 | **T1 Shape** | Document matches the graph schema | JSON Schema 2020-12 |
-| **T2 Conformance** | Node types are declared classes; edges are licensed; references resolve across the document set; properties are declared; a `resolved` citation or join actually resolves | `tools/validate.mjs` |
+| **T2 Conformance** | Node types are declared classes; edges are licensed; references resolve across the document set; properties are declared; a property bound to a value set holds one of its codes; GRADE direction and strength come as a pair, and ungraded kinds carry neither; a `resolved` citation or join actually resolves | `tools/validate.mjs` |
 | **T3 Fidelity** | Does the graph faithfully represent the PDF, the BPMN, the DMN? | Human. Never auto-passed |
 
-T2 is negative-tested by [`tools/negative-test.mjs`](tools/negative-test.mjs) — 20 cases, run in CI.
+T2 is negative-tested by [`tools/negative-test.mjs`](tools/negative-test.mjs) — 37 cases, run in CI.
 The documents it checks are built in the test rather than committed, because this repository holds
 no data.
 Unknown classes, unlicensed edges, undeclared properties, citations falsely claiming resolution, a
-join resolved against a placeholder, a resolved join with no evidence, and an invented
-`resolutionStatus` are each rejected with a located message, in the subgraphs as well as the base
-layers. Five cases assert the opposite — a free-text BPMN branch label, an unresolved join, and a
-reference into another layer's document must **not** be reported — because a check that fires on the
+join resolved against a placeholder, a resolved join with no evidence, an invented
+`resolutionStatus`, a value outside its value set (`"Strong"` for `strong`), a direction without a
+strength, a graded good practice statement, and PICO hung back on a recommendation are each rejected with a located message, in the subgraphs as well as the base
+layers. Eight cases assert the opposite — a free-text BPMN branch label, an unresolved join, a
+reference into another layer's document, and a good practice statement with a direction but no
+strength must **not** be reported — because a check that fires on the
 normal case trains people to ignore it.
 
 Loading an ontology also checks it: every class an edge names and every predicate it uses must be
-declared in that layer or something it imports. That check caught a real typo the first time it ran.
+declared in that layer or something it imports, and every value-set binding must name a declared
+property and a declared value set. That check caught a real typo the first time it ran.
 
 ---
 

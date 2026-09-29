@@ -19,11 +19,14 @@ import { validateGraph, layerOf } from "./validate.mjs";
 import { loadLayer } from "./ontology.mjs";
 
 const NS = "https://example.org/dak";
+// Every layer shares one schemaVersion -- loadLayer refuses an import across versions -- so the
+// fixtures read it rather than pinning a copy that goes stale on the next bump.
+const VERSION = loadLayer("l1").own.schemaVersion;
 const doc = (layer, nodes, edges) => ({
   "@context": `http://smart.who.int/kg/${layer}.context.jsonld`,
   id: `${NS}/kg/${layer}`,
   type: "Entity",
-  ontologyVersion: "1.0",
+  ontologyVersion: VERSION,
   generatedAt: "2026-01-01T00:00:00Z",
   wasDerivedFrom: [{ path: "fixture", sha256: "0".repeat(64) }],
   nodes,
@@ -45,14 +48,69 @@ const inferred = (why) => ({
 const DMN_FILE = `${NS}/artifact/DT.EXAMPLE`;
 const CITATION = `${NS}/citation/abc123abc123`;
 
+// The normative half of L1: one guideline, its annex, a key question in PICO form, one row of its
+// evidence profile, and three statements of different kinds answering the question -- the shape
+// the WHO guideline development handbook prescribes (chapters 7, 9 and 10).
+const GL = `${NS}/publication/example-guideline`;
+const ANNEX = `${GL}/annex-1`;
+const SEC = `${GL}/section/3`;
+const SUBSEC = `${GL}/section/3.1`;
+const KQ = `${GL}/key-question/1`;
+const EVID = `${GL}/evidence/kq1-mortality`;
+const HI = `${NS}/health-intervention/example-vaccine`;
+const REC = `${GL}/recommendation/1`;
+const GPS = `${GL}/recommendation/2`;
+const NOREC = `${GL}/recommendation/3`;
+const quoted = (q) => ({ ...inferred("extracted from the guideline PDF"),
+                         evidence: { location: "example-guideline.pdf p12", quote: q } });
+
 const L1 = doc("l1", [
   n(DMN_FILE, "external-artifact", "Example decision table",
     { iri: DMN_FILE, targetKind: "dmn:DecisionTable" }),
   n(CITATION, "citation", "Example guideline (1)",
     { text: "Example guideline (1)", location: "fixture#rule1", numbering: "1",
       resolutionStatus: "unresolved" }),
+  n(GL, "publication", "Example guideline",
+    { title: "Example guideline", issued: "2024-01-01", publicationType: "standard-guideline",
+      grcStatus: "approved", reviewBy: "2029-01-01", sha256: "3".repeat(64) }),
+  n(ANNEX, "publication", "Example guideline, web annex 1",
+    { title: "Web annex 1: evidence profiles", publicationType: "supplement" }),
+  n(SEC, "publication-section", "3 Recommendations", { heading: "Recommendations", number: "3" }),
+  n(SUBSEC, "publication-section", "3.1 Vaccination", { heading: "Vaccination", number: "3.1", pageRange: "12-13" }),
+  n(KQ, "key-question", "KQ1", {
+    text: "In infants, does vaccine X compared with no vaccination reduce mortality?",
+    population: "infants", intervention: "vaccine X", comparator: "no vaccination",
+    outcomes: ["mortality", "serious adverse events"] }, quoted("In infants, does vaccine X…")),
+  n(EVID, "evidence", "KQ1 mortality", {
+    outcome: "mortality", outcomeImportance: "critical", certainty: "moderate", studyCount: 4 },
+    { ...inferred("one row of the GRADE evidence profile"),
+      evidence: { location: "annex-1.pdf p3", quote: "Mortality … MODERATE" } }),
+  n(HI, "health-intervention", "Vaccine X", { name: "Vaccine X" }),
+  n(REC, "recommendation", "Recommendation 1", {
+    statement: "We recommend vaccine X for all infants.", kind: "recommendation",
+    direction: "for", strength: "strong", overallCertainty: "moderate", status: "current" },
+    quoted("We recommend vaccine X for all infants.")),
+  n(GPS, "recommendation", "Good practice statement", {
+    statement: "Vaccinators should record every dose given.", kind: "good-practice-statement",
+    direction: "for" }, quoted("Vaccinators should record every dose given.")),
+  n(NOREC, "recommendation", "No recommendation", {
+    statement: "No recommendation can be made on a booster dose.", kind: "no-recommendation" },
+    quoted("No recommendation can be made on a booster dose.")),
 ], [
   e("appearsIn", CITATION, DMN_FILE),
+  e("hasSupplement", GL, ANNEX),
+  e("contains", GL, SEC),
+  e("contains", SEC, SUBSEC, { qualifier: "subsection" }),
+  e("contains", SUBSEC, REC),
+  e("contains", SUBSEC, GPS),
+  e("contains", SUBSEC, NOREC),
+  e("answers", REC, KQ),
+  e("answers", NOREC, KQ),
+  e("aboutIntervention", KQ, HI),
+  e("addresses", EVID, KQ),
+  e("reportedIn", EVID, ANNEX),
+  e("supportedBy", REC, EVID),
+  e("recommends", REC, HI),
 ]);
 
 const DAK = `${NS}/kg/dak`;
@@ -188,6 +246,7 @@ const clone = (o) => JSON.parse(JSON.stringify(o));
 const index = (...docs) => new Map(docs.flatMap((d) => (d.nodes ?? []).map((x) => [x.id, x])));
 const find = (d, type) => d.nodes.find((x) => x.type === type);
 const findEdge = (d, predicate) => d.edges.find((x) => x.predicate === predicate);
+const byId = (d, id) => d.nodes.find((x) => x.id === id);
 
 const cases = [
   // --- rules that predate the subgraphs ---------------------------------------------------------
@@ -204,6 +263,39 @@ const cases = [
     delete find(d, "citation").properties.text;
   }, /carries no verbatim text/],
   ["version mismatch stops the run", L1, (d) => { d.ontologyVersion = "0.9"; }, /Nothing below was checked/],
+
+  // --- L1 normative content: value sets and GRADE ------------------------------------------------
+  ["a strength outside the value set is rejected", L1, (d) => {
+    byId(d, REC).properties.strength = "Strong";
+  }, /not a code in value set "recommendation-strength"/],
+  ["a publication type outside the value set is rejected", L1, (d) => {
+    byId(d, GL).properties.publicationType = "guideline";
+  }, /not a code in value set "publication-type"/],
+  ["an invented resolutionStatus on a citation node is rejected", L1, (d) => {
+    find(d, "citation").properties.resolutionStatus = "probably";
+  }, /not a code in value set "resolution-status"/],
+  ["a direction without a strength is rejected", L1, (d) => {
+    delete byId(d, REC).properties.strength;
+  }, /carries direction without strength/],
+  ["a graded recommendation with neither direction nor strength is rejected", L1, (d) => {
+    delete byId(d, REC).properties.strength; delete byId(d, REC).properties.direction;
+  }, /graded -- and carries no direction or strength/],
+  ["a good practice statement carrying a strength is rejected", L1, (d) => {
+    byId(d, GPS).properties.strength = "strong";
+  }, /A good practice statement is ungraded/],
+  ["a no-recommendation carrying a direction is rejected", L1, (d) => {
+    byId(d, NOREC).properties.direction = "against";
+  }, /No recommendation was made/],
+  ["PICO is no longer hung off the recommendation", L1, (d) => {
+    d.nodes.push(n(`${KQ}/comparator`, "comparator", "no vaccination", { description: "no vaccination" }));
+  }, /does not declare/],
+  ["evidence does not answer a key question; a recommendation does", L1, (d) => {
+    d.edges.push(e("answers", EVID, KQ));
+  }, /is not licensed by the ontology/],
+  ["certainty on a recommendation is overallCertainty, not certainty", L1, (d) => {
+    byId(d, REC).properties.certainty = "moderate";
+  }, /does not declare/],
+  ["a good practice statement with a direction and no strength is not a finding", L1, null, null],
 
   // --- the DAK component layer ------------------------------------------------------------------
   ["unlicensed edge is rejected", L2, (d) => {

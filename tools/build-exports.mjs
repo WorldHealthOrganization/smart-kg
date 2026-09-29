@@ -230,6 +230,32 @@ export function buildTurtle(ont, layer = { own: ont, imported: { classes: [], pr
     T.push("");
   }
 
+  // Value sets are closed code lists bound to class properties; validate.mjs rejects any other
+  // value. They go out as SKOS so a reader in Protege sees the vocabulary, not just its name.
+  if ((ont.valueSets ?? []).length) {
+    T.push("### Value sets", "# Closed code lists bound to class properties. tools/validate.mjs rejects any other value.", "");
+    const boundTo = new Map();
+    for (const c of scopeOf(layer).classes.values()) {
+      for (const [prop, set] of Object.entries(c.valueSets ?? {})) {
+        if (!boundTo.has(set)) boundTo.set(set, []);
+        boundTo.get(set).push(`${c.id}.${prop}`);
+      }
+    }
+    for (const v of ont.valueSets) {
+      const scheme = `${NS}valueset/${v.id}`;
+      T.push(`<${scheme}> a skos:ConceptScheme ;`);
+      T.push(`  skos:notation "${tt(v.id)}" ;`);
+      if (v.source) T.push(`  skos:note "source: ${tt(v.source)}" ;`);
+      if (boundTo.has(v.id)) T.push(`  skos:note "bound to: ${boundTo.get(v.id).join(", ")}" ;`);
+      T.push(`  rdfs:comment "${tt(v.note ?? "")}" .`);
+      for (const c of v.codes) {
+        T.push(`<${scheme}#${c.code}> a skos:Concept ; skos:inScheme <${scheme}> ; ` +
+               `skos:notation "${tt(c.code)}" ; skos:definition "${tt(c.definition ?? "")}" .`);
+      }
+      T.push("");
+    }
+  }
+
   T.push("### Object properties (the ArchiMate relationship vocabulary)", "");
   const used = new Set(ont.edges.map((e) => e.predicate));
   for (const p of ont.predicates) {

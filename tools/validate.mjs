@@ -166,6 +166,55 @@ export function validateGraph(doc, loaded, external = new Map()) {
     }
   }
 
+  // Value conformance. Where a class binds a property to a value set, the value must be one of its
+  // codes. Before value sets these vocabularies were prose in a propertyNote, and "Strong",
+  // "STRONG" and "weak" all passed -- after which a coverage query filtering on "strong" silently
+  // missed two of the three.
+  const valueSets = scope.valueSets ?? new Map();
+  const codesOf = (id) => (valueSets.get(id)?.codes ?? []).map((c) => c.code);
+  for (const n of nodes.values()) {
+    const bindings = classes.get(n.type)?.valueSets ?? {};
+    for (const [prop, setId] of Object.entries(bindings)) {
+      const value = n.properties?.[prop];
+      if (value === undefined || value === null) continue;
+      const codes = codesOf(setId);
+      if (!codes.includes(value)) {
+        errors.push(`node "${n.id}" (${n.type}) has ${prop} "${value}", which is not a code in ` +
+                    `value set "${setId}". Permitted: ${codes.join(", ")}`);
+      }
+    }
+  }
+
+  // GRADE's own rules about which of those values go together. A graded recommendation has a
+  // direction AND a strength -- one without the other is not a GRADE recommendation, and "not
+  // recommended" without a direction is the ambiguity the handbook warns about (§10.6). A good
+  // practice statement is ungraded by definition, and a decision to make no recommendation has
+  // neither a direction nor a strength to carry.
+  for (const n of nodes.values()) {
+    if (n.type !== "recommendation") continue;
+    const p = n.properties ?? {};
+    const kind = p.kind;
+    const has = (k) => p[k] !== undefined && p[k] !== null;
+    if (has("direction") !== has("strength") && kind !== "good-practice-statement") {
+      errors.push(`recommendation "${n.id}" carries ${has("direction") ? "direction" : "strength"} ` +
+                  `without ${has("direction") ? "strength" : "direction"}. GRADE states the two ` +
+                  `together; record both, or neither if the source gives neither.`);
+    }
+    if (kind === "recommendation" && !has("direction") && !has("strength")) {
+      errors.push(`recommendation "${n.id}" is kind "recommendation" -- graded -- and carries no ` +
+                  `direction or strength. If the source does not grade it, it is another kind.`);
+    }
+    if (kind === "good-practice-statement" || kind === "no-recommendation") {
+      const graded = ["strength", "overallCertainty", ...(kind === "no-recommendation" ? ["direction"] : [])]
+        .filter(has);
+      if (graded.length) {
+        errors.push(`recommendation "${n.id}" is kind "${kind}" and carries ${graded.join(", ")}. ` +
+                    `${kind === "no-recommendation" ? "No recommendation was made" : "A good practice statement is ungraded"}` +
+                    `, so there is nothing to grade.`);
+      }
+    }
+  }
+
   // A citation that claims to be resolved must actually resolve to something. This is the check the
   // repository exists for: an unresolved citation is the honest state, and a resolved one that
   // points nowhere is worse than no link at all.
@@ -187,7 +236,10 @@ export function validateGraph(doc, loaded, external = new Map()) {
   // The same discipline for every cross-format join. L2's three joins are string equality across
   // file formats, and an edge that claims `resolved` while its target is itself marked unresolved
   // is a match asserted against a thing that was never found.
-  const RESOLVABLE = new Set(["unresolved", "resolved", "ambiguous"]);
+  // One vocabulary for nodes and edges: the L1 value set when it is in scope, which it is for every
+  // layer, since all of them import L1.
+  const RESOLVABLE = new Set(valueSets.has("resolution-status")
+    ? codesOf("resolution-status") : ["unresolved", "resolved", "ambiguous"]);
   const joins = { resolved: 0, unresolved: 0, ambiguous: 0 };
   for (const e of doc.edges ?? []) {
     const status = e.properties?.resolutionStatus;

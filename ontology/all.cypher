@@ -33,11 +33,8 @@ MERGE (:KGClass:Source {id:'publication', name:'Publication', kind:'Source', lay
 MERGE (:KGClass:Source {id:'publication-section', name:'Publication section', kind:'Source', layer:'l1', iri:'http://smart.who.int/kg/publication-section'});
 MERGE (:KGClass:Concept {id:'recommendation', name:'Recommendation', kind:'Concept', layer:'l1', iri:'http://smart.who.int/kg/recommendation'});
 MERGE (:KGClass:Concept {id:'remark', name:'Remark', kind:'Concept', layer:'l1', iri:'http://smart.who.int/kg/remark'});
+MERGE (:KGClass:Concept {id:'key-question', name:'Key question', kind:'Concept', layer:'l1', iri:'http://smart.who.int/kg/key-question'});
 MERGE (:KGClass:Concept {id:'evidence', name:'Evidence', kind:'Concept', layer:'l1', iri:'http://smart.who.int/kg/evidence'});
-MERGE (:KGClass:Concept {id:'population', name:'Population', kind:'Concept', layer:'l1', iri:'http://smart.who.int/kg/population'});
-MERGE (:KGClass:Concept {id:'intervention', name:'Intervention', kind:'Concept', layer:'l1', iri:'http://smart.who.int/kg/intervention'});
-MERGE (:KGClass:Concept {id:'comparator', name:'Comparator', kind:'Concept', layer:'l1', iri:'http://smart.who.int/kg/comparator'});
-MERGE (:KGClass:Concept {id:'outcome', name:'Outcome', kind:'Concept', layer:'l1', iri:'http://smart.who.int/kg/outcome'});
 MERGE (:KGClass:Concept {id:'health-intervention', name:'Health intervention', kind:'Concept', layer:'l1', iri:'http://smart.who.int/kg/health-intervention'});
 MERGE (:KGClass:Concept {id:'schedule', name:'Schedule', kind:'Concept', layer:'l1', iri:'http://smart.who.int/kg/schedule'});
 MERGE (:KGClass:Concept {id:'schedule-entry', name:'Schedule entry', kind:'Concept', layer:'l1', iri:'http://smart.who.int/kg/schedule-entry'});
@@ -47,14 +44,18 @@ MERGE (:KGClass:Reference {id:'citation', name:'Citation', kind:'Reference', lay
 MERGE (:KGClass:Reference {id:'external-artifact', name:'External artefact', kind:'Reference', layer:'l1', iri:'http://smart.who.int/kg/external-artifact'});
 
 MATCH (s:KGClass {id:'publication'}), (t:KGClass {id:'publication-section'}) MERGE (s)-[:CONTAINS {predicate:'contains'}]->(t);
+MATCH (s:KGClass {id:'publication-section'}), (t:KGClass {id:'publication-section'}) MERGE (s)-[:CONTAINS {predicate:'contains', qualifier:'subsection'}]->(t);
 MATCH (s:KGClass {id:'publication-section'}), (t:KGClass {id:'recommendation'}) MERGE (s)-[:CONTAINS {predicate:'contains'}]->(t);
 MATCH (s:KGClass {id:'publication'}), (t:KGClass {id:'recommendation'}) MERGE (s)-[:CONTAINS {predicate:'contains', qualifier:'unsectioned'}]->(t);
+MATCH (s:KGClass {id:'publication'}), (t:KGClass {id:'publication'}) MERGE (s)-[:HASSUPPLEMENT {predicate:'hasSupplement'}]->(t);
 MATCH (s:KGClass {id:'publication'}), (t:KGClass {id:'publication'}) MERGE (s)-[:SUPERSEDES {predicate:'supersedes'}]->(t);
+MATCH (s:KGClass {id:'recommendation'}), (t:KGClass {id:'recommendation'}) MERGE (s)-[:SUPERSEDES {predicate:'supersedes'}]->(t);
 MATCH (s:KGClass {id:'recommendation'}), (t:KGClass {id:'recommendation'}) MERGE (s)-[:REFINES {predicate:'refines'}]->(t);
-MATCH (s:KGClass {id:'recommendation'}), (t:KGClass {id:'population'}) MERGE (s)-[:HASPOPULATION {predicate:'hasPopulation'}]->(t);
-MATCH (s:KGClass {id:'recommendation'}), (t:KGClass {id:'intervention'}) MERGE (s)-[:HASINTERVENTION {predicate:'hasIntervention'}]->(t);
-MATCH (s:KGClass {id:'recommendation'}), (t:KGClass {id:'comparator'}) MERGE (s)-[:HASCOMPARATOR {predicate:'hasComparator'}]->(t);
-MATCH (s:KGClass {id:'recommendation'}), (t:KGClass {id:'outcome'}) MERGE (s)-[:HASOUTCOME {predicate:'hasOutcome'}]->(t);
+MATCH (s:KGClass {id:'recommendation'}), (t:KGClass {id:'recommendation'}) MERGE (s)-[:RESTATES {predicate:'restates'}]->(t);
+MATCH (s:KGClass {id:'recommendation'}), (t:KGClass {id:'key-question'}) MERGE (s)-[:ANSWERS {predicate:'answers'}]->(t);
+MATCH (s:KGClass {id:'key-question'}), (t:KGClass {id:'health-intervention'}) MERGE (s)-[:ABOUTINTERVENTION {predicate:'aboutIntervention'}]->(t);
+MATCH (s:KGClass {id:'evidence'}), (t:KGClass {id:'key-question'}) MERGE (s)-[:ADDRESSES {predicate:'addresses'}]->(t);
+MATCH (s:KGClass {id:'evidence'}), (t:KGClass {id:'publication'}) MERGE (s)-[:REPORTEDIN {predicate:'reportedIn'}]->(t);
 MATCH (s:KGClass {id:'recommendation'}), (t:KGClass {id:'evidence'}) MERGE (s)-[:SUPPORTEDBY {predicate:'supportedBy'}]->(t);
 MATCH (s:KGClass {id:'recommendation'}), (t:KGClass {id:'remark'}) MERGE (s)-[:HASREMARK {predicate:'hasRemark'}]->(t);
 MATCH (s:KGClass {id:'recommendation'}), (t:KGClass {id:'health-intervention'}) MERGE (s)-[:RECOMMENDS {predicate:'recommends'}]->(t);
@@ -66,9 +67,7 @@ MATCH (s:KGClass {id:'indicator'}), (t:KGClass {id:'publication'}) MERGE (s)-[:D
 MATCH (s:KGClass {id:'indicator'}), (t:KGClass {id:'health-intervention'}) MERGE (s)-[:MEASURES {predicate:'measures'}]->(t);
 MATCH (s:KGClass {id:'indicator'}), (t:KGClass {id:'recommendation'}) MERGE (s)-[:DERIVEDFROM {predicate:'derivedFrom'}]->(t);
 MATCH (s:KGClass {id:'recommendation'}), (t:KGClass {id:'terminology-code'}) MERGE (s)-[:CROSSREFERENCES {predicate:'crossReferences'}]->(t);
-MATCH (s:KGClass {id:'population'}), (t:KGClass {id:'terminology-code'}) MERGE (s)-[:CROSSREFERENCES {predicate:'crossReferences'}]->(t);
-MATCH (s:KGClass {id:'intervention'}), (t:KGClass {id:'terminology-code'}) MERGE (s)-[:CROSSREFERENCES {predicate:'crossReferences'}]->(t);
-MATCH (s:KGClass {id:'outcome'}), (t:KGClass {id:'terminology-code'}) MERGE (s)-[:CROSSREFERENCES {predicate:'crossReferences'}]->(t);
+MATCH (s:KGClass {id:'key-question'}), (t:KGClass {id:'terminology-code'}) MERGE (s)-[:CROSSREFERENCES {predicate:'crossReferences'}]->(t);
 MATCH (s:KGClass {id:'schedule-entry'}), (t:KGClass {id:'terminology-code'}) MERGE (s)-[:CROSSREFERENCES {predicate:'crossReferences'}]->(t);
 MATCH (s:KGClass {id:'indicator'}), (t:KGClass {id:'terminology-code'}) MERGE (s)-[:CROSSREFERENCES {predicate:'crossReferences'}]->(t);
 MATCH (s:KGClass {id:'health-intervention'}), (t:KGClass {id:'terminology-code'}) MERGE (s)-[:CROSSREFERENCES {predicate:'crossReferences'}]->(t);
