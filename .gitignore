@@ -1,0 +1,3 @@
+# Installed only to run the tier-1 shape check (ajv). The tools themselves have no dependencies.
+node_modules/
+package-lock.json

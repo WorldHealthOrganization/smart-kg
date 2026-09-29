@@ -1,0 +1,12 @@
+# Generated files are compared byte-for-byte against what the tools produce, and the tools write
+# LF. Without this, Git for Windows' default core.autocrlf=true rewrites them to CRLF on checkout
+# and every --check reports stale on a clean tree.
+#
+# Normalising the whole repository rather than just the generated files keeps the rule simple and
+# avoids the next generated file being forgotten.
+* text=auto eol=lf
+
+# Binary, in case a PDF or an image is ever added alongside a publication node.
+*.pdf  binary
+*.png  binary
+*.jpg  binary

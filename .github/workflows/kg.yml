@@ -1,0 +1,85 @@
+# Structural checks for the knowledge graph schemas: l1, l2, l2-bpmn, l2-dmn.
+#
+# This repository holds the TYPE GRAPH and no DAK data (docs/STORAGE.md). Everything generated is
+# committed so a consumer can fetch the format their tool reads without installing a toolchain,
+# and committed generated files go stale silently, so each is checked against its source.
+
+name: Knowledge graph
+
+on:
+  push:
+    branches-ignore: ['gh-pages']
+    paths: ['ontology/**', 'shapes/**', 'tools/**', '.github/workflows/kg.yml']
+  pull_request:
+    paths: ['ontology/**', 'shapes/**', 'tools/**', '.github/workflows/kg.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: Validate schema package
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      # Turtle, Cypher and the JSON-LD context in each ontology/<layer>/, plus the combined
+      # ontology/all.{cypher,ttl}, are views of that layer's <layer>.json.
+      - name: Check exports match the ontologies
+        run: node tools/build-exports.mjs --check
+
+      # A validator is worth its output only if it fails on what it claims to catch. Four of these
+      # cases assert the opposite -- a free-text BPMN branch label, an unresolved join, a reference
+      # into another layer's document -- because a check that fires on the normal case trains
+      # people to ignore it. The documents are built in the test, not committed.
+      - name: Prove tier 2 rejects what it claims to
+        run: node tools/negative-test.mjs
+
+      # Tier 1: the same documents satisfy the document shape. Separate from the step above
+      # because a document can conform to the ontology and still be malformed.
+      - name: Validate documents against the shape schema
+        run: |
+          node tools/negative-test.mjs --emit "$RUNNER_TEMP/fixtures"
+          npm install --no-save --no-audit --no-fund ajv-cli@5 ajv-formats@2
+          npx ajv compile --spec=draft2020 -c ajv-formats -s shapes/recommendation-graph.schema.json > /dev/null
+          for f in "$RUNNER_TEMP"/fixtures/*.json; do
+            npx ajv validate --spec=draft2020 -c ajv-formats -s shapes/recommendation-graph.schema.json -d "$f"
+          done
+          node tools/validate.mjs "$RUNNER_TEMP"/fixtures/*.json
+
+      # The Turtle must be parseable as RDF, and the merged file must parse as one document.
+      - name: Parse the Turtle
+        run: |
+          python3 -m pip install --quiet rdflib
+          python3 - <<'PY'
+          from rdflib import Graph
+          for f in ['l1/l1', 'l2/l2', 'l2-bpmn/l2-bpmn', 'l2-dmn/l2-dmn']:
+              g = Graph(); g.parse(f'ontology/{f}.ttl')
+              print(f, len(g), 'triples')
+          g = Graph(); g.parse('ontology/all.ttl')
+          print('all.ttl', len(g), 'triples')
+          PY
+
+      # Every Cypher line must be one terminated statement with balanced quotes. A file that looks
+      # fine and fails at load is the failure mode this catches.
+      - name: Check the Cypher is loadable
+        run: |
+          python3 - <<'PY'
+          import glob, re, sys
+          bad = 0
+          for f in glob.glob('ontology/**/*.cypher', recursive=True):
+              for i, line in enumerate(open(f, encoding='utf-8'), 1):
+                  line = line.rstrip('\n')
+                  if not line or line.startswith('//'): continue
+                  if line.startswith('CREATE CONSTRAINT') or line.startswith('FOR '): continue
+                  if not line.endswith(';'):
+                      print(f'{f}:{i} not a terminated statement: {line[:90]}'); bad += 1
+                  s = re.sub(r"\\'", '', re.sub(r'\\\\', '', line))
+                  if s.count("'") % 2:
+                      print(f'{f}:{i} unbalanced quotes: {line[:90]}'); bad += 1
+          sys.exit(1 if bad else 0)
+          PY

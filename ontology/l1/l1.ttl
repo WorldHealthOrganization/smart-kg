@@ -1,0 +1,409 @@
+@prefix sgkg: <http://smart.who.int/kg/> .
+@prefix owl:  <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix skos: <http://www.w3.org/2004/02/skos/core#> .
+
+<http://smart.who.int/kg/l1> a owl:Ontology ;
+  rdfs:label "WHO SMART Guidelines L1 ontology" ;
+  rdfs:comment "Authored, not generated. The ArchiMate model in smart-ig-starter-kit has no L1 layer, and extending it before this shape is proven would put a governance process in front of a draft. Every class and edge below is grounded in an artefact that exists today; the `grounding` field on each says which one. Nothing here is speculative vocabulary. Pairwise licensing is carried as sub-properties, because a relationship is licensed between specific class pairs while an OWL object property has one global domain and range." .
+
+### Node kinds
+
+sgkg:Concept a owl:Class ; rdfs:label "Concept" ; rdfs:comment "A thing the guidance is about." .
+sgkg:Reference a owl:Class ; rdfs:label "Reference" ; rdfs:comment "A pointer out of this graph. Carries identity only; asserts nothing about the target." .
+sgkg:Source a owl:Class ; rdfs:label "Source" ; rdfs:comment "A published document, or a part of one, that guidance is stated in." .
+
+### Classes
+
+sgkg:Publication a owl:Class ;
+  rdfs:subClassOf sgkg:Source ;
+  rdfs:label "Publication" ;
+  skos:notation "publication" ;
+  rdfs:comment "A WHO normative publication: a guideline, guidance, recommendation summary, or classification. Metadata follows Dublin Core, which HealthInterventions already uses." .
+
+sgkg:PublicationSection a owl:Class ;
+  rdfs:subClassOf sgkg:Source ;
+  rdfs:label "Publication section" ;
+  skos:notation "publication-section" ;
+  rdfs:comment "A chapter, annex or numbered section. Recommendations are located by section and page, which is what makes an extraction checkable." .
+
+sgkg:Recommendation a owl:Class ;
+  rdfs:subClassOf sgkg:Concept ;
+  rdfs:label "Recommendation" ;
+  skos:notation "recommendation" ;
+  rdfs:comment "The atomic normative statement. This is the node nothing in the WHO estate currently makes addressable." .
+
+sgkg:Remark a owl:Class ;
+  rdfs:subClassOf sgkg:Concept ;
+  rdfs:label "Remark" ;
+  skos:notation "remark" ;
+  rdfs:comment "An implementation consideration attached to a recommendation. Grounded: the BCG table's first annotationEntry carries exactly this — \"Neonates born to women of unknown HIV status should be vaccinated as the benefits…\" — clinical nuance that shapes the decision logic but is not the recommendation itself." .
+
+sgkg:Evidence a owl:Class ;
+  rdfs:subClassOf sgkg:Concept ;
+  rdfs:label "Evidence" ;
+  skos:notation "evidence" ;
+  rdfs:comment "The body of evidence behind a recommendation, with its GRADE certainty rating." .
+
+sgkg:Population a owl:Class ;
+  rdfs:subClassOf sgkg:Concept ;
+  rdfs:label "Population" ;
+  skos:notation "population" ;
+  rdfs:comment "PICO P." .
+
+sgkg:Intervention a owl:Class ;
+  rdfs:subClassOf sgkg:Concept ;
+  rdfs:label "Intervention" ;
+  skos:notation "intervention" ;
+  rdfs:comment "PICO I. The clinical or public-health action, distinct from health-intervention, which is the DAK-facing component." .
+
+sgkg:Comparator a owl:Class ;
+  rdfs:subClassOf sgkg:Concept ;
+  rdfs:label "Comparator" ;
+  skos:notation "comparator" ;
+  rdfs:comment "PICO C. Frequently absent in WHO recommendations; absence is recorded rather than invented." .
+
+sgkg:Outcome a owl:Class ;
+  rdfs:subClassOf sgkg:Concept ;
+  rdfs:label "Outcome" ;
+  skos:notation "outcome" ;
+  rdfs:comment "PICO O." .
+
+sgkg:HealthIntervention a owl:Class ;
+  rdfs:subClassOf sgkg:Concept ;
+  rdfs:label "Health intervention" ;
+  skos:notation "health-intervention" ;
+  rdfs:comment "What a recommendation is about, and the hinge to L2. Corresponds to the DAK component smart-base defines as HealthInterventions — today `id`, `description[x]` and `reference 1..* DublinCore`, i.e. a bibliographic citation with no recommendation behind it. This class is what that citation should resolve to." .
+
+sgkg:Schedule a owl:Class ;
+  rdfs:subClassOf sgkg:Concept ;
+  rdfs:label "Schedule" ;
+  skos:notation "schedule" ;
+  rdfs:comment "A normative delivery schedule. Grounded: the BCG table cites \"WHO recommendations for routine immunization – summary tables\", which IS a schedule publication — the single most-cited L1 source in the immunization DAK." .
+
+sgkg:ScheduleEntry a owl:Class ;
+  rdfs:subClassOf sgkg:Concept ;
+  rdfs:label "Schedule entry" ;
+  skos:notation "schedule-entry" ;
+  rdfs:comment "One row of a schedule: which intervention, for whom, when, how many doses. This is the granularity a decision table actually consumes — the BCG rules turn on dose count, age and interval since a live vaccine." .
+
+sgkg:Indicator a owl:Class ;
+  rdfs:subClassOf sgkg:Concept ;
+  rdfs:label "Indicator" ;
+  skos:notation "indicator" ;
+  rdfs:comment "A programme indicator defined normatively at L1. Distinct from the DAK's ProgramIndicator component, which is its L2 expression; that model already carries `references 0..* id` pointing at health intervention ids." .
+
+sgkg:TerminologyCode a owl:Class ;
+  rdfs:subClassOf sgkg:Reference ;
+  rdfs:label "Terminology code" ;
+  skos:notation "terminology-code" ;
+  rdfs:comment "A code in an external terminology — ICD-10, ICD-11, SNOMED CT, ATC, or a WHO classification such as CDHI. CROSS-REFERENCE ONLY. It records system, code and display, and asserts NOTHING about the terminology: no hierarchy, no subsumption, no synonyms, no post-coordination. The terminology has its own authority, its own release cycle and its own tooling, and a partial copy here would be wrong within one release. Resolve meaning against the terminology server, not against this graph." .
+
+sgkg:Citation a owl:Class ;
+  rdfs:subClassOf sgkg:Reference ;
+  rdfs:label "Citation" ;
+  skos:notation "citation" ;
+  rdfs:comment "A citation string exactly as it appears in an L2 or L3 artefact, together with what it was resolved to. Grounded directly in the BCG table, where every rule's annotationEntry[1] reads \"WHO recommendations for routine immunization – summary tables (March 2023) (1)\" — a citation that no tool can currently follow. This class is where that string becomes a link, and where the fact that resolving it was a judgement gets recorded." .
+
+sgkg:ExternalArtefact a owl:Class ;
+  rdfs:subClassOf sgkg:Reference ;
+  rdfs:label "External artefact" ;
+  skos:notation "external-artifact" ;
+  rdfs:comment "An L2 or L3 artefact addressed by canonical URL — a BPMN process, a DMN decision table, a FHIR PlanDefinition. Deliberately opaque: it carries an IRI and a free-text kind, and this graph asserts nothing about its internal structure. That opacity is the boundary. The L2 and L3 subgraphs model those artefacts properly; L1 only needs to point." .
+
+### Object properties (the ArchiMate relationship vocabulary)
+
+sgkg:contains a owl:ObjectProperty ;
+  rdfs:label "contains" ;
+  rdfs:comment "Structural containment. A publication contains sections; a section contains recommendations." .
+
+sgkg:supersedes a owl:ObjectProperty ;
+  rdfs:label "supersedes" ;
+  rdfs:comment "This publication replaces that one. Guideline updates are the reason impact analysis matters." .
+
+sgkg:refines a owl:ObjectProperty ;
+  rdfs:label "refines" ;
+  rdfs:comment "A recommendation narrows or conditions another, rather than replacing it." .
+
+sgkg:hasPopulation a owl:ObjectProperty ;
+  rdfs:label "hasPopulation" ;
+  rdfs:comment "PICO." .
+
+sgkg:hasIntervention a owl:ObjectProperty ;
+  rdfs:label "hasIntervention" ;
+  rdfs:comment "PICO." .
+
+sgkg:hasComparator a owl:ObjectProperty ;
+  rdfs:label "hasComparator" ;
+  rdfs:comment "PICO." .
+
+sgkg:hasOutcome a owl:ObjectProperty ;
+  rdfs:label "hasOutcome" ;
+  rdfs:comment "PICO." .
+
+sgkg:supportedBy a owl:ObjectProperty ;
+  rdfs:label "supportedBy" ;
+  rdfs:comment "Recommendation to its body of evidence, carrying GRADE certainty." .
+
+sgkg:hasRemark a owl:ObjectProperty ;
+  rdfs:label "hasRemark" ;
+  rdfs:comment "Implementation consideration. Often the part a DAK author actually acts on." .
+
+sgkg:recommends a owl:ObjectProperty ;
+  rdfs:label "recommends" ;
+  rdfs:comment "A recommendation is about a health intervention. The hinge to L2." .
+
+sgkg:definedIn a owl:ObjectProperty ;
+  rdfs:label "definedIn" ;
+  rdfs:comment "A schedule or indicator is normatively defined in a publication." .
+
+sgkg:schedules a owl:ObjectProperty ;
+  rdfs:label "schedules" ;
+  rdfs:comment "A schedule entry prescribes when an intervention is delivered." .
+
+sgkg:measures a owl:ObjectProperty ;
+  rdfs:label "measures" ;
+  rdfs:comment "An indicator measures delivery of an intervention." .
+
+sgkg:derivedFrom a owl:ObjectProperty ;
+  rdfs:label "derivedFrom" ;
+  rdfs:comment "This normative content restates or operationalises that recommendation." .
+
+sgkg:crossReferences a owl:ObjectProperty ;
+  rdfs:label "crossReferences" ;
+  rdfs:comment "Names an external code. THE ONLY edge into terminology: it records that a code was cited, never what the code means. See the terminology-code class." .
+
+sgkg:classifiedAs a owl:ObjectProperty ;
+  rdfs:label "classifiedAs" ;
+  rdfs:comment "Placement in a WHO classification — CDHI for interventions. Also a cross-reference, kept separate because classification is an assertion about the thing, not a mention of a code." .
+
+sgkg:appearsIn a owl:ObjectProperty ;
+  rdfs:label "appearsIn" ;
+  rdfs:comment "A citation string appears in an L2 or L3 artefact at a stated location." .
+
+sgkg:resolvesTo a owl:ObjectProperty ;
+  rdfs:label "resolvesTo" ;
+  rdfs:comment "A citation string resolves to a publication or a recommendation. Almost always `inferred` or `decided`, never `derived` — matching a free-text citation is a judgement." .
+
+sgkg:implementedBy a owl:ObjectProperty ;
+  rdfs:label "implementedBy" ;
+  rdfs:comment "L1 content is implemented by an L2 or L3 artefact, addressed by canonical URL. The graph does not model the target's structure." .
+
+### Licensed edges, as qualified sub-properties
+# One per (source class, predicate, target class) triple the ArchiMate model licenses.
+# Domain and range on the sub-property is what preserves pairwise licensing: a single global
+# domain/range on sgkg:associatedWith would be a union of everything and would permit
+# Business Process aggregates Data Element, which the model does not.
+
+sgkg:contains_Publication_PublicationSection a owl:ObjectProperty ;
+  rdfs:subPropertyOf sgkg:contains ;
+  rdfs:domain sgkg:Publication ;
+  rdfs:range sgkg:PublicationSection ;
+  rdfs:label "Publication contains Publication section" .
+
+sgkg:contains_PublicationSection_Recommendation a owl:ObjectProperty ;
+  rdfs:subPropertyOf sgkg:contains ;
+  rdfs:domain sgkg:PublicationSection ;
+  rdfs:range sgkg:Recommendation ;
+  rdfs:label "Publication section contains Recommendation" .
+
+sgkg:contains_Publication_Recommendation a owl:ObjectProperty ;
+  rdfs:subPropertyOf sgkg:contains ;
+  rdfs:domain sgkg:Publication ;
+  rdfs:range sgkg:Recommendation ;
+  skos:note "qualifier: unsectioned" ;
+  rdfs:label "Publication unsectioned Recommendation" .
+
+sgkg:supersedes_Publication_Publication a owl:ObjectProperty ;
+  rdfs:subPropertyOf sgkg:supersedes ;
+  rdfs:domain sgkg:Publication ;
+  rdfs:range sgkg:Publication ;
+  rdfs:label "Publication supersedes Publication" .
+
+sgkg:refines_Recommendation_Recommendation a owl:ObjectProperty ;
+  rdfs:subPropertyOf sgkg:refines ;
+  rdfs:domain sgkg:Recommendation ;
+  rdfs:range sgkg:Recommendation ;
+  rdfs:label "Recommendation refines Recommendation" .
+
+sgkg:hasPopulation_Recommendation_Population a owl:ObjectProperty ;
+  rdfs:subPropertyOf sgkg:hasPopulation ;
+  rdfs:domain sgkg:Recommendation ;
+  rdfs:range sgkg:Population ;
+  rdfs:label "Recommendation hasPopulation Population" .
+
+sgkg:hasIntervention_Recommendation_Intervention a owl:ObjectProperty ;
+  rdfs:subPropertyOf sgkg:hasIntervention ;
+  rdfs:domain sgkg:Recommendation ;
+  rdfs:range sgkg:Intervention ;
+  rdfs:label "Recommendation hasIntervention Intervention" .
+
+sgkg:hasComparator_Recommendation_Comparator a owl:ObjectProperty ;
+  rdfs:subPropertyOf sgkg:hasComparator ;
+  rdfs:domain sgkg:Recommendation ;
+  rdfs:range sgkg:Comparator ;
+  rdfs:label "Recommendation hasComparator Comparator" .
+
+sgkg:hasOutcome_Recommendation_Outcome a owl:ObjectProperty ;
+  rdfs:subPropertyOf sgkg:hasOutcome ;
+  rdfs:domain sgkg:Recommendation ;
+  rdfs:range sgkg:Outcome ;
+  rdfs:label "Recommendation hasOutcome Outcome" .
+
+sgkg:supportedBy_Recommendation_Evidence a owl:ObjectProperty ;
+  rdfs:subPropertyOf sgkg:supportedBy ;
+  rdfs:domain sgkg:Recommendation ;
+  rdfs:range sgkg:Evidence ;
+  rdfs:label "Recommendation supportedBy Evidence" .
+
+sgkg:hasRemark_Recommendation_Remark a owl:ObjectProperty ;
+  rdfs:subPropertyOf sgkg:hasRemark ;
+  rdfs:domain sgkg:Recommendation ;
+  rdfs:range sgkg:Remark ;
+  rdfs:label "Recommendation hasRemark Remark" .
+
+sgkg:recommends_Recommendation_HealthIntervention a owl:ObjectProperty ;
+  rdfs:subPropertyOf sgkg:recommends ;
+  rdfs:domain sgkg:Recommendation ;
+  rdfs:range sgkg:HealthIntervention ;
+  rdfs:label "Recommendation recommends Health intervention" .
+
+sgkg:definedIn_Schedule_Publication a owl:ObjectProperty ;
+  rdfs:subPropertyOf sgkg:definedIn ;
+  rdfs:domain sgkg:Schedule ;
+  rdfs:range sgkg:Publication ;
+  rdfs:label "Schedule definedIn Publication" .
+
+sgkg:contains_Schedule_ScheduleEntry a owl:ObjectProperty ;
+  rdfs:subPropertyOf sgkg:contains ;
+  rdfs:domain sgkg:Schedule ;
+  rdfs:range sgkg:ScheduleEntry ;
+  rdfs:label "Schedule contains Schedule entry" .
+
+sgkg:schedules_ScheduleEntry_HealthIntervention a owl:ObjectProperty ;
+  rdfs:subPropertyOf sgkg:schedules ;
+  rdfs:domain sgkg:ScheduleEntry ;
+  rdfs:range sgkg:HealthIntervention ;
+  rdfs:label "Schedule entry schedules Health intervention" .
+
+sgkg:derivedFrom_ScheduleEntry_Recommendation a owl:ObjectProperty ;
+  rdfs:subPropertyOf sgkg:derivedFrom ;
+  rdfs:domain sgkg:ScheduleEntry ;
+  rdfs:range sgkg:Recommendation ;
+  rdfs:label "Schedule entry derivedFrom Recommendation" .
+
+sgkg:definedIn_Indicator_Publication a owl:ObjectProperty ;
+  rdfs:subPropertyOf sgkg:definedIn ;
+  rdfs:domain sgkg:Indicator ;
+  rdfs:range sgkg:Publication ;
+  rdfs:label "Indicator definedIn Publication" .
+
+sgkg:measures_Indicator_HealthIntervention a owl:ObjectProperty ;
+  rdfs:subPropertyOf sgkg:measures ;
+  rdfs:domain sgkg:Indicator ;
+  rdfs:range sgkg:HealthIntervention ;
+  rdfs:label "Indicator measures Health intervention" .
+
+sgkg:derivedFrom_Indicator_Recommendation a owl:ObjectProperty ;
+  rdfs:subPropertyOf sgkg:derivedFrom ;
+  rdfs:domain sgkg:Indicator ;
+  rdfs:range sgkg:Recommendation ;
+  rdfs:label "Indicator derivedFrom Recommendation" .
+
+sgkg:crossReferences_Recommendation_TerminologyCode a owl:ObjectProperty ;
+  rdfs:subPropertyOf sgkg:crossReferences ;
+  rdfs:domain sgkg:Recommendation ;
+  rdfs:range sgkg:TerminologyCode ;
+  rdfs:label "Recommendation crossReferences Terminology code" .
+
+sgkg:crossReferences_Population_TerminologyCode a owl:ObjectProperty ;
+  rdfs:subPropertyOf sgkg:crossReferences ;
+  rdfs:domain sgkg:Population ;
+  rdfs:range sgkg:TerminologyCode ;
+  rdfs:label "Population crossReferences Terminology code" .
+
+sgkg:crossReferences_Intervention_TerminologyCode a owl:ObjectProperty ;
+  rdfs:subPropertyOf sgkg:crossReferences ;
+  rdfs:domain sgkg:Intervention ;
+  rdfs:range sgkg:TerminologyCode ;
+  rdfs:label "Intervention crossReferences Terminology code" .
+
+sgkg:crossReferences_Outcome_TerminologyCode a owl:ObjectProperty ;
+  rdfs:subPropertyOf sgkg:crossReferences ;
+  rdfs:domain sgkg:Outcome ;
+  rdfs:range sgkg:TerminologyCode ;
+  rdfs:label "Outcome crossReferences Terminology code" .
+
+sgkg:crossReferences_ScheduleEntry_TerminologyCode a owl:ObjectProperty ;
+  rdfs:subPropertyOf sgkg:crossReferences ;
+  rdfs:domain sgkg:ScheduleEntry ;
+  rdfs:range sgkg:TerminologyCode ;
+  rdfs:label "Schedule entry crossReferences Terminology code" .
+
+sgkg:crossReferences_Indicator_TerminologyCode a owl:ObjectProperty ;
+  rdfs:subPropertyOf sgkg:crossReferences ;
+  rdfs:domain sgkg:Indicator ;
+  rdfs:range sgkg:TerminologyCode ;
+  rdfs:label "Indicator crossReferences Terminology code" .
+
+sgkg:crossReferences_HealthIntervention_TerminologyCode a owl:ObjectProperty ;
+  rdfs:subPropertyOf sgkg:crossReferences ;
+  rdfs:domain sgkg:HealthIntervention ;
+  rdfs:range sgkg:TerminologyCode ;
+  rdfs:label "Health intervention crossReferences Terminology code" .
+
+sgkg:classifiedAs_HealthIntervention_TerminologyCode a owl:ObjectProperty ;
+  rdfs:subPropertyOf sgkg:classifiedAs ;
+  rdfs:domain sgkg:HealthIntervention ;
+  rdfs:range sgkg:TerminologyCode ;
+  skos:note "qualifier: CDHI" ;
+  rdfs:label "Health intervention CDHI Terminology code" .
+
+sgkg:appearsIn_Citation_ExternalArtefact a owl:ObjectProperty ;
+  rdfs:subPropertyOf sgkg:appearsIn ;
+  rdfs:domain sgkg:Citation ;
+  rdfs:range sgkg:ExternalArtefact ;
+  rdfs:label "Citation appearsIn External artefact" .
+
+sgkg:resolvesTo_Citation_Publication a owl:ObjectProperty ;
+  rdfs:subPropertyOf sgkg:resolvesTo ;
+  rdfs:domain sgkg:Citation ;
+  rdfs:range sgkg:Publication ;
+  rdfs:label "Citation resolvesTo Publication" .
+
+sgkg:resolvesTo_Citation_Recommendation a owl:ObjectProperty ;
+  rdfs:subPropertyOf sgkg:resolvesTo ;
+  rdfs:domain sgkg:Citation ;
+  rdfs:range sgkg:Recommendation ;
+  rdfs:label "Citation resolvesTo Recommendation" .
+
+sgkg:resolvesTo_Citation_Schedule a owl:ObjectProperty ;
+  rdfs:subPropertyOf sgkg:resolvesTo ;
+  rdfs:domain sgkg:Citation ;
+  rdfs:range sgkg:Schedule ;
+  rdfs:label "Citation resolvesTo Schedule" .
+
+sgkg:implementedBy_Recommendation_ExternalArtefact a owl:ObjectProperty ;
+  rdfs:subPropertyOf sgkg:implementedBy ;
+  rdfs:domain sgkg:Recommendation ;
+  rdfs:range sgkg:ExternalArtefact ;
+  rdfs:label "Recommendation implementedBy External artefact" .
+
+sgkg:implementedBy_ScheduleEntry_ExternalArtefact a owl:ObjectProperty ;
+  rdfs:subPropertyOf sgkg:implementedBy ;
+  rdfs:domain sgkg:ScheduleEntry ;
+  rdfs:range sgkg:ExternalArtefact ;
+  rdfs:label "Schedule entry implementedBy External artefact" .
+
+sgkg:implementedBy_Indicator_ExternalArtefact a owl:ObjectProperty ;
+  rdfs:subPropertyOf sgkg:implementedBy ;
+  rdfs:domain sgkg:Indicator ;
+  rdfs:range sgkg:ExternalArtefact ;
+  rdfs:label "Indicator implementedBy External artefact" .
+
+sgkg:implementedBy_HealthIntervention_ExternalArtefact a owl:ObjectProperty ;
+  rdfs:subPropertyOf sgkg:implementedBy ;
+  rdfs:domain sgkg:HealthIntervention ;
+  rdfs:range sgkg:ExternalArtefact ;
+  rdfs:label "Health intervention implementedBy External artefact" .
+

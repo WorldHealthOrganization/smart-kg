@@ -1,0 +1,204 @@
+{
+  "@context": {
+    "@version": 1.1,
+    "rdf": "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
+    "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
+    "owl": "http://www.w3.org/2002/07/owl#",
+    "skos": "http://www.w3.org/2004/02/skos/core#",
+    "dcterms": "http://purl.org/dc/terms/",
+    "prov": "http://www.w3.org/ns/prov#",
+    "xsd": "http://www.w3.org/2001/XMLSchema#",
+    "sgkg": "http://smart.who.int/kg/",
+    "id": "@id",
+    "type": "@type",
+    "label": {
+      "@id": "rdfs:label"
+    },
+    "properties": {
+      "@id": "sgkg:properties",
+      "@container": "@index"
+    },
+    "nodes": {
+      "@id": "sgkg:node",
+      "@container": "@set"
+    },
+    "edges": {
+      "@id": "sgkg:edge",
+      "@container": "@set"
+    },
+    "Statement": "rdf:Statement",
+    "Entity": "prov:Entity",
+    "predicate": {
+      "@id": "rdf:predicate",
+      "@type": "@vocab"
+    },
+    "source": {
+      "@id": "rdf:subject",
+      "@type": "@id"
+    },
+    "target": {
+      "@id": "rdf:object",
+      "@type": "@id"
+    },
+    "qualifier": {
+      "@id": "sgkg:qualifier"
+    },
+    "derivation": {
+      "@id": "sgkg:derivation"
+    },
+    "evidence": {
+      "@id": "sgkg:evidence"
+    },
+    "location": {
+      "@id": "sgkg:location"
+    },
+    "quote": {
+      "@id": "sgkg:quote"
+    },
+    "note": {
+      "@id": "skos:note"
+    },
+    "skill": {
+      "@id": "sgkg:skill"
+    },
+    "generatedAt": {
+      "@id": "prov:generatedAtTime",
+      "@type": "xsd:dateTime"
+    },
+    "wasDerivedFrom": {
+      "@id": "prov:wasDerivedFrom",
+      "@type": "@id"
+    },
+    "ontologyVersion": {
+      "@id": "sgkg:ontologyVersion"
+    },
+    "hasComponent": {
+      "@id": "sgkg:hasComponent"
+    },
+    "sourcedFrom": {
+      "@id": "sgkg:sourcedFrom"
+    },
+    "realises": {
+      "@id": "sgkg:realises"
+    },
+    "involves": {
+      "@id": "sgkg:involves"
+    },
+    "fulfilledBy": {
+      "@id": "sgkg:fulfilledBy"
+    },
+    "hasStatement": {
+      "@id": "sgkg:hasStatement"
+    },
+    "listsTask": {
+      "@id": "sgkg:listsTask"
+    },
+    "references": {
+      "@id": "sgkg:references"
+    },
+    "describes": {
+      "@id": "sgkg:describes"
+    },
+    "implementedBy": {
+      "@id": "sgkg:implementedBy"
+    },
+    "contains": {
+      "@id": "sgkg:contains"
+    },
+    "supersedes": {
+      "@id": "sgkg:supersedes"
+    },
+    "refines": {
+      "@id": "sgkg:refines"
+    },
+    "hasPopulation": {
+      "@id": "sgkg:hasPopulation"
+    },
+    "hasIntervention": {
+      "@id": "sgkg:hasIntervention"
+    },
+    "hasComparator": {
+      "@id": "sgkg:hasComparator"
+    },
+    "hasOutcome": {
+      "@id": "sgkg:hasOutcome"
+    },
+    "supportedBy": {
+      "@id": "sgkg:supportedBy"
+    },
+    "hasRemark": {
+      "@id": "sgkg:hasRemark"
+    },
+    "recommends": {
+      "@id": "sgkg:recommends"
+    },
+    "definedIn": {
+      "@id": "sgkg:definedIn"
+    },
+    "schedules": {
+      "@id": "sgkg:schedules"
+    },
+    "measures": {
+      "@id": "sgkg:measures"
+    },
+    "derivedFrom": {
+      "@id": "sgkg:derivedFrom"
+    },
+    "crossReferences": {
+      "@id": "sgkg:crossReferences"
+    },
+    "classifiedAs": {
+      "@id": "sgkg:classifiedAs"
+    },
+    "appearsIn": {
+      "@id": "sgkg:appearsIn"
+    },
+    "resolvesTo": {
+      "@id": "sgkg:resolvesTo"
+    },
+    "flowsTo": {
+      "@id": "sgkg:flowsTo"
+    },
+    "messageTo": {
+      "@id": "sgkg:messageTo"
+    },
+    "performedBy": {
+      "@id": "sgkg:performedBy"
+    },
+    "DigitalAdaptationKit": "sgkg:dak",
+    "GenericPersona": "sgkg:persona",
+    "UserScenario": "sgkg:user-scenario",
+    "BusinessProcessWorkflow": "sgkg:business-process",
+    "TaskEntry": "sgkg:dak-task",
+    "CoreDataElement": "sgkg:data-element",
+    "DecisionSupportLogic": "sgkg:decision-support-logic",
+    "SchedulingLogic": "sgkg:scheduling-logic",
+    "ProgramIndicator": "sgkg:program-indicator",
+    "FunctionalRequirement": "sgkg:functional-requirement",
+    "NonFunctionalRequirement": "sgkg:non-functional-requirement",
+    "RequirementStatement": "sgkg:requirement-statement",
+    "TestScenario": "sgkg:test-scenario",
+    "Publication": "sgkg:publication",
+    "PublicationSection": "sgkg:publication-section",
+    "Recommendation": "sgkg:recommendation",
+    "Remark": "sgkg:remark",
+    "Evidence": "sgkg:evidence",
+    "Population": "sgkg:population",
+    "Intervention": "sgkg:intervention",
+    "Comparator": "sgkg:comparator",
+    "Outcome": "sgkg:outcome",
+    "HealthIntervention": "sgkg:health-intervention",
+    "Schedule": "sgkg:schedule",
+    "ScheduleEntry": "sgkg:schedule-entry",
+    "Indicator": "sgkg:indicator",
+    "TerminologyCode": "sgkg:terminology-code",
+    "Citation": "sgkg:citation",
+    "ExternalArtefact": "sgkg:external-artifact",
+    "BPMNFile": "sgkg:bpmn-definitions",
+    "BPMNProcess": "sgkg:bpmn-process",
+    "BPMNParticipant": "sgkg:bpmn-participant",
+    "BPMNTask": "sgkg:bpmn-task",
+    "BPMNGateway": "sgkg:bpmn-gateway",
+    "BPMNEvent": "sgkg:bpmn-event"
+  }
+}
