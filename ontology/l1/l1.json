@@ -113,7 +113,7 @@
     },
     {
       "id": "identifier-type",
-      "note": "Which kind of identifier a publication carries. The first available, in this order, builds the publication IRI.",
+      "note": "Which kind of identifier a publication carries. The first available, in this order, builds the publication IRI. url comes last: a web address is the least stable identifier and is used only for sources that have no other.",
       "source": "WHO IRIS practice; CDHIv2.fsh carries an ISBN",
       "codes": [
         {
@@ -131,6 +131,10 @@
         {
           "code": "issn",
           "definition": "ISSN, for serials such as the Weekly Epidemiological Record."
+        },
+        {
+          "code": "url",
+          "definition": "The canonical web address of a WHO source published only on the web, such as the routine immunization summary tables or the UHC Compendium. Used for the IRI only when no isbn, iris-handle, doi or issn exists; scheme, query and trailing slash are dropped. A moved page is a new publication, linked to the old one by supersedes."
         },
         {
           "code": "other",
@@ -673,9 +677,9 @@
         "publicationType": "publication-type",
         "grcStatus": "grc-status"
       },
-      "iriPattern": "^https://smart\\.who\\.int/kg/l1/publication/(isbn|iris-handle|doi|issn)-[^/]+$",
+      "iriPattern": "^https://smart\\.who\\.int/kg/l1/publication/(isbn|iris-handle|doi|issn|url)-[^/]+$",
       "minDerivation": "inferred",
-      "propertyNote": "identifiers is a list of {type, value}; type is from identifier-type, and the first of isbn, iris-handle, doi, issn builds the IRI, so an edition change is a new publication. issued and modified are Dublin Core. reviewBy is the handbook's review-by date (§12.5.1). sha256 pins the PDF."
+      "propertyNote": "identifiers is a list of {type, value}; type is from identifier-type, and the first of isbn, iris-handle, doi, issn, url builds the IRI, so an edition change is a new publication. issued and modified are Dublin Core. reviewBy is the handbook's review-by date (§12.5.1). sha256 pins the PDF."
     },
     {
       "id": "publication-section",
@@ -689,7 +693,7 @@
         "pageRange",
         "ordinal"
       ],
-      "iriPattern": "^https://smart\\.who\\.int/kg/l1/publication/(isbn|iris-handle|doi|issn)-[^/]+/section/[^/]+$",
+      "iriPattern": "^https://smart\\.who\\.int/kg/l1/publication/(isbn|iris-handle|doi|issn|url)-[^/]+/section/[^/]+$",
       "minDerivation": "inferred"
     },
     {
@@ -715,7 +719,7 @@
         "elementType": "element-type",
         "rowType": "row-type"
       },
-      "iriPattern": "^https://smart\\.who\\.int/kg/l1/publication/(isbn|iris-handle|doi|issn)-[^/]+/element/.+$",
+      "iriPattern": "^https://smart\\.who\\.int/kg/l1/publication/(isbn|iris-handle|doi|issn|url)-[^/]+/element/.+$",
       "minDerivation": "inferred",
       "propertyNote": "columns is the header text, verbatim. columnMap names, per column, the content field that fills it when the table is re-rendered (e.g. 'Recommendation' -> statement). cells holds only text no content node holds; a cell filled through columnMap is null. text is for unmodelled printed text such as a footnote that is not a remark. sha256 is for images."
     },
@@ -752,7 +756,7 @@
         "changeStatus": "change-status",
         "interventionType": "intervention-type"
       },
-      "iriPattern": "^https://smart\\.who\\.int/kg/l1/publication/(isbn|iris-handle|doi|issn)-[^/]+/recommendation/[^/]+(/[^/]+)*$",
+      "iriPattern": "^https://smart\\.who\\.int/kg/l1/publication/(isbn|iris-handle|doi|issn|url)-[^/]+/recommendation/[^/]+(/[^/]+)*$",
       "contentFields": [
         "statement"
       ],
@@ -774,7 +778,7 @@
       "valueSets": {
         "remarkType": "remark-type"
       },
-      "iriPattern": "^https://smart\\.who\\.int/kg/l1/publication/(isbn|iris-handle|doi|issn)-[^/]+/recommendation/.+/remark/[^/]+$",
+      "iriPattern": "^https://smart\\.who\\.int/kg/l1/publication/(isbn|iris-handle|doi|issn|url)-[^/]+/recommendation/.+/remark/[^/]+$",
       "contentFields": [
         "text"
       ],
@@ -795,7 +799,7 @@
         "setting",
         "contentHash"
       ],
-      "iriPattern": "^https://smart\\.who\\.int/kg/l1/publication/(isbn|iris-handle|doi|issn)-[^/]+/key-question/[^/]+$",
+      "iriPattern": "^https://smart\\.who\\.int/kg/l1/publication/(isbn|iris-handle|doi|issn|url)-[^/]+/key-question/[^/]+$",
       "contentFields": [
         "text"
       ],
@@ -816,7 +820,7 @@
       "valueSets": {
         "importance": "outcome-importance"
       },
-      "iriPattern": "^https://smart\\.who\\.int/kg/l1/publication/(isbn|iris-handle|doi|issn)-[^/]+/outcome/[^/]+$",
+      "iriPattern": "^https://smart\\.who\\.int/kg/l1/publication/(isbn|iris-handle|doi|issn|url)-[^/]+/outcome/[^/]+$",
       "minDerivation": "inferred",
       "propertyNote": "name as first printed; aliases are the other printed forms (e.g. 'EGWG'); category is the printed group heading (e.g. 'Fetal/newborn morbidity')."
     },
@@ -838,7 +842,7 @@
         "evidenceType": "evidence-type",
         "certainty": "certainty"
       },
-      "iriPattern": "^https://smart\\.who\\.int/kg/l1/publication/(isbn|iris-handle|doi|issn)-[^/]+/evidence/.+$",
+      "iriPattern": "^https://smart\\.who\\.int/kg/l1/publication/(isbn|iris-handle|doi|issn|url)-[^/]+/evidence/.+$",
       "contentFields": [
         "summary"
       ],
@@ -888,7 +892,7 @@
       "valueSets": {
         "changeStatus": "change-status"
       },
-      "iriPattern": "^https://smart\\.who\\.int/kg/l1/publication/(isbn|iris-handle|doi|issn)-[^/]+/indicator/[^/]+$",
+      "iriPattern": "^https://smart\\.who\\.int/kg/l1/publication/(isbn|iris-handle|doi|issn|url)-[^/]+/indicator/[^/]+$",
       "contentFields": [
         "definition",
         "numerator",

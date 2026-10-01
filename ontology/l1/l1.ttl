@@ -119,11 +119,12 @@ sgkg:TerminologyCode a owl:Class ;
 <http://smart.who.int/kg/valueset/identifier-type> a skos:ConceptScheme ;
   skos:notation "identifier-type" ;
   skos:note "source: WHO IRIS practice; CDHIv2.fsh carries an ISBN" ;
-  rdfs:comment "Which kind of identifier a publication carries. The first available, in this order, builds the publication IRI." .
+  rdfs:comment "Which kind of identifier a publication carries. The first available, in this order, builds the publication IRI. url comes last: a web address is the least stable identifier and is used only for sources that have no other." .
 <http://smart.who.int/kg/valueset/identifier-type#isbn> a skos:Concept ; skos:inScheme <http://smart.who.int/kg/valueset/identifier-type> ; skos:notation "isbn" ; skos:definition "ISBN-13, electronic version preferred." .
 <http://smart.who.int/kg/valueset/identifier-type#iris-handle> a skos:Concept ; skos:inScheme <http://smart.who.int/kg/valueset/identifier-type> ; skos:notation "iris-handle" ; skos:definition "WHO IRIS handle, e.g. 10665/250796." .
 <http://smart.who.int/kg/valueset/identifier-type#doi> a skos:Concept ; skos:inScheme <http://smart.who.int/kg/valueset/identifier-type> ; skos:notation "doi" ; skos:definition "Digital Object Identifier." .
 <http://smart.who.int/kg/valueset/identifier-type#issn> a skos:Concept ; skos:inScheme <http://smart.who.int/kg/valueset/identifier-type> ; skos:notation "issn" ; skos:definition "ISSN, for serials such as the Weekly Epidemiological Record." .
+<http://smart.who.int/kg/valueset/identifier-type#url> a skos:Concept ; skos:inScheme <http://smart.who.int/kg/valueset/identifier-type> ; skos:notation "url" ; skos:definition "The canonical web address of a WHO source published only on the web, such as the routine immunization summary tables or the UHC Compendium. Used for the IRI only when no isbn, iris-handle, doi or issn exists; scheme, query and trailing slash are dropped. A moved page is a new publication, linked to the old one by supersedes." .
 <http://smart.who.int/kg/valueset/identifier-type#other> a skos:Concept ; skos:inScheme <http://smart.who.int/kg/valueset/identifier-type> ; skos:notation "other" ; skos:definition "Any other identifier; never used to build an IRI." .
 
 <http://smart.who.int/kg/valueset/grc-status> a skos:ConceptScheme ;

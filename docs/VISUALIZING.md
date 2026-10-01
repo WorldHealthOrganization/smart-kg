@@ -153,7 +153,7 @@ pulls in its neighbours.
 
 ## Protégé
 
-`ontology/all.ttl` is the whole model merged into one document — 1881 triples — and is what to open
+`ontology/all.ttl` is the whole model merged into one document — 1885 triples — and is what to open
 offline. A single `ontology/<layer>/<layer>.ttl` declares `owl:imports` on its parents, which a
 reasoner can follow only if those IRIs resolve. Pairwise edge
 licensing is carried as qualified sub-properties — a single global domain and range on

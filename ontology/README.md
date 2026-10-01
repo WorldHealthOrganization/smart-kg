@@ -73,7 +73,7 @@ verification query returning the imported classes it expects to find.
 
 **Protégé** — open `all.ttl` for the whole model, or a single `<layer>/<layer>.ttl`. The per-layer
 files declare `owl:imports`, which a reasoner can follow only if the IRIs resolve; `all.ttl` is the
-offline merge, and parses as one 1881-triple document.
+offline merge, and parses as one 1885-triple document.
 
 **JSON-LD** — `<layer>.context.jsonld` expands a graph document of that layer. It covers imported
 terms too, so an L2-DMN document naming an `l1:citation` still expands.

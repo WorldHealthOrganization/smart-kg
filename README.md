@@ -241,7 +241,7 @@ classes from the ones it imports, and Cypher does not treat an empty `MATCH` as 
 out of order silently drops those edges. Every class node carries `layer`, so one subgraph is
 selectable on its own. See [`docs/VISUALIZING.md`](docs/VISUALIZING.md).
 
-**Protégé** — `ontology/all.ttl` is the whole model merged, 1881 triples, and parses as one document.
+**Protégé** — `ontology/all.ttl` is the whole model merged, 1885 triples, and parses as one document.
 Pairwise edge licensing is carried as qualified sub-properties, since licensing here is per
 class-pair while an OWL object property has one global domain and range.
 

@@ -66,18 +66,21 @@ export const dataElementId = (ns, name) => `${ns}/data-element/${slug(name)}`;
 export const L1_NAMESPACE = "https://smart.who.int/kg/l1";
 
 /** Identifier types that may build a publication IRI, in order of preference. */
-const IRI_IDENTIFIERS = ["isbn", "iris-handle", "doi", "issn"];
+const IRI_IDENTIFIERS = ["isbn", "iris-handle", "doi", "issn", "url"];
 
 /** Strips everything an identifier is commonly printed with and keeps what identifies. */
 const idValue = (type, value) => {
   const v = String(value).trim();
   if (type === "isbn" || type === "issn") return v.replace(/[^0-9Xx]/g, "").toUpperCase();
+  // A web-only source: host and path, so http/https, a query string or a trailing slash cannot
+  // make two IRIs for one page.
+  if (type === "url") return slug(v.replace(/^[a-z]+:\/\//i, "").replace(/[?#].*$/, "").replace(/\/+$/, "").replace(/^www\./i, ""));
   return slug(v);
 };
 
 /**
  * A publication, from its typed identifiers: [{type: "isbn", value: "978-92-4-154991-2"}, …].
- * The first of isbn, iris-handle, doi, issn wins. A new edition carries a new ISBN and so is a new
+ * The first of isbn, iris-handle, doi, issn, url wins; url only for sources published nowhere else. A new edition carries a new ISBN and so is a new
  * publication, linked to the old one by supersedes -- renumbering between editions cannot collide.
  */
 export const publicationId = (identifiers) => {
@@ -85,7 +88,7 @@ export const publicationId = (identifiers) => {
     const found = (identifiers ?? []).find((i) => i.type === type && i.value);
     if (found) return `${L1_NAMESPACE}/publication/${type}-${idValue(type, found.value)}`;
   }
-  throw new Error("a publication needs an isbn, iris-handle, doi or issn to have a stable IRI");
+  throw new Error("a publication needs an isbn, iris-handle, doi, issn or url to have a stable IRI");
 };
 
 /** A published number (A.1.1, PRV.3, 3.2) kept readable; anything outside [A-Za-z0-9.-] dropped. */

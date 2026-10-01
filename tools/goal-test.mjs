@@ -84,7 +84,10 @@ const CITE_TEXT = "WHO recommendations for routine immunization – summary tabl
 const CITE = citationId(NS, CITE_TEXT);
 const PLACE = citationId(NS, "[Add appropriate reference]");
 const ENTRY = referenceEntryId(WORKBOOK, 1);
-const SUMMARY = publicationId([{ type: "iris-handle", value: "example/immunization-summary-tables-2023" }]);
+// Published only on the web, so its address is its identifier (IMMZ DAK 2024, reference 29).
+const SUMMARY_URL = "https://www.who.int/teams/immunization-vaccines-and-biologicals/policies/" +
+  "who-recommendations-for-routine-immunization---summary-tables";
+const SUMMARY = publicationId([{ type: "url", value: SUMMARY_URL }]);
 const rule = (i) => `${DMN}#Rule_${i}`;
 
 const l1Cite = doc("l1", [
@@ -93,7 +96,7 @@ const l1Cite = doc("l1", [
   node(ENTRY, "reference-entry", { number: "1", resolutionStatus: "resolved",
     text: "WHO recommendations for routine immunization – summary tables (updated March 2023), Geneva: World Health Organization; 2023 (…)" }),
   node(SUMMARY, "publication", { title: "WHO recommendations for routine immunization – summary tables",
-    issued: "2023-03", identifiers: [{ type: "iris-handle", value: "example/immunization-summary-tables-2023" }],
+    issued: "2023-03", identifiers: [{ type: "url", value: SUMMARY_URL }],
     publicationType: "summary-table" }, pdf("IMMZ decision-support logic.xlsx, References!A2", "WHO recommendations for routine immunization – summary tables (updated March 2023)")),
 ], [
   edge("numberedAs", CITE, ENTRY),

@@ -387,6 +387,16 @@ const cases = [
   ["an IRI minted outside the scheme is rejected", L1, (d) => {
     const x = byId(d, PRV3); x.id = "https://example.org/indicator/prv3";
   }, /does not have the IRI shape/],
+  ["a web-only WHO source takes its IRI from its address", L1, (d) => {
+    const url = "https://www.who.int/teams/immunization-vaccines-and-biologicals/policies/who-recommendations-for-routine-immunization---summary-tables";
+    d.nodes.push({ id: publicationId([{ type: "url", value: url }]), type: "publication", label: "summary tables",
+      properties: { title: "WHO recommendations for routine immunization – summary tables", identifiers: [{ type: "url", value: url }],
+                    publicationType: "summary-table" },
+      derivation: "inferred", note: "IMMZ DAK reference 29", evidence: { location: "immz-dak.pdf p. 85", quote: url } });
+  }, null],
+  ["a publication IRI under an unlisted identifier type is rejected", L1, (d) => {
+    byId(d, ANC).id = ANC.replace("/isbn-", "/web-");
+  }, /does not have the IRI shape/],
   ["a contentHash that does not match the stored text is rejected", L1, (d) => {
     byId(d, A111).properties.statement += " (edited)";
   }, /contentHash that does not match/],
