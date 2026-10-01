@@ -16,6 +16,7 @@ import { readFileSync, writeFileSync, readdirSync, existsSync, statSync } from "
 import { createHash } from "node:crypto";
 import { join, relative, basename } from "node:path";
 import { sha256, artifactId, personaId, dataElementId, slug } from "./kgid.mjs";
+import { ontologyVersion } from "./ontology.mjs";
 
 const SKILL = "kg/extract-dak";
 const node = (id, type, label, properties, extra = {}) =>
@@ -242,7 +243,7 @@ export function extract(opts) {
       "@context": "http://smart.who.int/kg/l2.context.jsonld",
       id: `${ns}/kg/l2`,
       type: "Entity",
-      ontologyVersion: "1.0",
+      ontologyVersion: ontologyVersion(),
       generatedAt: new Date().toISOString().replace(/\.\d+Z$/, "Z"),
       wasDerivedFrom: derivedFrom,
       nodes,

@@ -111,6 +111,12 @@
     "implementedBy": {
       "@id": "sgkg:implementedBy"
     },
+    "derivedFrom": {
+      "@id": "sgkg:derivedFrom"
+    },
+    "appearsIn": {
+      "@id": "sgkg:appearsIn"
+    },
     "contains": {
       "@id": "sgkg:contains"
     },
@@ -123,8 +129,14 @@
     "refines": {
       "@id": "sgkg:refines"
     },
-    "restates": {
-      "@id": "sgkg:restates"
+    "partOf": {
+      "@id": "sgkg:partOf"
+    },
+    "definedIn": {
+      "@id": "sgkg:definedIn"
+    },
+    "presentedIn": {
+      "@id": "sgkg:presentedIn"
     },
     "answers": {
       "@id": "sgkg:answers"
@@ -132,11 +144,14 @@
     "addresses": {
       "@id": "sgkg:addresses"
     },
+    "hasOutcome": {
+      "@id": "sgkg:hasOutcome"
+    },
+    "forOutcome": {
+      "@id": "sgkg:forOutcome"
+    },
     "aboutIntervention": {
       "@id": "sgkg:aboutIntervention"
-    },
-    "reportedIn": {
-      "@id": "sgkg:reportedIn"
     },
     "supportedBy": {
       "@id": "sgkg:supportedBy"
@@ -147,17 +162,11 @@
     "recommends": {
       "@id": "sgkg:recommends"
     },
-    "definedIn": {
-      "@id": "sgkg:definedIn"
-    },
-    "schedules": {
-      "@id": "sgkg:schedules"
-    },
     "measures": {
       "@id": "sgkg:measures"
     },
-    "derivedFrom": {
-      "@id": "sgkg:derivedFrom"
+    "justifiedBy": {
+      "@id": "sgkg:justifiedBy"
     },
     "crossReferences": {
       "@id": "sgkg:crossReferences"
@@ -165,8 +174,8 @@
     "classifiedAs": {
       "@id": "sgkg:classifiedAs"
     },
-    "appearsIn": {
-      "@id": "sgkg:appearsIn"
+    "numberedAs": {
+      "@id": "sgkg:numberedAs"
     },
     "resolvesTo": {
       "@id": "sgkg:resolvesTo"
@@ -199,19 +208,20 @@
     "NonFunctionalRequirement": "sgkg:non-functional-requirement",
     "RequirementStatement": "sgkg:requirement-statement",
     "TestScenario": "sgkg:test-scenario",
+    "ExternalArtefact": "sgkg:external-artifact",
     "Publication": "sgkg:publication",
     "PublicationSection": "sgkg:publication-section",
+    "PublicationElement": "sgkg:publication-element",
     "Recommendation": "sgkg:recommendation",
     "Remark": "sgkg:remark",
     "KeyQuestion": "sgkg:key-question",
+    "Outcome": "sgkg:outcome",
     "Evidence": "sgkg:evidence",
     "HealthIntervention": "sgkg:health-intervention",
-    "Schedule": "sgkg:schedule",
-    "ScheduleEntry": "sgkg:schedule-entry",
     "Indicator": "sgkg:indicator",
-    "TerminologyCode": "sgkg:terminology-code",
     "Citation": "sgkg:citation",
-    "ExternalArtefact": "sgkg:external-artifact",
+    "ReferenceEntry": "sgkg:reference-entry",
+    "TerminologyCode": "sgkg:terminology-code",
     "DMNFile": "sgkg:dmn-definitions",
     "DMNDecision": "sgkg:dmn-decision",
     "DMNDecisionTable": "sgkg:dmn-decision-table",

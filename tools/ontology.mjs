@@ -123,7 +123,8 @@ export function loadLayer(layer, seen = new Set()) {
     if (new Set(codes).size !== codes.length) problems.push(`value set "${v.id}" repeats a code`);
   }
   for (const c of own.classes) {
-    for (const [prop, set] of Object.entries(c.valueSets ?? {})) {
+    for (const [prop, binding] of Object.entries(c.valueSets ?? {})) {
+      const set = typeof binding === "string" ? binding : binding?.set;
       if (!(c.properties ?? []).includes(prop)) {
         problems.push(`class "${c.id}" binds property "${prop}" to a value set but does not declare it`);
       }
@@ -136,6 +137,18 @@ export function loadLayer(layer, seen = new Set()) {
   if (problems.length) throw new Error(`${layer}.json:\n  - ${problems.join("\n  - ")}`);
 
   return { own, imported };
+}
+
+/** The schemaVersion every layer shares. Extractors stamp documents with it rather than a literal,
+ *  which went stale once already: 2.0 shipped with every extractor still writing "1.0". */
+export function ontologyVersion(layer = "l1") {
+  return readLayer(layer).schemaVersion;
+}
+
+/** A class's value-set binding, normalised: { set, severity }. A bare string binds as an error. */
+export function bindingOf(binding) {
+  return typeof binding === "string" ? { set: binding, severity: "error" }
+                                     : { set: binding.set, severity: binding.severity ?? "error" };
 }
 
 /** Class and predicate lookup across a layer and everything it imports. */

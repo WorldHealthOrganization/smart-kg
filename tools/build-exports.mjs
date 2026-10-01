@@ -23,7 +23,7 @@
 import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync } from "node:fs";
 import { join, dirname, relative } from "node:path";
 import { fileURLToPath } from "node:url";
-import { loadLayer, scopeOf, borrowedClassIds, layerDir } from "./ontology.mjs";
+import { loadLayer, scopeOf, borrowedClassIds, layerDir, bindingOf } from "./ontology.mjs";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 // Which ontology files to export. Each is authored or generated elsewhere; this only projects.
@@ -236,7 +236,8 @@ export function buildTurtle(ont, layer = { own: ont, imported: { classes: [], pr
     T.push("### Value sets", "# Closed code lists bound to class properties. tools/validate.mjs rejects any other value.", "");
     const boundTo = new Map();
     for (const c of scopeOf(layer).classes.values()) {
-      for (const [prop, set] of Object.entries(c.valueSets ?? {})) {
+      for (const [prop, binding] of Object.entries(c.valueSets ?? {})) {
+        const { set } = bindingOf(binding);
         if (!boundTo.has(set)) boundTo.set(set, []);
         boundTo.get(set).push(`${c.id}.${prop}`);
       }

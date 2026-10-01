@@ -31,55 +31,86 @@ FOR (c:KGClass) REQUIRE c.id IS UNIQUE;
 
 MERGE (:KGClass:Source {id:'publication', name:'Publication', kind:'Source', layer:'l1', iri:'http://smart.who.int/kg/publication'});
 MERGE (:KGClass:Source {id:'publication-section', name:'Publication section', kind:'Source', layer:'l1', iri:'http://smart.who.int/kg/publication-section'});
+MERGE (:KGClass:Source {id:'publication-element', name:'Publication element', kind:'Source', layer:'l1', iri:'http://smart.who.int/kg/publication-element'});
 MERGE (:KGClass:Concept {id:'recommendation', name:'Recommendation', kind:'Concept', layer:'l1', iri:'http://smart.who.int/kg/recommendation'});
 MERGE (:KGClass:Concept {id:'remark', name:'Remark', kind:'Concept', layer:'l1', iri:'http://smart.who.int/kg/remark'});
 MERGE (:KGClass:Concept {id:'key-question', name:'Key question', kind:'Concept', layer:'l1', iri:'http://smart.who.int/kg/key-question'});
+MERGE (:KGClass:Concept {id:'outcome', name:'Outcome', kind:'Concept', layer:'l1', iri:'http://smart.who.int/kg/outcome'});
 MERGE (:KGClass:Concept {id:'evidence', name:'Evidence', kind:'Concept', layer:'l1', iri:'http://smart.who.int/kg/evidence'});
 MERGE (:KGClass:Concept {id:'health-intervention', name:'Health intervention', kind:'Concept', layer:'l1', iri:'http://smart.who.int/kg/health-intervention'});
-MERGE (:KGClass:Concept {id:'schedule', name:'Schedule', kind:'Concept', layer:'l1', iri:'http://smart.who.int/kg/schedule'});
-MERGE (:KGClass:Concept {id:'schedule-entry', name:'Schedule entry', kind:'Concept', layer:'l1', iri:'http://smart.who.int/kg/schedule-entry'});
 MERGE (:KGClass:Concept {id:'indicator', name:'Indicator', kind:'Concept', layer:'l1', iri:'http://smart.who.int/kg/indicator'});
-MERGE (:KGClass:Reference {id:'terminology-code', name:'Terminology code', kind:'Reference', layer:'l1', iri:'http://smart.who.int/kg/terminology-code'});
 MERGE (:KGClass:Reference {id:'citation', name:'Citation', kind:'Reference', layer:'l1', iri:'http://smart.who.int/kg/citation'});
-MERGE (:KGClass:Reference {id:'external-artifact', name:'External artefact', kind:'Reference', layer:'l1', iri:'http://smart.who.int/kg/external-artifact'});
+MERGE (:KGClass:Reference {id:'reference-entry', name:'Reference entry', kind:'Reference', layer:'l1', iri:'http://smart.who.int/kg/reference-entry'});
+MERGE (:KGClass:Reference {id:'terminology-code', name:'Terminology code', kind:'Reference', layer:'l1', iri:'http://smart.who.int/kg/terminology-code'});
 
 MATCH (s:KGClass {id:'publication'}), (t:KGClass {id:'publication-section'}) MERGE (s)-[:CONTAINS {predicate:'contains'}]->(t);
 MATCH (s:KGClass {id:'publication-section'}), (t:KGClass {id:'publication-section'}) MERGE (s)-[:CONTAINS {predicate:'contains', qualifier:'subsection'}]->(t);
-MATCH (s:KGClass {id:'publication-section'}), (t:KGClass {id:'recommendation'}) MERGE (s)-[:CONTAINS {predicate:'contains'}]->(t);
-MATCH (s:KGClass {id:'publication'}), (t:KGClass {id:'recommendation'}) MERGE (s)-[:CONTAINS {predicate:'contains', qualifier:'unsectioned'}]->(t);
+MATCH (s:KGClass {id:'publication-section'}), (t:KGClass {id:'publication-element'}) MERGE (s)-[:CONTAINS {predicate:'contains'}]->(t);
+MATCH (s:KGClass {id:'publication'}), (t:KGClass {id:'publication-element'}) MERGE (s)-[:CONTAINS {predicate:'contains', qualifier:'unsectioned'}]->(t);
+MATCH (s:KGClass {id:'publication-element'}), (t:KGClass {id:'publication-element'}) MERGE (s)-[:CONTAINS {predicate:'contains', qualifier:'part'}]->(t);
 MATCH (s:KGClass {id:'publication'}), (t:KGClass {id:'publication'}) MERGE (s)-[:HASSUPPLEMENT {predicate:'hasSupplement'}]->(t);
 MATCH (s:KGClass {id:'publication'}), (t:KGClass {id:'publication'}) MERGE (s)-[:SUPERSEDES {predicate:'supersedes'}]->(t);
 MATCH (s:KGClass {id:'recommendation'}), (t:KGClass {id:'recommendation'}) MERGE (s)-[:SUPERSEDES {predicate:'supersedes'}]->(t);
 MATCH (s:KGClass {id:'recommendation'}), (t:KGClass {id:'recommendation'}) MERGE (s)-[:REFINES {predicate:'refines'}]->(t);
-MATCH (s:KGClass {id:'recommendation'}), (t:KGClass {id:'recommendation'}) MERGE (s)-[:RESTATES {predicate:'restates'}]->(t);
+MATCH (s:KGClass {id:'recommendation'}), (t:KGClass {id:'recommendation'}) MERGE (s)-[:PARTOF {predicate:'partOf'}]->(t);
+MATCH (s:KGClass {id:'recommendation'}), (t:KGClass {id:'publication'}) MERGE (s)-[:DEFINEDIN {predicate:'definedIn'}]->(t);
+MATCH (s:KGClass {id:'indicator'}), (t:KGClass {id:'publication'}) MERGE (s)-[:DEFINEDIN {predicate:'definedIn'}]->(t);
+MATCH (s:KGClass {id:'health-intervention'}), (t:KGClass {id:'publication'}) MERGE (s)-[:DEFINEDIN {predicate:'definedIn'}]->(t);
+MATCH (s:KGClass {id:'key-question'}), (t:KGClass {id:'publication'}) MERGE (s)-[:DEFINEDIN {predicate:'definedIn'}]->(t);
+MATCH (s:KGClass {id:'evidence'}), (t:KGClass {id:'publication'}) MERGE (s)-[:DEFINEDIN {predicate:'definedIn'}]->(t);
+MATCH (s:KGClass {id:'outcome'}), (t:KGClass {id:'publication'}) MERGE (s)-[:DEFINEDIN {predicate:'definedIn'}]->(t);
+MATCH (s:KGClass {id:'remark'}), (t:KGClass {id:'publication'}) MERGE (s)-[:DEFINEDIN {predicate:'definedIn'}]->(t);
+MATCH (s:KGClass {id:'recommendation'}), (t:KGClass {id:'publication-section'}) MERGE (s)-[:PRESENTEDIN {predicate:'presentedIn'}]->(t);
+MATCH (s:KGClass {id:'recommendation'}), (t:KGClass {id:'publication-element'}) MERGE (s)-[:PRESENTEDIN {predicate:'presentedIn'}]->(t);
+MATCH (s:KGClass {id:'indicator'}), (t:KGClass {id:'publication-section'}) MERGE (s)-[:PRESENTEDIN {predicate:'presentedIn'}]->(t);
+MATCH (s:KGClass {id:'indicator'}), (t:KGClass {id:'publication-element'}) MERGE (s)-[:PRESENTEDIN {predicate:'presentedIn'}]->(t);
+MATCH (s:KGClass {id:'health-intervention'}), (t:KGClass {id:'publication-section'}) MERGE (s)-[:PRESENTEDIN {predicate:'presentedIn'}]->(t);
+MATCH (s:KGClass {id:'health-intervention'}), (t:KGClass {id:'publication-element'}) MERGE (s)-[:PRESENTEDIN {predicate:'presentedIn'}]->(t);
+MATCH (s:KGClass {id:'key-question'}), (t:KGClass {id:'publication-section'}) MERGE (s)-[:PRESENTEDIN {predicate:'presentedIn'}]->(t);
+MATCH (s:KGClass {id:'key-question'}), (t:KGClass {id:'publication-element'}) MERGE (s)-[:PRESENTEDIN {predicate:'presentedIn'}]->(t);
+MATCH (s:KGClass {id:'evidence'}), (t:KGClass {id:'publication-section'}) MERGE (s)-[:PRESENTEDIN {predicate:'presentedIn'}]->(t);
+MATCH (s:KGClass {id:'evidence'}), (t:KGClass {id:'publication-element'}) MERGE (s)-[:PRESENTEDIN {predicate:'presentedIn'}]->(t);
+MATCH (s:KGClass {id:'outcome'}), (t:KGClass {id:'publication-section'}) MERGE (s)-[:PRESENTEDIN {predicate:'presentedIn'}]->(t);
+MATCH (s:KGClass {id:'outcome'}), (t:KGClass {id:'publication-element'}) MERGE (s)-[:PRESENTEDIN {predicate:'presentedIn'}]->(t);
+MATCH (s:KGClass {id:'remark'}), (t:KGClass {id:'publication-section'}) MERGE (s)-[:PRESENTEDIN {predicate:'presentedIn'}]->(t);
+MATCH (s:KGClass {id:'remark'}), (t:KGClass {id:'publication-element'}) MERGE (s)-[:PRESENTEDIN {predicate:'presentedIn'}]->(t);
 MATCH (s:KGClass {id:'recommendation'}), (t:KGClass {id:'key-question'}) MERGE (s)-[:ANSWERS {predicate:'answers'}]->(t);
-MATCH (s:KGClass {id:'key-question'}), (t:KGClass {id:'health-intervention'}) MERGE (s)-[:ABOUTINTERVENTION {predicate:'aboutIntervention'}]->(t);
 MATCH (s:KGClass {id:'evidence'}), (t:KGClass {id:'key-question'}) MERGE (s)-[:ADDRESSES {predicate:'addresses'}]->(t);
-MATCH (s:KGClass {id:'evidence'}), (t:KGClass {id:'publication'}) MERGE (s)-[:REPORTEDIN {predicate:'reportedIn'}]->(t);
+MATCH (s:KGClass {id:'key-question'}), (t:KGClass {id:'outcome'}) MERGE (s)-[:HASOUTCOME {predicate:'hasOutcome'}]->(t);
+MATCH (s:KGClass {id:'evidence'}), (t:KGClass {id:'outcome'}) MERGE (s)-[:FOROUTCOME {predicate:'forOutcome'}]->(t);
+MATCH (s:KGClass {id:'key-question'}), (t:KGClass {id:'health-intervention'}) MERGE (s)-[:ABOUTINTERVENTION {predicate:'aboutIntervention'}]->(t);
 MATCH (s:KGClass {id:'recommendation'}), (t:KGClass {id:'evidence'}) MERGE (s)-[:SUPPORTEDBY {predicate:'supportedBy'}]->(t);
 MATCH (s:KGClass {id:'recommendation'}), (t:KGClass {id:'remark'}) MERGE (s)-[:HASREMARK {predicate:'hasRemark'}]->(t);
 MATCH (s:KGClass {id:'recommendation'}), (t:KGClass {id:'health-intervention'}) MERGE (s)-[:RECOMMENDS {predicate:'recommends'}]->(t);
-MATCH (s:KGClass {id:'schedule'}), (t:KGClass {id:'publication'}) MERGE (s)-[:DEFINEDIN {predicate:'definedIn'}]->(t);
-MATCH (s:KGClass {id:'schedule'}), (t:KGClass {id:'schedule-entry'}) MERGE (s)-[:CONTAINS {predicate:'contains'}]->(t);
-MATCH (s:KGClass {id:'schedule-entry'}), (t:KGClass {id:'health-intervention'}) MERGE (s)-[:SCHEDULES {predicate:'schedules'}]->(t);
-MATCH (s:KGClass {id:'schedule-entry'}), (t:KGClass {id:'recommendation'}) MERGE (s)-[:DERIVEDFROM {predicate:'derivedFrom'}]->(t);
-MATCH (s:KGClass {id:'indicator'}), (t:KGClass {id:'publication'}) MERGE (s)-[:DEFINEDIN {predicate:'definedIn'}]->(t);
 MATCH (s:KGClass {id:'indicator'}), (t:KGClass {id:'health-intervention'}) MERGE (s)-[:MEASURES {predicate:'measures'}]->(t);
-MATCH (s:KGClass {id:'indicator'}), (t:KGClass {id:'recommendation'}) MERGE (s)-[:DERIVEDFROM {predicate:'derivedFrom'}]->(t);
+MATCH (s:KGClass {id:'indicator'}), (t:KGClass {id:'recommendation'}) MERGE (s)-[:MEASURES {predicate:'measures'}]->(t);
+MATCH (s:KGClass {id:'indicator'}), (t:KGClass {id:'recommendation'}) MERGE (s)-[:JUSTIFIEDBY {predicate:'justifiedBy'}]->(t);
 MATCH (s:KGClass {id:'recommendation'}), (t:KGClass {id:'terminology-code'}) MERGE (s)-[:CROSSREFERENCES {predicate:'crossReferences'}]->(t);
+MATCH (s:KGClass {id:'recommendation'}), (t:KGClass {id:'terminology-code'}) MERGE (s)-[:CROSSREFERENCES {predicate:'crossReferences', qualifier:'intervention'}]->(t);
+MATCH (s:KGClass {id:'recommendation'}), (t:KGClass {id:'terminology-code'}) MERGE (s)-[:CROSSREFERENCES {predicate:'crossReferences', qualifier:'population'}]->(t);
+MATCH (s:KGClass {id:'recommendation'}), (t:KGClass {id:'terminology-code'}) MERGE (s)-[:CROSSREFERENCES {predicate:'crossReferences', qualifier:'setting'}]->(t);
+MATCH (s:KGClass {id:'recommendation'}), (t:KGClass {id:'terminology-code'}) MERGE (s)-[:CROSSREFERENCES {predicate:'crossReferences', qualifier:'provider'}]->(t);
+MATCH (s:KGClass {id:'recommendation'}), (t:KGClass {id:'terminology-code'}) MERGE (s)-[:CROSSREFERENCES {predicate:'crossReferences', qualifier:'timing'}]->(t);
 MATCH (s:KGClass {id:'key-question'}), (t:KGClass {id:'terminology-code'}) MERGE (s)-[:CROSSREFERENCES {predicate:'crossReferences'}]->(t);
-MATCH (s:KGClass {id:'schedule-entry'}), (t:KGClass {id:'terminology-code'}) MERGE (s)-[:CROSSREFERENCES {predicate:'crossReferences'}]->(t);
 MATCH (s:KGClass {id:'indicator'}), (t:KGClass {id:'terminology-code'}) MERGE (s)-[:CROSSREFERENCES {predicate:'crossReferences'}]->(t);
 MATCH (s:KGClass {id:'health-intervention'}), (t:KGClass {id:'terminology-code'}) MERGE (s)-[:CROSSREFERENCES {predicate:'crossReferences'}]->(t);
+MATCH (s:KGClass {id:'outcome'}), (t:KGClass {id:'terminology-code'}) MERGE (s)-[:CROSSREFERENCES {predicate:'crossReferences'}]->(t);
+MATCH (s:KGClass {id:'health-intervention'}), (t:KGClass {id:'terminology-code'}) MERGE (s)-[:CLASSIFIEDAS {predicate:'classifiedAs', qualifier:'UHC'}]->(t);
+MATCH (s:KGClass {id:'health-intervention'}), (t:KGClass {id:'terminology-code'}) MERGE (s)-[:CLASSIFIEDAS {predicate:'classifiedAs', qualifier:'ICHI'}]->(t);
 MATCH (s:KGClass {id:'health-intervention'}), (t:KGClass {id:'terminology-code'}) MERGE (s)-[:CLASSIFIEDAS {predicate:'classifiedAs', qualifier:'CDHI'}]->(t);
-MATCH (s:KGClass {id:'citation'}), (t:KGClass {id:'external-artifact'}) MERGE (s)-[:APPEARSIN {predicate:'appearsIn'}]->(t);
+MATCH (s:KGClass {id:'citation'}), (t:KGClass {id:'reference-entry'}) MERGE (s)-[:NUMBEREDAS {predicate:'numberedAs'}]->(t);
 MATCH (s:KGClass {id:'citation'}), (t:KGClass {id:'publication'}) MERGE (s)-[:RESOLVESTO {predicate:'resolvesTo'}]->(t);
+MATCH (s:KGClass {id:'citation'}), (t:KGClass {id:'publication-section'}) MERGE (s)-[:RESOLVESTO {predicate:'resolvesTo'}]->(t);
+MATCH (s:KGClass {id:'citation'}), (t:KGClass {id:'publication-element'}) MERGE (s)-[:RESOLVESTO {predicate:'resolvesTo'}]->(t);
 MATCH (s:KGClass {id:'citation'}), (t:KGClass {id:'recommendation'}) MERGE (s)-[:RESOLVESTO {predicate:'resolvesTo'}]->(t);
-MATCH (s:KGClass {id:'citation'}), (t:KGClass {id:'schedule'}) MERGE (s)-[:RESOLVESTO {predicate:'resolvesTo'}]->(t);
-MATCH (s:KGClass {id:'recommendation'}), (t:KGClass {id:'external-artifact'}) MERGE (s)-[:IMPLEMENTEDBY {predicate:'implementedBy'}]->(t);
-MATCH (s:KGClass {id:'schedule-entry'}), (t:KGClass {id:'external-artifact'}) MERGE (s)-[:IMPLEMENTEDBY {predicate:'implementedBy'}]->(t);
-MATCH (s:KGClass {id:'indicator'}), (t:KGClass {id:'external-artifact'}) MERGE (s)-[:IMPLEMENTEDBY {predicate:'implementedBy'}]->(t);
-MATCH (s:KGClass {id:'health-intervention'}), (t:KGClass {id:'external-artifact'}) MERGE (s)-[:IMPLEMENTEDBY {predicate:'implementedBy'}]->(t);
+MATCH (s:KGClass {id:'citation'}), (t:KGClass {id:'indicator'}) MERGE (s)-[:RESOLVESTO {predicate:'resolvesTo'}]->(t);
+MATCH (s:KGClass {id:'citation'}), (t:KGClass {id:'health-intervention'}) MERGE (s)-[:RESOLVESTO {predicate:'resolvesTo'}]->(t);
+MATCH (s:KGClass {id:'reference-entry'}), (t:KGClass {id:'publication'}) MERGE (s)-[:RESOLVESTO {predicate:'resolvesTo'}]->(t);
+MATCH (s:KGClass {id:'reference-entry'}), (t:KGClass {id:'publication-section'}) MERGE (s)-[:RESOLVESTO {predicate:'resolvesTo'}]->(t);
+MATCH (s:KGClass {id:'reference-entry'}), (t:KGClass {id:'publication-element'}) MERGE (s)-[:RESOLVESTO {predicate:'resolvesTo'}]->(t);
+MATCH (s:KGClass {id:'reference-entry'}), (t:KGClass {id:'recommendation'}) MERGE (s)-[:RESOLVESTO {predicate:'resolvesTo'}]->(t);
+MATCH (s:KGClass {id:'reference-entry'}), (t:KGClass {id:'indicator'}) MERGE (s)-[:RESOLVESTO {predicate:'resolvesTo'}]->(t);
+MATCH (s:KGClass {id:'reference-entry'}), (t:KGClass {id:'health-intervention'}) MERGE (s)-[:RESOLVESTO {predicate:'resolvesTo'}]->(t);
 
 // WHO SMART Guidelines knowledge graph -- L2 ONTOLOGY (type graph).
 // Generated by tools/build-exports.mjs. Do not edit; edit the ontology JSON.
@@ -97,7 +128,7 @@ MATCH (s:KGClass {id:'health-intervention'}), (t:KGClass {id:'external-artifact'
 //     cypher-shell -d neo4j -f <this file>           (shell)
 //
 // REQUIRES l1.cypher TO BE LOADED FIRST.
-// This layer licenses edges onto imported classes (external-artifact, health-intervention, indicator, recommendation, schedule, schedule-entry, terminology-code). The MATCH
+// This layer licenses edges onto imported classes (citation, health-intervention, indicator, recommendation, terminology-code). The MATCH
 // statements below find nothing if those classes are absent, and Cypher does not treat
 // that as an error -- the edges would simply be missing. Verify with the query at the
 // end of this file.
@@ -115,6 +146,7 @@ MERGE (:KGClass:Component {id:'functional-requirement', name:'Functional Require
 MERGE (:KGClass:Component {id:'non-functional-requirement', name:'Non-Functional Requirement', kind:'Component', layer:'l2', iri:'http://smart.who.int/kg/non-functional-requirement'});
 MERGE (:KGClass:Element {id:'requirement-statement', name:'Requirement Statement', kind:'Element', layer:'l2', iri:'http://smart.who.int/kg/requirement-statement'});
 MERGE (:KGClass:Component {id:'test-scenario', name:'Test Scenario', kind:'Component', layer:'l2', iri:'http://smart.who.int/kg/test-scenario'});
+MERGE (:KGClass:Reference {id:'external-artifact', name:'External artefact', kind:'Reference', layer:'l2', iri:'http://smart.who.int/kg/external-artifact'});
 
 MATCH (s:KGClass {id:'dak'}), (t:KGClass {id:'health-intervention'}) MERGE (s)-[:HASCOMPONENT {predicate:'hasComponent', qualifier:'healthInterventions'}]->(t);
 MATCH (s:KGClass {id:'dak'}), (t:KGClass {id:'persona'}) MERGE (s)-[:HASCOMPONENT {predicate:'hasComponent', qualifier:'personas'}]->(t);
@@ -133,8 +165,6 @@ MATCH (s:KGClass {id:'recommendation'}), (t:KGClass {id:'decision-support-logic'
 MATCH (s:KGClass {id:'recommendation'}), (t:KGClass {id:'persona'}) MERGE (s)-[:IMPLEMENTEDBY {predicate:'implementedBy'}]->(t);
 MATCH (s:KGClass {id:'recommendation'}), (t:KGClass {id:'user-scenario'}) MERGE (s)-[:IMPLEMENTEDBY {predicate:'implementedBy'}]->(t);
 MATCH (s:KGClass {id:'indicator'}), (t:KGClass {id:'program-indicator'}) MERGE (s)-[:IMPLEMENTEDBY {predicate:'implementedBy'}]->(t);
-MATCH (s:KGClass {id:'schedule-entry'}), (t:KGClass {id:'scheduling-logic'}) MERGE (s)-[:IMPLEMENTEDBY {predicate:'implementedBy'}]->(t);
-MATCH (s:KGClass {id:'schedule'}), (t:KGClass {id:'scheduling-logic'}) MERGE (s)-[:IMPLEMENTEDBY {predicate:'implementedBy'}]->(t);
 MATCH (s:KGClass {id:'business-process'}), (t:KGClass {id:'external-artifact'}) MERGE (s)-[:SOURCEDFROM {predicate:'sourcedFrom'}]->(t);
 MATCH (s:KGClass {id:'decision-support-logic'}), (t:KGClass {id:'external-artifact'}) MERGE (s)-[:SOURCEDFROM {predicate:'sourcedFrom'}]->(t);
 MATCH (s:KGClass {id:'test-scenario'}), (t:KGClass {id:'external-artifact'}) MERGE (s)-[:SOURCEDFROM {predicate:'sourcedFrom'}]->(t);
@@ -157,10 +187,15 @@ MATCH (s:KGClass {id:'data-element'}), (t:KGClass {id:'terminology-code'}) MERGE
 MATCH (s:KGClass {id:'program-indicator'}), (t:KGClass {id:'terminology-code'}) MERGE (s)-[:CROSSREFERENCES {predicate:'crossReferences'}]->(t);
 MATCH (s:KGClass {id:'functional-requirement'}), (t:KGClass {id:'terminology-code'}) MERGE (s)-[:CROSSREFERENCES {predicate:'crossReferences'}]->(t);
 MATCH (s:KGClass {id:'non-functional-requirement'}), (t:KGClass {id:'terminology-code'}) MERGE (s)-[:CROSSREFERENCES {predicate:'crossReferences'}]->(t);
+MATCH (s:KGClass {id:'citation'}), (t:KGClass {id:'external-artifact'}) MERGE (s)-[:APPEARSIN {predicate:'appearsIn'}]->(t);
+MATCH (s:KGClass {id:'recommendation'}), (t:KGClass {id:'external-artifact'}) MERGE (s)-[:IMPLEMENTEDBY {predicate:'implementedBy'}]->(t);
+MATCH (s:KGClass {id:'indicator'}), (t:KGClass {id:'external-artifact'}) MERGE (s)-[:IMPLEMENTEDBY {predicate:'implementedBy'}]->(t);
+MATCH (s:KGClass {id:'health-intervention'}), (t:KGClass {id:'external-artifact'}) MERGE (s)-[:IMPLEMENTEDBY {predicate:'implementedBy'}]->(t);
+MATCH (s:KGClass {id:'recommendation'}), (t:KGClass {id:'scheduling-logic'}) MERGE (s)-[:IMPLEMENTEDBY {predicate:'implementedBy'}]->(t);
 
-// Verification. Must return 7 rows -- one per imported class this layer
+// Verification. Must return 5 rows -- one per imported class this layer
 // builds on. Fewer means an imported layer was not loaded and edges above are missing.
-// MATCH (c:KGClass) WHERE c.id IN ['external-artifact', 'health-intervention', 'indicator', 'recommendation', 'schedule', 'schedule-entry', 'terminology-code'] RETURN c.id;
+// MATCH (c:KGClass) WHERE c.id IN ['citation', 'health-intervention', 'indicator', 'recommendation', 'terminology-code'] RETURN c.id;
 
 // WHO SMART Guidelines knowledge graph -- L2-BPMN ONTOLOGY (type graph).
 // Generated by tools/build-exports.mjs. Do not edit; edit the ontology JSON.

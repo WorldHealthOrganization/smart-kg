@@ -179,10 +179,26 @@ tie-break for a matcher.
 GRADE strength, certainty and direction, the handbook's guideline types, recommendation status and
 citation resolution are **value sets** in `l1.json`, each code with a definition and a source.
 `tools/validate.mjs` rejects any other value — `"Strong"` is not `strong`, and a coverage query
-filtering on one silently misses the other. It also enforces GRADE's own pairing: a recommendation
-states direction and strength together, and a good practice statement or a decision to make no
-recommendation carries no grade.
+filtering on one silently misses the other. It also enforces GRADE's own rules: a strength always
+has a direction (a direction alone is fine — ANC 2016 prints "Recommended" with no strength), and a
+good practice statement or a decision to make no recommendation carries no grade.
 
 The GRADE lists are copied here rather than referenced. folio-assistant publishes the same
 vocabularies as SKOS code lists; pointing at those, pinned by hash, is deliberately deferred so
 this repository takes on no external dependency yet.
+
+### L1 points nowhere
+
+Since 3.0, L1 holds what WHO says and where it is printed, and nothing in it points out of it. A
+DAK's files (`external-artifact`) and the edges into them (`appearsIn`, `implementedBy`) are L2's,
+and point down at L1. Keeping a second copy of those edges in L1 gave the question "which artefacts
+implement this recommendation?" two paths, and each extractor would have picked one.
+
+### Identity is built from what WHO prints
+
+An L1 IRI is minted by `tools/kgid.mjs` from the publication's ISBN (or IRIS handle, DOI, ISSN) and
+the published number — `…/publication/isbn-9789241549912/recommendation/A.1.1` — under one WHO-wide
+namespace. The same guideline extracted twice yields the same nodes, and the ANC recommendations
+cited by several DAKs are one set of nodes, not one per DAK. A new edition has a new ISBN, so it is a
+new publication linked by `supersedes`; renumbering between editions cannot collide. The validator
+rejects an L1 node whose IRI does not have its class's shape.
