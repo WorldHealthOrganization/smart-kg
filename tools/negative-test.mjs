@@ -17,13 +17,19 @@ import { writeFileSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { validateGraph, layerOf } from "./validate.mjs";
 import { loadLayer } from "./ontology.mjs";
+import { citationId, referenceEntryId, publicationId, sectionId, publicationElementId, recommendationId,
+         remarkId, keyQuestionId, outcomeId, evidenceId, healthInterventionId, indicatorId, L1_NAMESPACE,
+         contentHash, contentText } from "./kgid.mjs";
 
 const NS = "https://example.org/dak";
+// Every layer shares one schemaVersion -- loadLayer refuses an import across versions -- so the
+// fixtures read it rather than pinning a copy that goes stale on the next bump.
+const VERSION = loadLayer("l1").own.schemaVersion;
 const doc = (layer, nodes, edges) => ({
   "@context": `http://smart.who.int/kg/${layer}.context.jsonld`,
   id: `${NS}/kg/${layer}`,
   type: "Entity",
-  ontologyVersion: "1.0",
+  ontologyVersion: VERSION,
   generatedAt: "2026-01-01T00:00:00Z",
   wasDerivedFrom: [{ path: "fixture", sha256: "0".repeat(64) }],
   nodes,
@@ -42,17 +48,145 @@ const inferred = (why) => ({
   evidence: { location: "fixture#1", quote: "…" },
 });
 
+const ie = (predicate, source, target, extra = {}) =>
+  e(predicate, source, target, { derivation: "inferred", note: "read from the guideline PDF",
+                                 evidence: { location: "fixture", quote: "…" }, ...extra });
+
 const DMN_FILE = `${NS}/artifact/DT.EXAMPLE`;
-const CITATION = `${NS}/citation/abc123abc123`;
+const CITATION = citationId(NS, "Example guideline (1)");
+const PLACEHOLDER = citationId(NS, "[Add appropriate reference]");
+const REF1 = referenceEntryId(DMN_FILE, 1);
+
+// L1 is WHO content, so its fixture uses the real ANC (2016) and HIV strategic information (2022)
+// guidelines this model was checked against, with IRIs minted the way an extractor would mint them.
+// Wording is quoted from the PDFs. Kinds those two guidelines do not exercise -- a good practice
+// statement, a no-recommendation -- sit in a clearly fictional example publication.
+const ANC = publicationId([{ type: "isbn", value: "978-92-4-154991-2" }]);
+const ANC_ANNEX = publicationId([{ type: "iris-handle", value: "example/anc-2016-web-annexes" }]);
+const ANC_SEC = sectionId(ANC, "3.A.1");
+const ANC_T1 = publicationElementId(ANC, "Table 1");
+const ANC_ROW = publicationElementId(ANC, "Table 1", "row 2");
+const ANC_FN = publicationElementId(ANC, "Table 1", "row 2", "footnote a");
+const A111 = recommendationId(ANC, "A.1.1");
+const A111_REMARK = remarkId(A111, 1);
+const KQ = keyQuestionId(ANC, "A.1.1");
+const EGWG = outcomeId(ANC, "excessive gestational weight gain");
+const EVID = evidenceId(ANC, "A.1.1", "excessive gestational weight gain");
+const DIET_HI = healthInterventionId("UHC", "example-diet-counselling");
+const HIV = publicationId([{ type: "isbn", value: "978-92-4-005531-5" }]);
+const PRV3 = indicatorId(HIV, "PRV.3");
+const EX = publicationId([{ type: "isbn", value: "0000000000000" }]);
+const GPS = recommendationId(EX, "1");
+const NOREC = recommendationId(EX, "2");
+const CODE = `${L1_NAMESPACE}/code/icd-11/example`;
+
+const pdf = (where, q) => ({ derivation: "inferred", note: "extracted from the guideline PDF",
+                              evidence: { location: where, quote: q } });
+const hashed = (props, fields) => ({ ...props, contentHash: contentHash(contentText({ properties: props }, fields)) });
+const A111_STATEMENT = "Counselling about healthy eating and keeping physically active during pregnancy is " +
+  "recommended for pregnant women to stay healthy and to prevent excessive weight gain during pregnancy.";
 
 const L1 = doc("l1", [
-  n(DMN_FILE, "external-artifact", "Example decision table",
-    { iri: DMN_FILE, targetKind: "dmn:DecisionTable" }),
   n(CITATION, "citation", "Example guideline (1)",
-    { text: "Example guideline (1)", location: "fixture#rule1", numbering: "1",
-      resolutionStatus: "unresolved" }),
+    { text: "Example guideline (1)", numbering: "1", citationKind: "reference", resolutionStatus: "unresolved" }),
+  n(PLACEHOLDER, "citation", "[Add appropriate reference]",
+    { text: "[Add appropriate reference]", citationKind: "placeholder", resolutionStatus: "unresolved" }),
+  n(REF1, "reference-entry", "(1)",
+    { number: "1", text: "Example guideline. Geneva: Example; 2024 (https://example.org/guideline).",
+      url: "https://example.org/guideline", resolutionStatus: "unresolved" }),
+  n(ANC, "publication", "WHO recommendations on antenatal care for a positive pregnancy experience",
+    { title: "WHO recommendations on antenatal care for a positive pregnancy experience", issued: "2016",
+      identifiers: [{ type: "isbn", value: "978-92-4-154991-2" }], publicationType: "standard-guideline",
+      grcStatus: "approved", sha256: "338300b76172d410b91048209305fac53e1166c3be295a18b3f2c0c7c6b54182" },
+    pdf("anc.pdf p. ii", "ISBN 978 92 4 154991 2")),
+  n(ANC_ANNEX, "publication", "ANC 2016 web annexes",
+    { title: "WHO recommendations on antenatal care for a positive pregnancy experience: web annexes",
+      identifiers: [{ type: "iris-handle", value: "example/anc-2016-web-annexes" }], publicationType: "supplement" },
+    pdf("anc-web-annexes.pdf p. 1", "web annexes")),
+  n(ANC_SEC, "publication-section", "A.1 Dietary interventions",
+    { heading: "A.1: Dietary interventions", number: "3.A.1", pageRange: "15-16" }, pdf("anc.pdf p. 15", "A.1: Dietary interventions")),
+  n(ANC_T1, "publication-element", "Table 1",
+    { elementType: "table", label: "Table 1", pageRange: "xi-xiv",
+      caption: "These recommendations apply to pregnant women and adolescent girls within the context of routine ANC",
+      columns: ["", "Recommendation", "Type of recommendation"],
+      columnMap: { "Recommendation": "statement", "Type of recommendation": "kind+direction" } },
+    pdf("anc.pdf p. xi", "Table 1: Summary list of WHO recommendations on antenatal care")),
+  n(ANC_ROW, "publication-element", "Table 1 / A.1.1",
+    { elementType: "table-row", rowType: "data", ordinal: 2, cells: ["Dietary interventions", null, null] },
+    pdf("anc.pdf p. xi", "Dietary interventions")),
+  n(ANC_FN, "publication-element", "footnote a", { elementType: "footnote", label: "a" },
+    pdf("anc.pdf p. xi", "a. A healthy diet contains adequate energy…")),
+  n(A111, "recommendation", "A.1.1",
+    hashed({ identifier: "A.1.1", statement: A111_STATEMENT, kind: "recommendation", direction: "for",
+             intervention: "Counselling about healthy eating and keeping physically active",
+             population: "pregnant women", status: "current" }, ["statement"]),
+    pdf("anc.pdf p. 15", "RECOMMENDATION A.1.1: Counselling about healthy eating…")),
+  n(A111_REMARK, "remark", "A.1.1 remark 1",
+    hashed({ text: "A healthy diet contains adequate energy, protein, vitamins and minerals, obtained through " +
+             "the consumption of a variety of foods.", remarkType: "definition", ordinal: 1 }, ["text"]),
+    pdf("anc.pdf p. 15", "A healthy diet contains adequate energy…")),
+  n(KQ, "key-question", "KQ A.1.1",
+    hashed({ identifier: "A.1.1", text: "For pregnant women (P), do diet and/or exercise interventions (I) " +
+             "compared with standard ANC (C) improve maternal and perinatal outcomes (O)?",
+             population: "pregnant women", intervention: "diet and/or exercise interventions",
+             comparator: "standard ANC" }, ["text"]),
+    pdf("anc-web-annexes.pdf p. 1", "A.1.1: For pregnant women (P)…")),
+  n(EGWG, "outcome", "EGWG",
+    { name: "excessive gestational weight gain", importance: "critical", aliases: ["excessive weight gain", "EGWG"],
+      category: "Maternal morbidity" }, pdf("anc-web-annexes.pdf p. 1", "Maternal morbidity (excessive weight gain…)")),
+  n(EVID, "evidence", "A.1.1 / EGWG",
+    hashed({ evidenceType: "effect", certainty: "high", studyCount: 24,
+             summary: "High-certainty evidence shows that women receiving diet and/or exercise interventions as " +
+                      "part of ANC to prevent EGWG are less likely to experience EGWG." }, ["summary"]),
+    pdf("anc.pdf p. 16", "High-certainty evidence shows…")),
+  n(DIET_HI, "health-intervention", "Diet counselling (example code)",
+    { name: "Diet counselling in pregnancy", interventionType: "behavioural" }, pdf("fixture: example catalogue code", "…")),
+  n(HIV, "publication", "Consolidated guidelines on person-centred HIV strategic information",
+    { title: "Consolidated guidelines on person-centred HIV strategic information", issued: "2022",
+      identifiers: [{ type: "isbn", value: "978-92-4-005531-5" }], publicationType: "consolidated-guideline" },
+    pdf("hiv-si.pdf p. ii", "ISBN 978-92-4-005531-5")),
+  n(PRV3, "indicator", "PRV.3 PrEP coverage",
+    hashed({ refNo: "PRV.3", shortName: "PrEP coverage", changeStatus: "new",
+             definition: "% of people prescribed PrEP among those identified as being at elevated risk for HIV acquisition" },
+           ["definition", "numerator", "denominator"]),
+    pdf("hiv-si.pdf p. 294", "PRV.3 PrEP coverage (NEW)")),
+  n(EX, "publication", "Example guideline (fictional)",
+    { title: "Example guideline", identifiers: [{ type: "isbn", value: "0000000000000" }],
+      publicationType: "standard-guideline", grcStatus: "approved" }, pdf("fixture", "…")),
+  n(GPS, "recommendation", "Example good practice statement",
+    hashed({ statement: "Vaccinators should record every dose given.", kind: "good-practice-statement",
+             direction: "for" }, ["statement"]), pdf("fixture", "Vaccinators should record every dose given.")),
+  n(NOREC, "recommendation", "Example no-recommendation",
+    hashed({ statement: "No recommendation can be made on a booster dose.", kind: "no-recommendation" }, ["statement"]),
+    pdf("fixture", "No recommendation can be made on a booster dose.")),
+  n(CODE, "terminology-code", "example code", { system: "ICD-11", code: "example", display: "pregnancy (example)" }),
 ], [
-  e("appearsIn", CITATION, DMN_FILE),
+  e("numberedAs", CITATION, REF1),
+  ie("hasSupplement", ANC, ANC_ANNEX),
+  ie("contains", ANC, ANC_SEC),
+  ie("contains", ANC, ANC_T1, { qualifier: "unsectioned" }),
+  ie("contains", ANC_T1, ANC_ROW, { qualifier: "part" }),
+  ie("contains", ANC_ROW, ANC_FN, { qualifier: "part" }),
+  ie("definedIn", A111, ANC),
+  ie("presentedIn", A111, ANC_ROW),
+  ie("presentedIn", A111, ANC_SEC),
+  ie("hasRemark", A111, A111_REMARK),
+  ie("definedIn", A111_REMARK, ANC),
+  ie("presentedIn", A111_REMARK, ANC_FN),
+  ie("answers", A111, KQ),
+  ie("definedIn", KQ, ANC),
+  ie("hasOutcome", KQ, EGWG),
+  ie("definedIn", EGWG, ANC),
+  ie("addresses", EVID, KQ),
+  ie("forOutcome", EVID, EGWG),
+  ie("definedIn", EVID, ANC),
+  ie("supportedBy", A111, EVID),
+  ie("recommends", A111, DIET_HI),
+  ie("aboutIntervention", KQ, DIET_HI),
+  ie("crossReferences", A111, CODE, { qualifier: "population" }),
+  ie("definedIn", PRV3, HIV),
+  ie("definedIn", GPS, EX),
+  ie("definedIn", NOREC, EX),
 ]);
 
 const DAK = `${NS}/kg/dak`;
@@ -70,7 +204,10 @@ const L2 = doc("l2", [
     { id: "Example.Skills.RecordVisit", title: "Can record a visit", sourceKind: "instance" }),
   n(STMT, "requirement-statement", "REC-01",
     { key: "REC-01", label: "Record a visit", requirement: "Can record a visit.", conformance: "SHALL" }),
+  // Moved from L1 in 3.0: a DAK file is the DAK's material. The citation it carries is an L1 node.
+  n(DMN_FILE, "external-artifact", "Example decision table", { iri: DMN_FILE, targetKind: "dmn" }),
 ], [
+  e("appearsIn", CITATION, DMN_FILE),
   e("hasComponent", DAK, PERSONA, { qualifier: "personas", ...inferred("presence in the input tree") }),
   e("hasComponent", DAK, REQ, { qualifier: "requirements", ...inferred("presence in the input tree") }),
   e("hasStatement", REQ, STMT),
@@ -188,22 +325,128 @@ const clone = (o) => JSON.parse(JSON.stringify(o));
 const index = (...docs) => new Map(docs.flatMap((d) => (d.nodes ?? []).map((x) => [x.id, x])));
 const find = (d, type) => d.nodes.find((x) => x.type === type);
 const findEdge = (d, predicate) => d.edges.find((x) => x.predicate === predicate);
+const byId = (d, id) => d.nodes.find((x) => x.id === id);
 
 const cases = [
   // --- rules that predate the subgraphs ---------------------------------------------------------
-  ["unknown class is rejected", L1, (d) => { d.nodes[0].type = "wormhole"; }, /does not declare/],
-  ["dangling edge target is rejected", L1, (d) => { d.edges[0].target = "urn:nope"; }, /defined in no document/],
-  ["undeclared property is rejected", L1, (d) => { d.nodes[0].properties.colour = "blue"; }, /does not declare/],
-  ["inferred node without evidence is rejected", L1, (d) => {
-    d.nodes[1].derivation = "inferred"; d.nodes[1].note = "why";
-  }, /carries no evidence/],
+  ["unknown class is rejected", L1, (d) => { find(d, "remark").type = "wormhole"; }, /does not declare/],
+  ["dangling edge target is rejected", L1, (d) => { findEdge(d, "answers").target = "urn:nope"; }, /defined in no document/],
+  ["undeclared property is rejected", L1, (d) => { find(d, "publication").properties.colour = "blue"; }, /does not declare/],
+  ["inferred node without evidence is rejected", L1, (d) => { delete byId(d, A111).evidence; }, /carries no evidence/],
   ["citation claiming resolution without a resolvesTo edge is rejected", L1, (d) => {
-    find(d, "citation").properties.resolutionStatus = "resolved";
+    byId(d, CITATION).properties.resolutionStatus = "resolved";
   }, /claims resolutionStatus "resolved" but has no resolvesTo/],
   ["a citation with no verbatim text is rejected", L1, (d) => {
-    delete find(d, "citation").properties.text;
+    delete byId(d, CITATION).properties.text;
   }, /carries no verbatim text/],
   ["version mismatch stops the run", L1, (d) => { d.ontologyVersion = "0.9"; }, /Nothing below was checked/],
+
+  // --- L1 3.0: value sets and GRADE -------------------------------------------------------------
+  ["a strength outside the value set is rejected", L1, (d) => {
+    byId(d, A111).properties.strength = "Strong";
+  }, /not a code in value set "recommendation-strength"/],
+  ["a publication type outside the value set is rejected", L1, (d) => {
+    byId(d, ANC).properties.publicationType = "guideline";
+  }, /not a code in value set "publication-type"/],
+  ["an invented identifier type is rejected", L1, (d) => {
+    byId(d, ANC).properties.identifiers[0].type = "isbn13";
+  }, /not a code in value set "identifier-type"/],
+  ["an invented resolutionStatus on a citation node is rejected", L1, (d) => {
+    byId(d, CITATION).properties.resolutionStatus = "probably";
+  }, /not a code in value set "resolution-status"/],
+  ["a strength without a direction is rejected", L1, (d) => {
+    delete byId(d, A111).properties.direction; byId(d, A111).properties.strength = "strong";
+  }, /strength without a direction/],
+  ["a good practice statement carrying a strength is rejected", L1, (d) => {
+    byId(d, GPS).properties.strength = "strong";
+  }, /A good practice statement is ungraded/],
+  ["a no-recommendation carrying a direction is rejected", L1, (d) => {
+    byId(d, NOREC).properties.direction = "against";
+  }, /No recommendation was made/],
+  ["a direction with no strength is legitimate (ANC prints none)", L1, null, null],
+
+  // --- L1 3.0: what was removed stays removed ----------------------------------------------------
+  ["PICO is not hung off the recommendation", L1, (d) => {
+    d.nodes.push(n(`${KQ}/comparator`, "comparator", "standard ANC", { description: "standard ANC" }));
+  }, /does not declare/],
+  ["schedule is no longer a class", L1, (d) => {
+    d.nodes.push(n(`${ANC}/schedule/x`, "schedule", "x", {}));
+  }, /does not declare/],
+  ["a citation's location is no longer a property", L1, (d) => {
+    byId(d, CITATION).properties.location = "fixture#Rule_1";
+  }, /does not declare/],
+  ["appearsIn is not licensed in L1 any more: DAK files are L2's", L1, (d) => {
+    d.nodes.push(n(DMN_FILE, "external-artifact", "x", { iri: DMN_FILE }));
+    d.edges.push(e("appearsIn", CITATION, DMN_FILE));
+  }, /does not declare|not licensed/],
+  ["evidence does not answer a key question; a recommendation does", L1, (d) => {
+    d.edges.push(ie("answers", EVID, KQ));
+  }, /is not licensed by the ontology/],
+
+  // --- L1 3.0: identity, hashes, provenance --------------------------------------------------------
+  ["an IRI minted outside the scheme is rejected", L1, (d) => {
+    const x = byId(d, PRV3); x.id = "https://example.org/indicator/prv3";
+  }, /does not have the IRI shape/],
+  ["a web-only WHO source takes its IRI from its address", L1, (d) => {
+    const url = "https://www.who.int/teams/immunization-vaccines-and-biologicals/policies/who-recommendations-for-routine-immunization---summary-tables";
+    d.nodes.push({ id: publicationId([{ type: "url", value: url }]), type: "publication", label: "summary tables",
+      properties: { title: "WHO recommendations for routine immunization – summary tables", identifiers: [{ type: "url", value: url }],
+                    publicationType: "summary-table" },
+      derivation: "inferred", note: "IMMZ DAK reference 29", evidence: { location: "immz-dak.pdf p. 85", quote: url } });
+  }, null],
+  ["a publication IRI under an unlisted identifier type is rejected", L1, (d) => {
+    byId(d, ANC).id = ANC.replace("/isbn-", "/web-");
+  }, /does not have the IRI shape/],
+  ["a contentHash that does not match the stored text is rejected", L1, (d) => {
+    byId(d, A111).properties.statement += " (edited)";
+  }, /contentHash that does not match/],
+  ["content read from a PDF may not claim to be derived", L1, (d) => {
+    const x = byId(d, A111); x.derivation = "derived";
+  }, /requires at least "inferred"/],
+  ["a resolvesTo edge may not claim to be derived", L1, (d) => {
+    d.edges.push(e("resolvesTo", REF1, ANC));
+  }, /requires at least "inferred"/],
+  ["a decided judgement must say who and when", L1, (d) => {
+    d.edges.push(ie("resolvesTo", REF1, ANC, { derivation: "decided" }));
+  }, /who decided and when/],
+  ["a decided judgement that says who and when is accepted", L1, (d) => {
+    byId(d, REF1).properties.resolutionStatus = "resolved";
+    d.edges.push(ie("resolvesTo", REF1, ANC, { derivation: "decided",
+      evidence: { location: "fixture", quote: "…", by: "reviewer@example.org", at: "2026-10-01" } }));
+  }, null],
+  ["a citation resolves through its reference entry", L1, (d) => {
+    byId(d, REF1).properties.resolutionStatus = "resolved";
+    byId(d, CITATION).properties.resolutionStatus = "resolved";
+    d.edges.push(ie("resolvesTo", REF1, ANC));
+  }, null],
+  ["a placeholder never resolves", L1, (d) => {
+    d.edges.push(ie("resolvesTo", PLACEHOLDER, ANC));
+  }, /is a placeholder and claims a resolution/],
+
+  // --- L1 3.0: GRC, quoting, certainty, one copy of the words -------------------------------------
+  ["a recommendation from a guideline recorded as not GRC-reviewed is rejected", L1, (d) => {
+    byId(d, ANC).properties.grcStatus = "not-reviewed";
+  }, /recorded as not reviewed by the GRC/],
+  ["unrecorded GRC status is a warning, not an error", L1, (d) => {
+    delete byId(d, ANC).properties.grcStatus;
+  }, { warning: /records no GRC status/ }],
+  ["a slot not quoted from the source is a warning", L1, (d) => {
+    byId(d, A111).properties.setting = "in low-income countries";
+  }, { warning: /setting "in low-income countries", which is not quoted/ }],
+  ["a slot quoted from the table caption is not a finding", L1, (d) => {
+    byId(d, A111).properties.population = "pregnant women and adolescent girls";
+  }, { noWarning: /population .* not quoted/ }],
+  ["overall certainty above the lowest critical outcome is a warning", L1, (d) => {
+    byId(d, EVID).properties.certainty = "low";
+    byId(d, EVID).properties.contentHash = contentHash(contentText(byId(d, EVID), ["summary"]));
+    byId(d, A111).properties.overallCertainty = "high";
+  }, { warning: /higher than the lowest certainty on its critical outcomes/ }],
+  ["a row that stores a cell filled from content is rejected", L1, (d) => {
+    byId(d, ANC_ROW).properties.cells[1] = A111_STATEMENT;
+  }, /Store it once/],
+  ["an unknown code system is a warning, not an error", L1, (d) => {
+    byId(d, CODE).properties.system = "snomed";
+  }, { warning: /not a code in value set "terminology-system"/ }],
 
   // --- the DAK component layer ------------------------------------------------------------------
   ["unlicensed edge is rejected", L2, (d) => {
@@ -268,8 +511,19 @@ let failures = 0;
 for (const [name, base, mutate, expect] of cases) {
   const d = clone(base);
   if (mutate) mutate(d);
-  const { errors } = validateGraph(d, loadLayer(layerOf(d)),
-                                   index(d, ...ALL.filter((x) => x !== base)));
+  const { errors, warnings } = validateGraph(d, loadLayer(layerOf(d)),
+                                             index(d, ...ALL.filter((x) => x !== base)));
+  // A warning case asserts the finding is reported AND that it is only a warning; a noWarning case
+  // asserts a legitimate source is not flagged. Both also require no errors.
+  if (expect && (expect.warning || expect.noWarning)) {
+    const w = expect.warning ? warnings.find((x) => expect.warning.test(x)) : null;
+    const bad = expect.noWarning ? warnings.find((x) => expect.noWarning.test(x)) : null;
+    if (errors.length) { console.error(`FAIL  ${name}\n      unexpected error: ${errors[0]}`); failures++; }
+    else if (expect.warning && !w) { console.error(`FAIL  ${name}\n      expected warning /${expect.warning.source}/, got: ${warnings.join(" | ").slice(0, 200) || "(none)"}`); failures++; }
+    else if (bad) { console.error(`FAIL  ${name}\n      unexpected warning: ${bad}`); failures++; }
+    else console.log(`ok    ${name}${w ? `\n      warning: ${w.slice(0, 99)}` : ""}`);
+    continue;
+  }
   if (expect === null) {
     if (errors.length) { console.error(`FAIL  ${name}\n      unexpected: ${errors[0]}`); failures++; }
     else console.log(`ok    ${name}`);

@@ -13,6 +13,7 @@
 sgkg:Component a owl:Class ; rdfs:label "Component" ; rdfs:comment "One of the nine components DAK.fsh declares a kit must be able to hold. It points at the file that defines it and does not describe that file's interior." .
 sgkg:Element a owl:Class ; rdfs:label "Element" ; rdfs:comment "A structured part of a component -- a requirement statement, a task entry. It exists as a node only where something outside its component needs to reach it." .
 sgkg:Kit a owl:Class ; rdfs:label "Kit" ; rdfs:comment "A Digital Adaptation Kit as a whole: metadata, and the nine components it contains." .
+sgkg:Reference a owl:Class ; rdfs:label "Reference" ; rdfs:comment "A pointer out of this graph. Carries identity only; asserts nothing about the target." .
 
 ### Classes
 
@@ -62,7 +63,7 @@ sgkg:SchedulingLogic a owl:Class ;
   rdfs:subClassOf sgkg:Component ;
   rdfs:label "Scheduling Logic" ;
   skos:notation "scheduling-logic" ;
-  rdfs:comment "When an intervention is due, as a DAK component. NOT declared by DAK.fsh -- it is added here because the published SOP lists Scheduling Logic as an active L2 input (spreadsheets under input/scheduling-logic), WHO's ArchiMate model declares it a BusinessObject realised by PlanDefinition, and l1:schedule and l1:schedule-entry had no L2 component to reach. Note that the SOP's own L3 row for scheduling is present but HTML-commented-out and there is no l3_schedulinglogic.md page, so WHO has drafted the mapping and not activated it; the L3 edge is licensed here as a deliberate departure, recorded rather than hidden." .
+  rdfs:comment "When an intervention is due, as a DAK component. NOT declared by DAK.fsh -- it is added here because the published SOP lists Scheduling Logic as an active L2 input (spreadsheets under input/scheduling-logic), WHO's ArchiMate model declares it a BusinessObject realised by PlanDefinition, and L1's schedules needed an L2 component to reach (since L1 3.0, a recommendation's timing slot). Note that the SOP's own L3 row for scheduling is present but HTML-commented-out and there is no l3_schedulinglogic.md page, so WHO has drafted the mapping and not activated it; the L3 edge is licensed here as a deliberate departure, recorded rather than hidden." .
 
 sgkg:ProgramIndicator a owl:Class ;
   rdfs:subClassOf sgkg:Component ;
@@ -93,6 +94,27 @@ sgkg:TestScenario a owl:Class ;
   rdfs:label "Test Scenario" ;
   skos:notation "test-scenario" ;
   rdfs:comment "DAK component 9. `feature 1..1 uri` to a Gherkin feature file, plus an optional description. The feature file's interior is not modelled: no DAK in this estate ships one yet, so a subgraph for it would have no instance to check it against." .
+
+sgkg:ExternalArtefact a owl:Class ;
+  rdfs:subClassOf sgkg:Reference ;
+  rdfs:label "External artefact" ;
+  skos:notation "external-artifact" ;
+  rdfs:comment "A DAK file addressed by canonical URL: a BPMN process, a DMN decision table, a FHIR resource, a workbook. Deliberately opaque: it carries an IRI and a kind, and nothing about its interior. The L2-BPMN, L2-DMN and L3 classes that describe a file's interior elaborate this class at the same IRI. Moved here from L1 in 3.0 unchanged: a DAK file is the DAK's material, not WHO content." .
+
+### Value sets
+# Closed code lists bound to class properties. tools/validate.mjs rejects any other value.
+
+<http://smart.who.int/kg/valueset/artifact-kind> a skos:ConceptScheme ;
+  skos:notation "artifact-kind" ;
+  skos:note "source: Files observed in smart-base and smart-immunizations" ;
+  skos:note "bound to: external-artifact.targetKind" ;
+  rdfs:comment "What kind of file an external artefact is. Moved with the class from L1, where it was free text." .
+<http://smart.who.int/kg/valueset/artifact-kind#dmn> a skos:Concept ; skos:inScheme <http://smart.who.int/kg/valueset/artifact-kind> ; skos:notation "dmn" ; skos:definition "A DMN decision table." .
+<http://smart.who.int/kg/valueset/artifact-kind#bpmn> a skos:Concept ; skos:inScheme <http://smart.who.int/kg/valueset/artifact-kind> ; skos:notation "bpmn" ; skos:definition "A BPMN process." .
+<http://smart.who.int/kg/valueset/artifact-kind#fhir-resource> a skos:Concept ; skos:inScheme <http://smart.who.int/kg/valueset/artifact-kind> ; skos:notation "fhir-resource" ; skos:definition "A FHIR resource, addressed by canonical URL." .
+<http://smart.who.int/kg/valueset/artifact-kind#spreadsheet> a skos:Concept ; skos:inScheme <http://smart.who.int/kg/valueset/artifact-kind> ; skos:notation "spreadsheet" ; skos:definition "A workbook, such as the decision-support logic or indicators workbook." .
+<http://smart.who.int/kg/valueset/artifact-kind#feature-file> a skos:Concept ; skos:inScheme <http://smart.who.int/kg/valueset/artifact-kind> ; skos:notation "feature-file" ; skos:definition "A Gherkin feature file." .
+<http://smart.who.int/kg/valueset/artifact-kind#document> a skos:Concept ; skos:inScheme <http://smart.who.int/kg/valueset/artifact-kind> ; skos:notation "document" ; skos:definition "Any other document." .
 
 ### Object properties (the ArchiMate relationship vocabulary)
 
@@ -135,6 +157,14 @@ sgkg:describes a owl:ObjectProperty ;
 sgkg:implementedBy a owl:ObjectProperty ;
   rdfs:label "implementedBy" ;
   rdfs:comment "Reused from l1, and licensed here for the L1->L2 hop that L1 could not declare itself: l1 cannot name an l2 class without a circular import, but l2 imports l1 and sees both ends. A recommendation is implemented by the DAK component that realises it. Always `inferred`, never `derived` -- deciding that a process realises a recommendation is adaptation, the judgement a DAK exists to record, and it carries a resolutionStatus like every other cross-artefact claim. Note health-intervention has NO implementedBy edge: the published SOP gives Health Interventions an L3 row of `n/a / n/a / n/a` and calls L1 recommendations inputs rather than outputs, so the trace runs through processes, decisions and indicators instead." .
+
+sgkg:derivedFrom a owl:ObjectProperty ;
+  rdfs:label "derivedFrom" ;
+  rdfs:comment "This normative content restates or operationalises that recommendation." .
+
+sgkg:appearsIn a owl:ObjectProperty ;
+  rdfs:label "appearsIn" ;
+  rdfs:comment "A citation string appears in an L2 or L3 artefact at a stated location." .
 
 ### Licensed edges, as qualified sub-properties
 # One per (source class, predicate, target class) triple the ArchiMate model licenses.
@@ -254,18 +284,6 @@ sgkg:implementedBy_Indicator_ProgramIndicator a owl:ObjectProperty ;
   rdfs:domain sgkg:Indicator ;
   rdfs:range sgkg:ProgramIndicator ;
   rdfs:label "Indicator implementedBy Program Indicator" .
-
-sgkg:implementedBy_ScheduleEntry_SchedulingLogic a owl:ObjectProperty ;
-  rdfs:subPropertyOf sgkg:implementedBy ;
-  rdfs:domain sgkg:ScheduleEntry ;
-  rdfs:range sgkg:SchedulingLogic ;
-  rdfs:label "Schedule entry implementedBy Scheduling Logic" .
-
-sgkg:implementedBy_Schedule_SchedulingLogic a owl:ObjectProperty ;
-  rdfs:subPropertyOf sgkg:implementedBy ;
-  rdfs:domain sgkg:Schedule ;
-  rdfs:range sgkg:SchedulingLogic ;
-  rdfs:label "Schedule implementedBy Scheduling Logic" .
 
 sgkg:sourcedFrom_BusinessProcessWorkflow_ExternalArtefact a owl:ObjectProperty ;
   rdfs:subPropertyOf sgkg:sourcedFrom ;
@@ -398,4 +416,34 @@ sgkg:crossReferences_NonFunctionalRequirement_TerminologyCode a owl:ObjectProper
   rdfs:domain sgkg:NonFunctionalRequirement ;
   rdfs:range sgkg:TerminologyCode ;
   rdfs:label "Non-Functional Requirement crossReferences Terminology code" .
+
+sgkg:appearsIn_Citation_ExternalArtefact a owl:ObjectProperty ;
+  rdfs:subPropertyOf sgkg:appearsIn ;
+  rdfs:domain sgkg:Citation ;
+  rdfs:range sgkg:ExternalArtefact ;
+  rdfs:label "Citation appearsIn External artefact" .
+
+sgkg:implementedBy_Recommendation_ExternalArtefact a owl:ObjectProperty ;
+  rdfs:subPropertyOf sgkg:implementedBy ;
+  rdfs:domain sgkg:Recommendation ;
+  rdfs:range sgkg:ExternalArtefact ;
+  rdfs:label "Recommendation implementedBy External artefact" .
+
+sgkg:implementedBy_Indicator_ExternalArtefact a owl:ObjectProperty ;
+  rdfs:subPropertyOf sgkg:implementedBy ;
+  rdfs:domain sgkg:Indicator ;
+  rdfs:range sgkg:ExternalArtefact ;
+  rdfs:label "Indicator implementedBy External artefact" .
+
+sgkg:implementedBy_HealthIntervention_ExternalArtefact a owl:ObjectProperty ;
+  rdfs:subPropertyOf sgkg:implementedBy ;
+  rdfs:domain sgkg:HealthIntervention ;
+  rdfs:range sgkg:ExternalArtefact ;
+  rdfs:label "Health intervention implementedBy External artefact" .
+
+sgkg:implementedBy_Recommendation_SchedulingLogic a owl:ObjectProperty ;
+  rdfs:subPropertyOf sgkg:implementedBy ;
+  rdfs:domain sgkg:Recommendation ;
+  rdfs:range sgkg:SchedulingLogic ;
+  rdfs:label "Recommendation implementedBy Scheduling Logic" .
 

@@ -23,7 +23,8 @@
 import { readFileSync } from "node:fs";
 import { join, dirname, relative } from "node:path";
 import { fileURLToPath } from "node:url";
-import { loadLayer, scopeOf } from "./ontology.mjs";
+import { loadLayer, scopeOf, bindingOf } from "./ontology.mjs";
+import { contentHash, contentText, norm } from "./kgid.mjs";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const DEFAULT_LAYER = "l1";
@@ -144,6 +145,15 @@ export function validateGraph(doc, loaded, external = new Map()) {
         `edge "${s.type} ${e.predicate} ${t.type}" carries qualifier «${e.qualifier}»; ` +
         `the model has: ${known}. More often a model that has moved on than a defect in the graph.`);
     }
+    const minEdge = candidates.map((c) => c.minDerivation).find(Boolean);
+    if (minEdge && { derived: 0, inferred: 1, decided: 2 }[e.derivation] < { derived: 0, inferred: 1, decided: 2 }[minEdge]) {
+      errors.push(`edge "${s.type} ${e.predicate} ${t.type}" is "${e.derivation}", but the model ` +
+                  `requires at least "${minEdge}" for it`);
+    }
+    if (e.derivation === "decided" && !(e.evidence?.by && e.evidence?.at)) {
+      errors.push(`edge "${s.type} ${e.predicate} ${t.type}" is "decided" and its evidence does not ` +
+                  `say who decided and when (evidence.by, evidence.at)`);
+    }
     if ((e.derivation === "inferred" || e.derivation === "decided") && !(e.note && e.evidence)) {
       errors.push(
         `edge "${s.type} ${e.predicate} ${t.type}" is ${e.derivation} and carries no ` +
@@ -166,28 +176,220 @@ export function validateGraph(doc, loaded, external = new Map()) {
     }
   }
 
-  // A citation that claims to be resolved must actually resolve to something. This is the check the
-  // repository exists for: an unresolved citation is the honest state, and a resolved one that
-  // points nowhere is worse than no link at all.
+  // Value conformance. Where a class binds a property to a value set, the value must be one of its
+  // codes. Before value sets these vocabularies were prose in a propertyNote, and "Strong",
+  // "STRONG" and "weak" all passed -- after which a coverage query filtering on "strong" silently
+  // missed two of the three. A binding may be warning-level: an unknown code system is more often a
+  // new system than a typo, but a typo breaks every join across guidelines, so it is reported.
+  const valueSets = scope.valueSets ?? new Map();
+  const codesOf = (id) => (valueSets.get(id)?.codes ?? []).map((c) => c.code);
   for (const n of nodes.values()) {
-    if (n.type !== "citation") continue;
-    const status = n.properties?.resolutionStatus;
-    const resolves = (doc.edges ?? []).some((e) => e.predicate === "resolvesTo" && e.source === n.id);
-    if (status === "resolved" && !resolves) {
-      errors.push(`citation "${n.id}" claims resolutionStatus "resolved" but has no resolvesTo edge`);
+    const bindings = classes.get(n.type)?.valueSets ?? {};
+    for (const [prop, binding] of Object.entries(bindings)) {
+      const { set: setId, severity } = bindingOf(binding);
+      const value = n.properties?.[prop];
+      if (value === undefined || value === null) continue;
+      const codes = codesOf(setId);
+      if (!codes.includes(value)) {
+        (severity === "warning" ? warnings : errors).push(
+          `node "${n.id}" (${n.type}) has ${prop} "${value}", which is not a code in ` +
+          `value set "${setId}". Permitted: ${codes.join(", ")}`);
+      }
     }
-    if (resolves && status !== "resolved") {
-      warnings.push(`citation "${n.id}" has a resolvesTo edge but resolutionStatus is "${status}"`);
+    // identifiers is a list of {type, value}; its types are a value set too, and the first usable
+    // one builds the publication IRI, so a misspelt type would silently change identity.
+    if (Array.isArray(n.properties?.identifiers) && valueSets.has("identifier-type")) {
+      for (const idf of n.properties.identifiers) {
+        if (!codesOf("identifier-type").includes(idf?.type)) {
+          errors.push(`node "${n.id}" has an identifier of type "${idf?.type}", which is not a code ` +
+                      `in value set "identifier-type"`);
+        }
+      }
+    }
+  }
+
+  // Identity. An L1 IRI is built from what WHO prints -- the publication's ISBN, the recommendation's
+  // published number -- so that two extractions of one guideline produce one node rather than two
+  // that never join. A node whose IRI does not have its class's shape was minted some other way.
+  for (const n of nodes.values()) {
+    const pattern = classes.get(n.type)?.iriPattern;
+    if (pattern && !new RegExp(pattern).test(n.id)) {
+      errors.push(`node "${n.id}" (${n.type}) does not have the IRI shape its class requires ` +
+                  `(${pattern}). Mint it with tools/kgid.mjs so re-extraction yields the same node.`);
+    }
+  }
+
+  // Content hashes. A new PDF hash says something changed; contentHash says what. It must match the
+  // stored text, or a re-extraction would compare against a hash of something else.
+  for (const n of nodes.values()) {
+    const fields = classes.get(n.type)?.contentFields;
+    if (!fields) continue;
+    const text = contentText(n, fields);
+    if (text === null) continue;
+    const have = n.properties?.contentHash;
+    if (have === undefined) {
+      warnings.push(`node "${n.id}" (${n.type}) has no contentHash; a corrected PDF cannot be ` +
+                    `checked against it node by node`);
+    } else if (have !== contentHash(text)) {
+      errors.push(`node "${n.id}" (${n.type}) has a contentHash that does not match its ` +
+                  `${fields.join(" + ")}. Recompute it with tools/kgid.mjs contentHash().`);
+    }
+  }
+
+  // Minimum derivation. Reading a PDF is always a judgement, so content extracted from one is never
+  // `derived`; copying a DAK string is mechanical, so a citation may be. A `decided` judgement says
+  // who made it and when, because that is what a reviewer asks first.
+  const RANK = { derived: 0, inferred: 1, decided: 2 };
+  const checkDerivation = (what, item, min) => {
+    if (min && RANK[item.derivation] !== undefined && RANK[item.derivation] < RANK[min]) {
+      errors.push(`${what} is "${item.derivation}", but the model requires at least "${min}" for it`);
+    }
+    if (item.derivation === "decided" && !(item.evidence?.by && item.evidence?.at)) {
+      errors.push(`${what} is "decided" and its evidence does not say who decided and when ` +
+                  `(evidence.by, evidence.at)`);
+    }
+  };
+  for (const n of nodes.values()) {
+    checkDerivation(`node "${n.id}"`, n, classes.get(n.type)?.minDerivation);
+  }
+
+  const edgesFrom = (id, predicate) => (doc.edges ?? []).filter((e) => e.source === id && e.predicate === predicate);
+  const nodeAt = (id) => nodes.get(id) ?? external.get(id);
+
+  // GRADE's rules about which values go together. Grading is optional -- ANC 2016 prints
+  // "Recommended" with no strength -- but a strength always needs a direction, a good practice
+  // statement is ungraded, and a decision to make no recommendation has nothing to grade.
+  for (const n of nodes.values()) {
+    if (n.type !== "recommendation") continue;
+    const p = n.properties ?? {};
+    const kind = p.kind;
+    const has = (k) => p[k] !== undefined && p[k] !== null;
+    if (has("strength") && !has("direction")) {
+      errors.push(`recommendation "${n.id}" carries a strength without a direction. A strength says ` +
+                  `how firmly WHO recommends for or against something; record which.`);
+    }
+    if (kind === "good-practice-statement" || kind === "no-recommendation") {
+      const graded = ["strength", "overallCertainty", ...(kind === "no-recommendation" ? ["direction"] : [])]
+        .filter(has);
+      if (graded.length) {
+        errors.push(`recommendation "${n.id}" is kind "${kind}" and carries ${graded.join(", ")}. ` +
+                    `${kind === "no-recommendation" ? "No recommendation was made" : "A good practice statement is ungraded"}` +
+                    `, so there is nothing to grade.`);
+      }
+    }
+
+    // Recommendations come from GRC-approved guidelines. Unrecorded approval is a warning -- real
+    // consolidated guidelines do not always state it -- and a recorded "not-reviewed" is an error.
+    for (const e of edgesFrom(n.id, "definedIn")) {
+      const pub = nodeAt(e.target);
+      const grc = pub?.properties?.grcStatus;
+      if (grc === "not-reviewed") {
+        errors.push(`recommendation "${n.id}" is defined in "${e.target}", which is recorded as not ` +
+                    `reviewed by the GRC. Recommendations come from GRC-approved guidelines.`);
+      } else if (pub && grc === undefined) {
+        warnings.push(`recommendation "${n.id}" is defined in "${e.target}", which records no GRC status`);
+      }
+    }
+
+    // Slots quote the source. A slot that appears in neither the statement, its remarks, nor the
+    // caption or heading it is printed under was written by the extractor, not by WHO.
+    const sources = [p.statement ?? ""];
+    for (const e of edgesFrom(n.id, "hasRemark")) sources.push(nodeAt(e.target)?.properties?.text ?? "");
+    for (const e of edgesFrom(n.id, "presentedIn")) {
+      const where = nodeAt(e.target)?.properties ?? {};
+      sources.push(where.caption ?? "", where.heading ?? "");
+      for (const up of (doc.edges ?? []).filter((x) => x.predicate === "contains" && x.target === e.target)) {
+        const parent = nodeAt(up.source)?.properties ?? {};
+        sources.push(parent.caption ?? "", parent.heading ?? "");
+      }
+    }
+    const haystack = norm(sources.join(" \n "));
+    for (const slot of ["intervention", "population", "setting", "provider", "timing"]) {
+      if (has(slot) && !haystack.includes(norm(p[slot]))) {
+        warnings.push(`recommendation "${n.id}" has ${slot} "${p[slot]}", which is not quoted from its ` +
+                      `statement, remarks, or the caption or heading it is printed under`);
+      }
+    }
+
+    // Overall certainty is the lowest across critical outcomes (handbook §9.6). Stating something
+    // higher is usually a transcription error; the handbook allows exceptions, so this warns.
+    if (has("overallCertainty")) {
+      const ORDER = ["very-low", "low", "moderate", "high"];
+      const critical = [];
+      for (const s of edgesFrom(n.id, "supportedBy")) {
+        const ev = nodeAt(s.target);
+        if (!ev?.properties?.certainty) continue;
+        for (const f of edgesFrom(s.target, "forOutcome")) {
+          if (nodeAt(f.target)?.properties?.importance === "critical") critical.push(ev.properties.certainty);
+        }
+      }
+      if (critical.length) {
+        const lowest = critical.reduce((a, b) => (ORDER.indexOf(a) <= ORDER.indexOf(b) ? a : b));
+        if (ORDER.indexOf(p.overallCertainty) > ORDER.indexOf(lowest)) {
+          warnings.push(`recommendation "${n.id}" states overallCertainty "${p.overallCertainty}", higher ` +
+                        `than the lowest certainty on its critical outcomes ("${lowest}"; handbook §9.6)`);
+        }
+      }
+    }
+  }
+
+  // One copy of the words. A table row whose column is filled from a content node through the
+  // table's columnMap must not store that cell again; two copies drift apart.
+  for (const n of nodes.values()) {
+    if (n.type !== "publication-element" || n.properties?.elementType !== "table") continue;
+    const { columns, columnMap } = n.properties;
+    if (!Array.isArray(columns) || !columnMap) continue;
+    const mapped = columns.map((c, i) => (columnMap[c] ? i : -1)).filter((i) => i >= 0);
+    for (const e of edgesFrom(n.id, "contains")) {
+      const row = nodeAt(e.target);
+      if (row?.properties?.rowType !== "data" || !Array.isArray(row.properties.cells)) continue;
+      const presented = (doc.edges ?? []).some((x) => x.predicate === "presentedIn" && x.target === row.id);
+      for (const i of mapped) {
+        if (presented && row.properties.cells[i] !== null && row.properties.cells[i] !== undefined) {
+          errors.push(`row "${row.id}" stores column "${columns[i]}", which the table fills from ` +
+                      `${columnMap[columns[i]]} of the content presented there. Store it once: set the cell to null.`);
+        }
+      }
+    }
+  }
+
+  // A citation that claims to be resolved must actually resolve -- directly, or through the
+  // reference-list entry its "(n)" points at. A placeholder never resolves: "[Add appropriate
+  // reference]" is the author saying a source is missing, and resolving it would invent one.
+  const resolved = (id, seen = new Set()) => {
+    if (seen.has(id)) return false;
+    seen.add(id);
+    if (edgesFrom(id, "resolvesTo").length) return true;
+    return edgesFrom(id, "numberedAs").some((e) =>
+      nodeAt(e.target)?.properties?.resolutionStatus === "resolved" && resolved(e.target, seen));
+  };
+  for (const n of nodes.values()) {
+    if (n.type !== "citation" && n.type !== "reference-entry") continue;
+    const status = n.properties?.resolutionStatus;
+    const direct = edgesFrom(n.id, "resolvesTo").length > 0;
+    if (n.type === "citation" && n.properties?.citationKind === "placeholder") {
+      if (direct || status === "resolved") {
+        errors.push(`citation "${n.id}" is a placeholder and claims a resolution. A placeholder marks ` +
+                    `a missing source; it never resolves.`);
+      }
+    } else if (status === "resolved" && !resolved(n.id)) {
+      errors.push(`${n.type} "${n.id}" claims resolutionStatus "resolved" but has no resolvesTo edge`);
+    }
+    if (direct && status !== "resolved") {
+      warnings.push(`${n.type} "${n.id}" has a resolvesTo edge but resolutionStatus is "${status}"`);
     }
     if (!n.properties?.text) {
-      errors.push(`citation "${n.id}" carries no verbatim text, so nothing can be checked against the source`);
+      errors.push(`${n.type} "${n.id}" carries no verbatim text, so nothing can be checked against the source`);
     }
   }
 
   // The same discipline for every cross-format join. L2's three joins are string equality across
   // file formats, and an edge that claims `resolved` while its target is itself marked unresolved
   // is a match asserted against a thing that was never found.
-  const RESOLVABLE = new Set(["unresolved", "resolved", "ambiguous"]);
+  // One vocabulary for nodes and edges: the L1 value set when it is in scope, which it is for every
+  // layer, since all of them import L1.
+  const RESOLVABLE = new Set(valueSets.has("resolution-status")
+    ? codesOf("resolution-status") : ["unresolved", "resolved", "ambiguous"]);
   const joins = { resolved: 0, unresolved: 0, ambiguous: 0 };
   for (const e of doc.edges ?? []) {
     const status = e.properties?.resolutionStatus;
@@ -259,13 +461,19 @@ function main() {
   const everyNode = new Map();
   const elaborations = [];
   let failed = false;
-  for (const { file, doc } of parsed) {
-    let elaboratesOf;
+  // Which class elaborates which, across every layer in the run -- collected before any node is
+  // compared, because files arrive in name order and l2-dmn.json sorts before l2.json. Built per
+  // document, an L2 file meeting a DMN file's IRI could not see that dmn-definitions elaborates
+  // external-artifact, and reported one artefact as two things.
+  const elaboratesOf = new Map();
+  for (const { doc } of parsed) {
     try {
-      elaboratesOf = new Map(
-        [...scopeOf(layerFor(layerOf(doc))).classes.values()]
-          .filter((c) => c.elaborates).map((c) => [c.id, c.elaborates]));
-    } catch { elaboratesOf = new Map(); }   // reported per document below
+      for (const c of scopeOf(layerFor(layerOf(doc))).classes.values()) {
+        if (c.elaborates) elaboratesOf.set(c.id, c.elaborates);
+      }
+    } catch { /* reported per document below */ }
+  }
+  for (const { file, doc } of parsed) {
     for (const n of doc.nodes ?? []) {
       const prior = everyNode.get(n.id);
       if (!prior) { everyNode.set(n.id, n); continue; }

@@ -1,5 +1,5 @@
 {
-  "schemaVersion": "1.0",
+  "schemaVersion": "3.0",
   "layer": "L3",
   "namespace": "http://smart.who.int/kg/",
   "source": "authored",
