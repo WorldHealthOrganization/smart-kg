@@ -1,4 +1,4 @@
-# Structural checks for the knowledge graph schemas: l1, l2, l2-bpmn, l2-dmn.
+# Structural checks for the knowledge graph schemas: l1, l2, l2-bpmn, l2-dmn, l3.
 #
 # This repository holds the TYPE GRAPH and no DAK data (docs/STORAGE.md). Everything generated is
 # committed so a consumer can fetch the format their tool reads without installing a toolchain,
@@ -39,6 +39,12 @@ jobs:
       - name: Prove tier 2 rejects what it claims to
         run: node tools/negative-test.mjs
 
+      # L1 exists to answer three questions (docs/SCOPE.md): impact, coverage, citation resolution.
+      # These run them against the smallest documents that exercise each, so a model change that
+      # stops one of them answering fails here rather than being noticed later.
+      - name: Prove L1 still answers the questions it exists for
+        run: node tools/goal-test.mjs
+
       # Tier 1: the same documents satisfy the document shape. Separate from the step above
       # because a document can conform to the ontology and still be malformed.
       - name: Validate documents against the shape schema
@@ -57,7 +63,7 @@ jobs:
           python3 -m pip install --quiet rdflib
           python3 - <<'PY'
           from rdflib import Graph
-          for f in ['l1/l1', 'l2/l2', 'l2-bpmn/l2-bpmn', 'l2-dmn/l2-dmn']:
+          for f in ['l1/l1', 'l2/l2', 'l2-bpmn/l2-bpmn', 'l2-dmn/l2-dmn', 'l3/l3']:
               g = Graph(); g.parse(f'ontology/{f}.ttl')
               print(f, len(g), 'triples')
           g = Graph(); g.parse('ontology/all.ttl')

@@ -46,8 +46,8 @@ MATCH (c:KGClass) RETURN c.layer AS layer, count(*) AS classes ORDER BY layer;
 ```
 
 ```
-l1        │ 16
-l2        │ 13
+l1        │ 13
+l2        │ 14
 l2-bpmn   │  6
 l2-dmn    │  6
 l3        │ 14
@@ -132,7 +132,7 @@ MATCH (t:KGClass {id:'terminology-code'})-[r]->(c) RETURN c;   // returns nothin
 MATCH (c:KGClass {layer:'l2'}) RETURN c.kind AS kind, collect(c.name) AS classes ORDER BY kind;
 ```
 
-**Which artefact classes elaborate an L1 reference** — the shared-IRI mechanism, as declared:
+**Which artefact classes elaborate a DAK file** (`l2:external-artifact`) — the shared-IRI mechanism, as declared:
 
 ```cypher
 MATCH (c:KGClass) WHERE c.layer STARTS WITH 'l2-' AND c.kind = 'Artefact' RETURN c.name, c.iri;
@@ -153,7 +153,7 @@ pulls in its neighbours.
 
 ## Protégé
 
-`ontology/all.ttl` is the whole model merged into one document — 835 triples — and is what to open
+`ontology/all.ttl` is the whole model merged into one document — 1885 triples — and is what to open
 offline. A single `ontology/<layer>/<layer>.ttl` declares `owl:imports` on its parents, which a
 reasoner can follow only if those IRIs resolve. Pairwise edge
 licensing is carried as qualified sub-properties — a single global domain and range on

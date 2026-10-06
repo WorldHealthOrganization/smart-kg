@@ -75,23 +75,38 @@
     "contains": {
       "@id": "sgkg:contains"
     },
+    "hasSupplement": {
+      "@id": "sgkg:hasSupplement"
+    },
     "supersedes": {
       "@id": "sgkg:supersedes"
     },
     "refines": {
       "@id": "sgkg:refines"
     },
-    "hasPopulation": {
-      "@id": "sgkg:hasPopulation"
+    "partOf": {
+      "@id": "sgkg:partOf"
     },
-    "hasIntervention": {
-      "@id": "sgkg:hasIntervention"
+    "definedIn": {
+      "@id": "sgkg:definedIn"
     },
-    "hasComparator": {
-      "@id": "sgkg:hasComparator"
+    "presentedIn": {
+      "@id": "sgkg:presentedIn"
+    },
+    "answers": {
+      "@id": "sgkg:answers"
+    },
+    "addresses": {
+      "@id": "sgkg:addresses"
     },
     "hasOutcome": {
       "@id": "sgkg:hasOutcome"
+    },
+    "forOutcome": {
+      "@id": "sgkg:forOutcome"
+    },
+    "aboutIntervention": {
+      "@id": "sgkg:aboutIntervention"
     },
     "supportedBy": {
       "@id": "sgkg:supportedBy"
@@ -102,17 +117,11 @@
     "recommends": {
       "@id": "sgkg:recommends"
     },
-    "definedIn": {
-      "@id": "sgkg:definedIn"
-    },
-    "schedules": {
-      "@id": "sgkg:schedules"
-    },
     "measures": {
       "@id": "sgkg:measures"
     },
-    "derivedFrom": {
-      "@id": "sgkg:derivedFrom"
+    "justifiedBy": {
+      "@id": "sgkg:justifiedBy"
     },
     "crossReferences": {
       "@id": "sgkg:crossReferences"
@@ -120,30 +129,24 @@
     "classifiedAs": {
       "@id": "sgkg:classifiedAs"
     },
-    "appearsIn": {
-      "@id": "sgkg:appearsIn"
+    "numberedAs": {
+      "@id": "sgkg:numberedAs"
     },
     "resolvesTo": {
       "@id": "sgkg:resolvesTo"
     },
-    "implementedBy": {
-      "@id": "sgkg:implementedBy"
-    },
     "Publication": "sgkg:publication",
     "PublicationSection": "sgkg:publication-section",
+    "PublicationElement": "sgkg:publication-element",
     "Recommendation": "sgkg:recommendation",
     "Remark": "sgkg:remark",
-    "Evidence": "sgkg:evidence",
-    "Population": "sgkg:population",
-    "Intervention": "sgkg:intervention",
-    "Comparator": "sgkg:comparator",
+    "KeyQuestion": "sgkg:key-question",
     "Outcome": "sgkg:outcome",
+    "Evidence": "sgkg:evidence",
     "HealthIntervention": "sgkg:health-intervention",
-    "Schedule": "sgkg:schedule",
-    "ScheduleEntry": "sgkg:schedule-entry",
     "Indicator": "sgkg:indicator",
-    "TerminologyCode": "sgkg:terminology-code",
     "Citation": "sgkg:citation",
-    "ExternalArtefact": "sgkg:external-artifact"
+    "ReferenceEntry": "sgkg:reference-entry",
+    "TerminologyCode": "sgkg:terminology-code"
   }
 }
