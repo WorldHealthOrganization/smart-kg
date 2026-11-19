@@ -16,6 +16,7 @@
 import { readFileSync, writeFileSync, readdirSync, statSync, existsSync } from "node:fs";
 import { join, relative, basename } from "node:path";
 import { sha256, dakNamespace, citationId, slug, normalisedScheme } from "./kgid.mjs";
+import { ontologyVersion } from "./ontology.mjs";
 
 const SKILL = "kg/extract-l3";
 const node = (id, type, label, properties, extra = {}) =>
@@ -336,7 +337,7 @@ export function extract(igPath) {
   return {
     doc: {
       "@context": "http://smart.who.int/kg/l3.context.jsonld",
-      id: `${ns}/kg/l3`, type: "Entity", ontologyVersion: "1.0",
+      id: `${ns}/kg/l3`, type: "Entity", ontologyVersion: ontologyVersion(),
       generatedAt: new Date().toISOString().replace(/\.\d+Z$/, "Z"),
       wasDerivedFrom: [{ path: igPath, sha256: sha256(Buffer.from(igPath)),
         note: "The IG as a whole; each node carries the SHA-256 of the file it came from." }],

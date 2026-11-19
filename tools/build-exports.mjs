@@ -23,7 +23,7 @@
 import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync } from "node:fs";
 import { join, dirname, relative } from "node:path";
 import { fileURLToPath } from "node:url";
-import { loadLayer, scopeOf, borrowedClassIds, layerDir } from "./ontology.mjs";
+import { loadLayer, scopeOf, borrowedClassIds, layerDir, bindingOf } from "./ontology.mjs";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 // Which ontology files to export. Each is authored or generated elsewhere; this only projects.
@@ -228,6 +228,33 @@ export function buildTurtle(ont, layer = { own: ont, imported: { classes: [], pr
     }
     T.push(`  rdfs:comment "${tt(c.note ?? `${c.archimateType ?? ""} ${c.archimateId ?? ""}`.trim())}" .`);
     T.push("");
+  }
+
+  // Value sets are closed code lists bound to class properties; validate.mjs rejects any other
+  // value. They go out as SKOS so a reader in Protege sees the vocabulary, not just its name.
+  if ((ont.valueSets ?? []).length) {
+    T.push("### Value sets", "# Closed code lists bound to class properties. tools/validate.mjs rejects any other value.", "");
+    const boundTo = new Map();
+    for (const c of scopeOf(layer).classes.values()) {
+      for (const [prop, binding] of Object.entries(c.valueSets ?? {})) {
+        const { set } = bindingOf(binding);
+        if (!boundTo.has(set)) boundTo.set(set, []);
+        boundTo.get(set).push(`${c.id}.${prop}`);
+      }
+    }
+    for (const v of ont.valueSets) {
+      const scheme = `${NS}valueset/${v.id}`;
+      T.push(`<${scheme}> a skos:ConceptScheme ;`);
+      T.push(`  skos:notation "${tt(v.id)}" ;`);
+      if (v.source) T.push(`  skos:note "source: ${tt(v.source)}" ;`);
+      if (boundTo.has(v.id)) T.push(`  skos:note "bound to: ${boundTo.get(v.id).join(", ")}" ;`);
+      T.push(`  rdfs:comment "${tt(v.note ?? "")}" .`);
+      for (const c of v.codes) {
+        T.push(`<${scheme}#${c.code}> a skos:Concept ; skos:inScheme <${scheme}> ; ` +
+               `skos:notation "${tt(c.code)}" ; skos:definition "${tt(c.definition ?? "")}" .`);
+      }
+      T.push("");
+    }
   }
 
   T.push("### Object properties (the ArchiMate relationship vocabulary)", "");
