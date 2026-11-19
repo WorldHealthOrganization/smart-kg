@@ -61,76 +61,132 @@ const classLink = (id, from) => {
 
 // ---------------------------------------------------------------------------------------------
 // PlantUML. One class diagram per layer: own classes with their properties, imported classes the
-// layer's edges reach shown as greyed stubs, so the diagram says where the layer touches its
-// imports without redrawing them. Smetana layout, so rendering needs Java and nothing else.
+// layer's edges reach shown as dashed grey stubs, so the diagram says where the layer touches its
+// imports without redrawing them. Laid out by Graphviz dot, PlantUML's standard engine.
+//
+// Two things keep them readable. Parallel edges between one pair of classes are drawn as ONE arrow
+// carrying every predicate (Citation -> Reference entry has three), because dot otherwise fans
+// them into a braid of near-identical curves. And a class is tinted by its kind, with a legend, so
+// the stereotype is readable at a zoom where the text is not.
 
 const pumlId = (id) => id.replace(/[^A-Za-z0-9]/g, "_");
+
+// Light tints, one per kind; the border is the layer colour the explorer also uses.
+const KIND_TINT = {
+  Source: "#E3EEF9", Concept: "#E6F4EA", Reference: "#FDF1E2",
+  Kit: "#EDE7F6", Component: "#E0F2F1", Element: "#F1F8E9",
+  Artefact: "#FFF3E0", Structure: "#F3E5F5",
+  Knowledge: "#FCE4EC", Conformance: "#E8EAF6",
+};
+const LAYER_LINE = { "l1": "#2E5C8A", "l2": "#2A8C5A", "l2-bpmn": "#C0661B", "l2-dmn": "#8A3E9C", "l3": "#B23A48" };
+const tint = (kind) => KIND_TINT[kind] ?? "#F5F5F5";
+
 const PUML_HEAD = [
-  "!pragma layout smetana",
+  "skinparam backgroundColor transparent",
   "skinparam shadowing false",
+  "skinparam roundCorner 10",
+  "skinparam defaultFontName Helvetica",
+  "skinparam defaultFontSize 12",
+  "skinparam titleFontSize 15",
+  "skinparam titleFontStyle bold",
+  "skinparam nodesep 30",
+  "skinparam ranksep 45",
+  "skinparam linetype ortho",
+  "skinparam padding 4",
   "skinparam classAttributeIconSize 0",
-  "skinparam defaultFontName sans-serif",
   "skinparam class {",
-  "  BackgroundColor #FDFDFD",
-  "  BorderColor #2E5C8A",
-  "  ArrowColor #555555",
+  "  BorderThickness 1.4",
+  "  AttributeFontSize 11",
+  "  AttributeFontColor #3B4650",
+  "  StereotypeFontSize 10",
+  "  StereotypeFontColor #6B7785",
+  "  ArrowColor #7D8994",
+  "  ArrowThickness 1.1",
+  "  ArrowFontSize 10",
+  "  ArrowFontColor #44505B",
   "}",
-  "skinparam class<<imported>> {",
-  "  BackgroundColor #EEEEEE",
-  "  BorderColor #999999",
-  "  FontColor #666666",
+  "skinparam package {",
+  "  BorderColor #C4CDD5",
+  "  BackgroundColor #FAFBFC",
+  "  FontColor #5C6670",
+  "  FontStyle bold",
+  "  Style rectangle",
   "}",
+  "skinparam legend {",
+  "  BackgroundColor #FFFFFF",
+  "  BorderColor #C4CDD5",
+  "  FontSize 10",
+  "}",
+  "hide circle",
   "hide empty members",
 ];
 
-function pumlClass(c, { fields = true, stereo } = {}) {
-  const s = stereo ?? c.kind;
-  const lines = [`class "${c.name}" as ${pumlId(c.id)} <<${s}>>${fields && c.properties?.length ? " {" : ""}`];
-  if (fields && c.properties?.length) {
+function pumlClass(c, { fields = true, imported = false, line } = {}) {
+  const look = imported ? "#F4F5F6;line:A0A8B0;line.dashed;text:6B7785"
+                        : `${tint(c.kind)};line:${(line ?? LAYER_LINE[classLayer.get(c.id)] ?? "#2E5C8A").slice(1)}`;
+  const stereo = imported ? `from ${classLayer.get(c.id)}` : c.kind;
+  const body = fields && c.properties?.length;
+  const lines = [`class "${c.name}" as ${pumlId(c.id)} <<${stereo}>> #${look.replace(/^#/, "")}${body ? " {" : ""}`];
+  if (body) {
     for (const p of c.properties) {
       const vs = c.valueSets?.[p];
-      lines.push(`  ${p}${vs ? ` : ${typeof vs === "string" ? vs : vs.set}` : ""}`);
+      lines.push(`  ${p}${vs ? ` : <i>${typeof vs === "string" ? vs : vs.set}</i>` : ""}`);
     }
     lines.push("}");
   }
   return lines;
 }
 
-function pumlEdge(e) {
-  const label = e.qualifier ? `${e.predicate} (${e.qualifier})` : e.predicate;
-  return `${pumlId(e.source)} --> ${pumlId(e.target)} : ${label}`;
+/** Merge edges that join the same ordered pair into one arrow with every label on it. */
+function pumlEdges(edges) {
+  const pairs = new Map();
+  for (const e of edges) {
+    const k = `${e.source}|${e.target}`;
+    const label = e.qualifier ? `${e.predicate} (${e.qualifier})` : e.predicate;
+    if (!pairs.has(k)) pairs.set(k, { s: e.source, t: e.target, labels: [] });
+    const p = pairs.get(k);
+    if (!p.labels.includes(label)) p.labels.push(label);
+  }
+  return [...pairs.values()].map((p) => `${pumlId(p.s)} --> ${pumlId(p.t)} : ${p.labels.join("\\n")}`);
+}
+
+function kindLegend(kinds) {
+  return ["legend bottom right", "  <b>Kind</b>",
+    ...kinds.map((k) => `  <back:${tint(k)}>    </back> ${k}`),
+    "  <color:#6B7785>dashed = imported layer</color>", "endlegend"];
 }
 
 function layerPuml(L) {
-  const out = ["@startuml", ...PUML_HEAD, `title ${L.own.layer} — ${L.own.classes.length} classes, ${L.own.edges.length} licensed edges`];
+  const out = ["@startuml", ...PUML_HEAD,
+    `title ${L.own.layer} · ${L.own.classes.length} classes · ${L.own.edges.length} licensed edges`];
   out.push(`package "${L.id}" {`);
   for (const c of L.own.classes) out.push(...pumlClass(c).map((x) => "  " + x));
   out.push("}");
-  for (const id of borrowedClassIds(L)) {
-    const c = classById.get(id);
-    out.push(...pumlClass(c, { fields: false, stereo: `imported from ${classLayer.get(id)}` }).map((x) => x.replace(/<<imported from [^>]+>>/, `<<imported>>`)));
-  }
-  for (const e of L.own.edges) out.push(pumlEdge(e));
+  for (const id of borrowedClassIds(L)) out.push(...pumlClass(classById.get(id), { fields: false, imported: true }));
+  out.push(...pumlEdges(L.own.edges));
+  out.push(...kindLegend([...new Set(L.own.classes.map((c) => c.kind))]));
   out.push("@enduml", "");
   return out.join("\n");
 }
 
 function allPuml() {
-  const out = ["@startuml", ...PUML_HEAD, "title All layers — classes and licensed edges (properties omitted)"];
+  const out = ["@startuml", ...PUML_HEAD, "left to right direction",
+    "title All layers · classes and licensed edges (properties on each layer's page)"];
   for (const L of layers) {
     out.push(`package "${L.id}" {`);
     for (const c of L.own.classes) out.push("  " + pumlClass(c, { fields: false })[0]);
     out.push("}");
   }
-  for (const L of layers) for (const e of L.own.edges) out.push(pumlEdge(e));
+  out.push(...pumlEdges(layers.flatMap((L) => L.own.edges)));
+  out.push(...kindLegend([...new Set(layers.flatMap((L) => L.own.classes.map((c) => c.kind)))]));
   out.push("@enduml", "");
   return out.join("\n");
 }
 
 function layersPuml() {
-  const out = ["@startuml", ...PUML_HEAD, "title Layer imports"];
+  const out = ["@startuml", ...PUML_HEAD, "hide stereotype", "title Layer imports"];
   for (const L of layers) {
-    out.push(`package "${L.id}" as ${pumlId(L.id)} {`, `  class "${L.own.classes.length} classes, ${L.own.edges.length} edges" as ${pumlId(L.id)}_n <<${L.own.layer}>>`, "}");
+    out.push(`class "<b>${L.id}</b>\\n${L.own.classes.length} classes · ${L.own.edges.length} edges" as ${pumlId(L.id)} #FFFFFF;line:${LAYER_LINE[L.id].slice(1)}`);
   }
   for (const L of layers) for (const dep of L.own.imports ?? []) out.push(`${pumlId(L.id)} ..> ${pumlId(dep)} : imports`);
   out.push("@enduml", "");
@@ -140,6 +196,16 @@ function layersPuml() {
 for (const L of layers) write(`diagrams/${L.id}.puml`, layerPuml(L));
 write("diagrams/all.puml", allPuml());
 write("diagrams/layers.puml", layersPuml());
+
+// A diagram embed: the pan/zoom viewer (site-src/diagram.js) mounts on the div; without JavaScript
+// the <noscript> image is shown instead.
+const diagram = (src, alt) =>
+  `<div class="kg-diagram" data-src="${src}" data-alt="${alt}" markdown="0"><noscript><a href="${src}"><img src="${src}" alt="${alt}"></a></noscript></div>`;
+const DIAGRAM_ASSETS = [
+  '<link rel="stylesheet" href="../assets/kg/diagram.css">',
+  '<script src="https://cdn.jsdelivr.net/npm/svg-pan-zoom@3.6.2/dist/svg-pan-zoom.min.js"></script>',
+  '<script type="module" src="../assets/kg/diagram.js"></script>',
+].join("\n");
 
 // ---------------------------------------------------------------------------------------------
 // Markdown pages, one per layer.
@@ -157,8 +223,9 @@ function layerPage(L, order) {
     ` [.cypher](${BLOB}ontology/${L.id}/${L.id}.cypher){: .btn }` +
     ` [.puml](../diagrams/${L.id}.puml){: .btn }`, "");
   if (o.note) P.push(`> ${md(o.note)}`, "");
-  P.push("## Diagram", "", `[![${L.id} class diagram](../diagrams/${L.id}.svg)](../diagrams/${L.id}.svg)`, "",
-    "Grey classes are declared by an imported layer and shown only where this layer's edges reach them.", "");
+  P.push("## Diagram", "", diagram(`../diagrams/${L.id}.svg`, `${L.id} class diagram`), "",
+    "Dashed grey classes are declared by an imported layer and shown only where this layer's edges " +
+    "reach them. Several predicates between the same two classes share one arrow.", "");
 
   P.push("## Classes", "");
   for (const c of o.classes) {
@@ -213,6 +280,7 @@ function layerPage(L, order) {
     for (const d of o.deliberatelyOmitted) P.push(`| ${md(d.what)} | ${md(d.why)} |`);
     P.push("");
   }
+  P.push(DIAGRAM_ASSETS, "");
   return P.join("\n");
 }
 
@@ -228,15 +296,18 @@ write("schema/index.md", [
   "## Layers", "",
   "| Layer | Classes | Edges | Imports |", "|---|---|---|---|",
   ...layers.map((L) => `| [${L.id}](${L.id}.html) | ${L.own.classes.length} | ${L.own.edges.length} | ${(L.own.imports ?? []).join(", ")} |`),
-  "", "[![Layer imports](../diagrams/layers.svg)](../diagrams/layers.svg)", "",
+  "", diagram("../diagrams/layers.svg", "Layer imports"), "",
   "## Every layer", "", "Properties omitted; each layer's page carries them.", "",
-  "[![All layers](../diagrams/all.svg)](../diagrams/all.svg)", "",
+  diagram("../diagrams/all.svg", "All layers"), "",
   "## Notation", "",
   "UML class diagrams, drawn with [PlantUML](https://plantuml.com/class-diagram). A box is a class " +
   "with its declared properties (and the value set a property is bound to, after the colon); the " +
   "stereotype is its `kind`. An arrow is a **licensed edge**: an instance of the source class may " +
   "point at an instance of the target class with that predicate. The `.puml` sources are linked " +
-  "from each layer page.", "",
+  "from each layer page. Classes are tinted by kind and outlined in their layer's colour; a dashed " +
+  "grey box is a class from an imported layer. Where one class may reach another by several " +
+  "predicates, they share one arrow.", "",
+  DIAGRAM_ASSETS, "",
 ].join("\n"));
 
 // ---------------------------------------------------------------------------------------------
@@ -258,7 +329,7 @@ const graph = {
 write("assets/kg/graph.json", JSON.stringify(graph, null, 1));
 mkdirSync(join(OUT, "assets/kg"), { recursive: true });
 copyFileSync(join(ROOT, "ontology/all.ttl"), join(OUT, "assets/kg/all.ttl"));
-for (const f of ["explorer.js", "explorer.css"]) copyFileSync(join(ROOT, "site-src", f), join(OUT, "assets/kg", f));
+for (const f of ["explorer.js", "explorer.css", "diagram.js", "diagram.css"]) copyFileSync(join(ROOT, "site-src", f), join(OUT, "assets/kg", f));
 write("explorer.md", readFileSync(join(ROOT, "site-src/explorer.md"), "utf8"));
 write("_config.yml", readFileSync(join(ROOT, "site-src/_config.yml"), "utf8"));
 write("Gemfile", readFileSync(join(ROOT, "site-src/Gemfile"), "utf8"));

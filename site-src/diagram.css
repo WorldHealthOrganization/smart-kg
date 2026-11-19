@@ -1,0 +1,15 @@
+.kg-diagram { --kg-border: #d0d7de; border: 1px solid var(--kg-border); border-radius: 6px; margin: .75rem 0 1.25rem; background: #fff; display: flex; flex-direction: column; }
+.kg-dbar { display: flex; flex-wrap: wrap; align-items: center; gap: .35rem; padding: .4rem .5rem; border-bottom: 1px solid var(--kg-border); background: #f6f8fa; border-radius: 6px 6px 0 0; }
+.kg-dbtn { min-width: 2.1rem; padding: .15rem .55rem !important; font-size: .9rem !important; line-height: 1.5 !important; text-align: center; }
+.kg-dhint { margin-left: auto; color: #5c6670; font-size: .78rem; }
+.kg-dview { height: 70vh; min-height: 420px; overflow: hidden; cursor: grab; outline: none; }
+.kg-dview:active { cursor: grabbing; }
+.kg-dview:focus-visible { box-shadow: inset 0 0 0 2px #7253ed; }
+/* Full screen, or the window-filling fallback when the browser refuses full screen. */
+.kg-diagram.kg-full { position: fixed; inset: 0; z-index: 1000; margin: 0; border: 0; border-radius: 0; }
+.kg-diagram.kg-full .kg-dview { height: auto; min-height: 0; flex: 1 1 auto; }
+body.kg-noscroll { overflow: hidden; }
+.kg-diagram noscript img { max-width: 100%; }
+@media (max-width: 700px) { .kg-dview { height: 60vh; min-height: 320px; } .kg-dhint { display: none; } }
+/* The theme caps content at a reading width; a diagram needs the room. */
+body:has(.kg-diagram) .main { max-width: none; }

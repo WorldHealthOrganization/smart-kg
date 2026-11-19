@@ -12,6 +12,7 @@ properties and edges. Filter by layer, predicate or text, or ask the model a que
 below. Nothing here is DAK data; it is the schema.
 
 <div id="kg-explorer" markdown="0">
+  <div class="kg-stage">
   <div class="kg-toolbar">
     <fieldset id="kg-layers" class="kg-layers"><legend>Layers</legend></fieldset>
     <label>Predicate
@@ -21,7 +22,10 @@ below. Nothing here is DAK data; it is the schema.
       <input id="kg-search" type="search" placeholder="class, id or property">
     </label>
     <label class="kg-check"><input id="kg-labels" type="checkbox"> edge labels</label>
+    <button id="kg-zoom-in" type="button" class="btn" title="Zoom in" aria-label="Zoom in">+</button>
+    <button id="kg-zoom-out" type="button" class="btn" title="Zoom out" aria-label="Zoom out">−</button>
     <button id="kg-fit" type="button" class="btn">Fit</button>
+    <button id="kg-full" type="button" class="btn" title="Full screen" aria-label="Full screen">⛶</button>
     <button id="kg-reset" type="button" class="btn">Reset</button>
   </div>
   <div class="kg-main">
@@ -29,6 +33,7 @@ below. Nothing here is DAK data; it is the schema.
     <aside id="kg-detail"><p class="kg-hint">Click a class to see its properties and licensed edges.</p></aside>
   </div>
   <p id="kg-status" class="kg-status"></p>
+  </div>
 
   <h2 id="sparql">Query the ontology (SPARQL)</h2>
   <p>Runs in your browser with <a href="https://github.com/oxigraph/oxigraph">Oxigraph</a> over

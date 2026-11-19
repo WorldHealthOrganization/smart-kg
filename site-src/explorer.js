@@ -90,7 +90,7 @@ function applyFilters() {
 
 function status() {
   const nv = cy.nodes(":visible").length, ev = cy.edges(":visible").length;
-  $("kg-status").textContent = `${nv} of ${graph.classes.length} classes, ${ev} of ${graph.edges.length} licensed edges shown. Scroll to zoom, drag to pan.`;
+  $("kg-status").textContent = `${nv} of ${graph.classes.length} classes, ${ev} of ${graph.edges.length} licensed edges shown. Scroll or +/− to zoom, drag or arrow keys to pan.`;
 }
 
 function edgeItem(e, dir) {
@@ -143,6 +143,35 @@ $("kg-predicate").addEventListener("change", applyFilters);
 $("kg-search").addEventListener("input", applyFilters);
 $("kg-labels").addEventListener("change", (e) => cy.edges().toggleClass("labelled", e.target.checked));
 $("kg-fit").addEventListener("click", () => cy.fit(cy.elements(":visible"), 20));
+// Zoom about the centre of the view, so the buttons behave like the scroll wheel over the middle.
+const zoomBy = (f) => cy.zoom({
+  level: Math.min(cy.maxZoom(), Math.max(cy.minZoom(), cy.zoom() * f)),
+  renderedPosition: { x: cy.width() / 2, y: cy.height() / 2 },
+});
+$("kg-zoom-in").addEventListener("click", () => zoomBy(1.3));
+$("kg-zoom-out").addEventListener("click", () => zoomBy(1 / 1.3));
+// Full screen where the browser allows it; where it refuses (an embedding iframe, some mobile
+// browsers) the panel fills the window instead. Esc leaves either.
+const mainBox = document.querySelector(".kg-stage");
+const refit = () => setTimeout(() => { cy.resize(); cy.fit(cy.elements(":visible"), 20); }, 50);
+const setMax = (on) => { mainBox.classList.toggle("kg-full", on); document.body.classList.toggle("kg-noscroll", on); refit(); };
+$("kg-full").addEventListener("click", async () => {
+  if (document.fullscreenElement) return document.exitFullscreen();
+  if (mainBox.classList.contains("kg-full")) return setMax(false);
+  try { await mainBox.requestFullscreen(); } catch { setMax(true); }
+});
+document.addEventListener("fullscreenchange", () => setMax(document.fullscreenElement === mainBox));
+document.addEventListener("keydown", (e) => { if (e.key === "Escape" && mainBox.classList.contains("kg-full")) setMax(false); });
+$("kg-cy").tabIndex = 0;
+$("kg-cy").addEventListener("keydown", (e) => {
+  const pan = { ArrowLeft: [60, 0], ArrowRight: [-60, 0], ArrowUp: [0, 60], ArrowDown: [0, -60] }[e.key];
+  if (e.key === "+" || e.key === "=") zoomBy(1.3);
+  else if (e.key === "-") zoomBy(1 / 1.3);
+  else if (e.key === "0") cy.fit(cy.elements(":visible"), 20);
+  else if (pan) cy.panBy({ x: pan[0], y: pan[1] });
+  else return;
+  e.preventDefault();
+});
 $("kg-reset").addEventListener("click", () => {
   layerBox.querySelectorAll("input").forEach((i) => (i.checked = true));
   $("kg-predicate").value = ""; $("kg-search").value = "";
