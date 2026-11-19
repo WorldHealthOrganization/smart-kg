@@ -205,7 +205,7 @@ input tree with no component declaring them. Nothing else in the estate reports 
 **Browse it** at <https://worldhealthorganization.github.io/smart-kg/> — the same model, rendered: every
 layer as a UML class diagram, an explorer that filters classes and licensed edges by layer, predicate
 or name, and a SPARQL console that queries `ontology/all.ttl` in the browser. To build it locally:
-`node tools/build-site.mjs`, render `site/diagrams/*.puml` with PlantUML, then `bundle exec jekyll
+`node tools/build-site.mjs`, render `site/diagrams/*.puml` with PlantUML (and Graphviz), then `bundle exec jekyll
 serve` in `site/`.
 
 **The schema:**

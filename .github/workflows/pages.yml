@@ -37,7 +37,8 @@ jobs:
       - name: Generate pages, graph data and PlantUML sources
         run: node tools/build-site.mjs --repo "$GITHUB_REPOSITORY"
 
-      # Smetana is PlantUML's built-in layout engine, so this needs Java and no Graphviz.
+      # Graphviz dot is PlantUML's standard layout engine. Its orthogonal routing is what keeps a
+      # class diagram with 40+ edges legible; the built-in smetana engine cannot do it.
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -45,6 +46,8 @@ jobs:
 
       - name: Render PlantUML to SVG
         run: |
+          sudo apt-get install -y --no-install-recommends graphviz > /dev/null
+          dot -V
           curl -fsSL -o "$RUNNER_TEMP/plantuml.jar" \
             "https://github.com/plantuml/plantuml/releases/download/v${PLANTUML_VERSION}/plantuml-${PLANTUML_VERSION}.jar"
           java -Djava.awt.headless=true -jar "$RUNNER_TEMP/plantuml.jar" -tsvg -failfast2 site/diagrams/*.puml

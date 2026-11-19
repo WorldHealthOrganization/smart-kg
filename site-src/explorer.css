@@ -21,3 +21,9 @@ body:has(#kg-explorer) .main { max-width: none; }
 #kg-results table { font-size: .8rem; }
 #kg-results a { cursor: pointer; }
 @media (max-width: 700px) { #kg-cy { height: 460px; } }
+/* Full screen, or the window-filling fallback when the browser refuses full screen. */
+.kg-stage.kg-full { position: fixed; inset: 0; z-index: 1000; background: #fff; padding: .75rem 1rem; display: flex; flex-direction: column; overflow: auto; }
+.kg-stage.kg-full .kg-main { flex: 1 1 auto; min-height: 0; }
+.kg-stage.kg-full #kg-cy, .kg-stage.kg-full #kg-detail { height: auto; max-height: none; align-self: stretch; }
+body.kg-noscroll { overflow: hidden; }
+#kg-cy:focus-visible { outline: 2px solid #7253ed; }
