@@ -1,0 +1,23 @@
+#kg-explorer { --kg-border: #d0d7de; --kg-muted: #5c6670; }
+/* The theme caps content at a reading width; a graph needs the room. */
+body:has(#kg-explorer) .main { max-width: none; }
+.kg-toolbar { display: flex; flex-wrap: wrap; gap: .75rem 1.25rem; align-items: center; margin: .5rem 0 1rem; font-size: .875rem; }
+.kg-toolbar label { display: inline-flex; gap: .4rem; align-items: center; }
+.kg-toolbar select, .kg-toolbar input[type=search] { font: inherit; padding: .2rem .4rem; border: 1px solid var(--kg-border); border-radius: 4px; }
+.kg-layers { display: flex; flex-wrap: wrap; gap: .25rem .75rem; border: 0; margin: 0; padding: 0; }
+.kg-layers legend { float: left; margin-right: .5rem; font-weight: 600; }
+.kg-layers label { gap: .3rem; }
+.kg-swatch { display: inline-block; width: .75rem; height: .75rem; border-radius: 50%; }
+.kg-main { display: flex; flex-wrap: wrap; gap: 1rem; }
+#kg-cy { flex: 3 1 480px; min-width: 0; height: 640px; border: 1px solid var(--kg-border); border-radius: 6px; background: #fbfcfd; }
+#kg-detail { flex: 1 1 260px; max-height: 640px; overflow: auto; border: 1px solid var(--kg-border); border-radius: 6px; padding: .75rem 1rem; font-size: .85rem; }
+#kg-detail h3 { margin-top: 0; }
+#kg-detail ul { padding-left: 1.1rem; margin: .25rem 0 .75rem; }
+#kg-detail a { cursor: pointer; }
+.kg-hint, .kg-status { color: var(--kg-muted); font-size: .85rem; }
+.kg-tag { display: inline-block; padding: 0 .4rem; border-radius: 3px; font-size: .75rem; color: #fff; margin-right: .25rem; }
+#kg-query { width: 100%; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: .8rem; padding: .5rem; border: 1px solid var(--kg-border); border-radius: 6px; box-sizing: border-box; }
+#kg-results { overflow-x: auto; margin-top: .75rem; }
+#kg-results table { font-size: .8rem; }
+#kg-results a { cursor: pointer; }
+@media (max-width: 700px) { #kg-cy { height: 460px; } }
