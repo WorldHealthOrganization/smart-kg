@@ -48,7 +48,7 @@ cross-model edge everyone wants **already exists in the artefact** — it just h
 | Path | Contents |
 |---|---|
 | [`ontology/l1/`](ontology/l1/) | **L1** — WHO publications and their layout, recommendations, key questions, outcomes, evidence, interventions, indicators, citations. 13 classes, 68 edges, 18 value sets |
-| [`ontology/l2/`](ontology/l2/) | **DAK components** — nine, plus scheduling, and the DAK files they point at. 14 classes, 44 edges. Imports L1 |
+| [`ontology/l2/`](ontology/l2/) | **DAK components** — nine, plus scheduling, and the DAK files they point at. 14 classes, 47 edges. Imports L1 |
 | [`ontology/l2-bpmn/`](ontology/l2-bpmn/) | **BPMN interiors.** 6 classes, 20 edges. Imports L2 |
 | [`ontology/l2-dmn/`](ontology/l2-dmn/) | **DMN interiors.** 6 classes, 10 edges. Imports L2-BPMN |
 | [`ontology/l3/`](ontology/l3/) | **FHIR index.** 14 classes, 39 edges. Imports L2-DMN |
@@ -58,6 +58,7 @@ cross-model edge everyone wants **already exists in the artefact** — it just h
 | [`shapes/recommendation-graph.schema.json`](shapes/recommendation-graph.schema.json) | Graph document shape — tier 1 |
 | [`docs/SCOPE.md`](docs/SCOPE.md) | **Read first.** What this graph refuses to hold, and why |
 | [`docs/STORAGE.md`](docs/STORAGE.md) · [`docs/RAG.md`](docs/RAG.md) | Where instances live; the ingestion contract |
+| [`docs/COVERAGE.md`](docs/COVERAGE.md) | L1 publication coverage report — a contract: normative sentences, captured and accounted-for % |
 | [`tools/`](tools/) | Extractors, exporter, validator, negative tests, and the L1 goal queries and their tests. Plain Node, no dependencies |
 
 In each `ontology/<layer>/`, the `.json` is authored and the `.ttl`, `.cypher` and
@@ -256,7 +257,7 @@ class-pair while an OWL object property has one global domain and range.
 | **Goals** | L1 still answers what it exists for: impact, coverage, citation resolution | `tools/goal-test.mjs` |
 | **T3 Fidelity** | Does the graph faithfully represent the PDF, the BPMN, the DMN? | Human. Never auto-passed |
 
-T2 is negative-tested by [`tools/negative-test.mjs`](tools/negative-test.mjs) — 54 cases, run in CI.
+T2 is negative-tested by [`tools/negative-test.mjs`](tools/negative-test.mjs) — 64 cases, run in CI.
 The documents it checks are built in the test rather than committed, because this repository holds
 no data; the L1 ones quote the real ANC and HIV guidelines and carry their real ISBNs. Each rule above
 has a case that breaks it and expects the located message, in the subgraphs as well as in L1. Some

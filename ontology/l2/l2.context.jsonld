@@ -165,6 +165,9 @@
     "implementedBy": {
       "@id": "sgkg:implementedBy"
     },
+    "verifiedBy": {
+      "@id": "sgkg:verifiedBy"
+    },
     "derivedFrom": {
       "@id": "sgkg:derivedFrom"
     },

@@ -193,6 +193,10 @@ const DAK = `${NS}/kg/dak`;
 const PERSONA = `${NS}/persona/data-clerk`;
 const REQ = `${NS}/requirement/record-a-visit`;
 const STMT = `${REQ}/statement/rec-01`;
+const NFR = `${NS}/requirement/availability`;
+const TEST = `${NS}/test-scenario/record-a-visit`;
+// The requirements trace to a real L1 recommendation from the fixture above (ANC A.1.1).
+const RECOMMENDATION = A111;
 
 const L2 = doc("l2", [
   n(DAK, "dak", "Example DAK", { id: "example.dak", name: "Example", title: "Example DAK",
@@ -203,7 +207,17 @@ const L2 = doc("l2", [
   n(REQ, "functional-requirement", "Can record a visit",
     { id: "Example.Skills.RecordVisit", title: "Can record a visit", sourceKind: "instance" }),
   n(STMT, "requirement-statement", "REC-01",
-    { key: "REC-01", label: "Record a visit", requirement: "Can record a visit.", conformance: "SHALL" }),
+    { key: "REC-01", label: "Record a visit", requirement: "Can record a visit.", conformance: "SHALL",
+      // A list of objects, the shape the class's propertyNote states. Same field name and
+      // verification enum as folio-assistant's requirement.ts.
+      successCriteria: [
+        { key: "SC-1", criterion: "A saved visit is listed for the client.", verification: "test" },
+        { key: "SC-2", criterion: "The form names every required field.", verification: "inspection" },
+      ] }),
+  n(NFR, "non-functional-requirement", "Available offline",
+    { id: "Example.NFR.Offline", requirement: "Visits can be recorded offline.", sourceKind: "instance" }),
+  n(TEST, "test-scenario", "Record a visit",
+    { id: "Example.Test.RecordVisit", feature: `${NS}/features/record-visit.feature`, sourceKind: "url" }),
   // Moved from L1 in 3.0: a DAK file is the DAK's material. The citation it carries is an L1 node.
   n(DMN_FILE, "external-artifact", "Example decision table", { iri: DMN_FILE, targetKind: "dmn" }),
 ], [
@@ -215,6 +229,10 @@ const L2 = doc("l2", [
     properties: { resolutionStatus: "resolved", matchedOn: "actor Canonical() == ActorDefinition instance id" },
     ...inferred("resolved by canonical reference, not by name matching"),
   }),
+  // Crosses into L1: the recommendation is defined in the L1 document.
+  e("derivedFrom", REQ, RECOMMENDATION, inferred("the requirement operationalises the recommendation")),
+  e("derivedFrom", NFR, RECOMMENDATION, inferred("offline capture is what makes the counselling recordable at every visit")),
+  e("verifiedBy", STMT, TEST),
 ]);
 
 const BPMN = `${NS}/artifact/Example.bpmn`;
@@ -325,6 +343,15 @@ const clone = (o) => JSON.parse(JSON.stringify(o));
 const index = (...docs) => new Map(docs.flatMap((d) => (d.nodes ?? []).map((x) => [x.id, x])));
 const find = (d, type) => d.nodes.find((x) => x.type === type);
 const findEdge = (d, predicate) => d.edges.find((x) => x.predicate === predicate);
+// A "licensed" case asserts the edge is really in the document, so it cannot pass vacuously
+// because someone later trimmed the fixture.
+const must = (d, predicate, sType, tType) => {
+  const all = index(d, ...ALL);
+  if (!d.edges.some((x) => x.predicate === predicate && all.get(x.source)?.type === sType
+                           && all.get(x.target)?.type === tType)) {
+    throw new Error(`fixture has no "${sType} ${predicate} ${tType}" edge`);
+  }
+};
 const byId = (d, id) => d.nodes.find((x) => x.id === id);
 
 const cases = [
@@ -461,6 +488,30 @@ const cases = [
   ["an undeclared property on a DAK component is rejected", L2, (d) => {
     find(d, "dak").properties.budget = "none of your business";
   }, /does not declare/],
+
+  // --- requirements: trace to L1, verification, success criteria ----------------------------------
+  ["a functional requirement derivedFrom an L1 recommendation is licensed", L2, (d) => {
+    must(d, "derivedFrom", "functional-requirement", "recommendation");
+  }, null],
+  ["a non-functional requirement derivedFrom an L1 recommendation is licensed", L2, (d) => {
+    must(d, "derivedFrom", "non-functional-requirement", "recommendation");
+  }, null],
+  ["a requirement statement verifiedBy a test scenario is licensed", L2, (d) => {
+    must(d, "verifiedBy", "requirement-statement", "test-scenario");
+  }, null],
+  ["a requirement statement may not be derivedFrom a recommendation directly", L2, (d) => {
+    d.edges.push(e("derivedFrom", STMT, RECOMMENDATION, inferred("why")));
+  }, /is not licensed by the ontology/],
+  ["a requirement may not be verifiedBy a test scenario; its statements are", L2, (d) => {
+    d.edges.push(e("verifiedBy", REQ, TEST));
+  }, /is not licensed by the ontology/],
+  ["a statement with no successCriteria WARNS, and is not an error", L2, (d) => {
+    delete find(d, "requirement-statement").properties.successCriteria;
+  }, { warning: /carries no successCriteria/ }],
+  ["an empty successCriteria list warns the same way", L2, (d) => {
+    find(d, "requirement-statement").properties.successCriteria = [];
+  }, { warning: /carries no successCriteria/ }],
+  ["a statement with successCriteria raises no warning", L2, null, { noWarning: /successCriteria/ }],
 
   // --- the BPMN subgraph -------------------------------------------------------------------------
   ["a subgraph may not license an edge its ontology does not", L2_BPMN, (d) => {

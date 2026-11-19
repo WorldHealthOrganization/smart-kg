@@ -898,7 +898,7 @@ sgkg:RequirementStatement a owl:Class ;
   rdfs:subClassOf sgkg:Element ;
   rdfs:label "Requirement Statement" ;
   skos:notation "requirement-statement" ;
-  rdfs:comment "One numbered, labelled statement inside a requirement, with a conformance verb. A node rather than a property because conformance is queried across a whole DAK -- 'every SHALL in this kit, and what fulfils it' is the question requirements exist to answer." .
+  rdfs:comment "One numbered, labelled statement inside a requirement, with a conformance verb. A node rather than a property because conformance is queried across a whole DAK -- 'every SHALL in this kit, and what fulfils it' is the question requirements exist to answer. It also carries its own success criteria, so 'what would show this SHALL is met' is answerable per statement rather than per requirement." .
 
 sgkg:TestScenario a owl:Class ;
   rdfs:subClassOf sgkg:Component ;
@@ -968,6 +968,10 @@ sgkg:describes a owl:ObjectProperty ;
 sgkg:implementedBy a owl:ObjectProperty ;
   rdfs:label "implementedBy" ;
   rdfs:comment "Reused from l1, and licensed here for the L1->L2 hop that L1 could not declare itself: l1 cannot name an l2 class without a circular import, but l2 imports l1 and sees both ends. A recommendation is implemented by the DAK component that realises it. Always `inferred`, never `derived` -- deciding that a process realises a recommendation is adaptation, the judgement a DAK exists to record, and it carries a resolutionStatus like every other cross-artefact claim. Note health-intervention has NO implementedBy edge: the published SOP gives Health Interventions an L3 row of `n/a / n/a / n/a` and calls L1 recommendations inputs rather than outputs, so the trace runs through processes, decisions and indicators instead." .
+
+sgkg:verifiedBy a owl:ObjectProperty ;
+  rdfs:label "verifiedBy" ;
+  rdfs:comment "A requirement statement is verified by a test scenario. The statement is the granularity at which conformance is asserted, so it is also the granularity at which a test is claimed to check it. The edge records the claim that a scenario exists for the statement; whether the scenario actually exercises each success criterion is a review question, recorded per criterion by `verification` on successCriteria, not by this edge." .
 
 sgkg:derivedFrom a owl:ObjectProperty ;
   rdfs:label "derivedFrom" ;
@@ -1227,6 +1231,24 @@ sgkg:crossReferences_NonFunctionalRequirement_TerminologyCode a owl:ObjectProper
   rdfs:domain sgkg:NonFunctionalRequirement ;
   rdfs:range sgkg:TerminologyCode ;
   rdfs:label "Non-Functional Requirement crossReferences Terminology code" .
+
+sgkg:derivedFrom_FunctionalRequirement_Recommendation a owl:ObjectProperty ;
+  rdfs:subPropertyOf sgkg:derivedFrom ;
+  rdfs:domain sgkg:FunctionalRequirement ;
+  rdfs:range sgkg:Recommendation ;
+  rdfs:label "Functional Requirement derivedFrom Recommendation" .
+
+sgkg:derivedFrom_NonFunctionalRequirement_Recommendation a owl:ObjectProperty ;
+  rdfs:subPropertyOf sgkg:derivedFrom ;
+  rdfs:domain sgkg:NonFunctionalRequirement ;
+  rdfs:range sgkg:Recommendation ;
+  rdfs:label "Non-Functional Requirement derivedFrom Recommendation" .
+
+sgkg:verifiedBy_RequirementStatement_TestScenario a owl:ObjectProperty ;
+  rdfs:subPropertyOf sgkg:verifiedBy ;
+  rdfs:domain sgkg:RequirementStatement ;
+  rdfs:range sgkg:TestScenario ;
+  rdfs:label "Requirement Statement verifiedBy Test Scenario" .
 
 sgkg:appearsIn_Citation_ExternalArtefact a owl:ObjectProperty ;
   rdfs:subPropertyOf sgkg:appearsIn ;
