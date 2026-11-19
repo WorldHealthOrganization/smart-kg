@@ -1,0 +1,30 @@
+# Jekyll config for the GitHub Pages site. tools/build-site.mjs copies this into site/.
+title: SMART Guidelines KG
+description: The WHO SMART Guidelines knowledge graph type schema — classes, licensed edges, and a SPARQL console.
+theme: just-the-docs
+
+aux_links:
+  "smart-kg on GitHub": "https://github.com/WorldHealthOrganization/smart-kg"
+aux_links_new_tab: true
+
+search_enabled: true
+heading_anchors: true
+back_to_top: true
+color_scheme: light
+
+gh_edit_link: false
+
+# Every page uses the theme's layout. GitHub's own Pages build adds jekyll-default-layout for this;
+# a plain Jekyll build (which is what pages.yml runs) does not.
+defaults:
+  - scope: { path: "" }
+    values: { layout: default }
+
+callouts:
+  note:
+    color: blue
+
+exclude:
+  - Gemfile
+  - Gemfile.lock
+  - vendor

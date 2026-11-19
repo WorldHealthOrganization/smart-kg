@@ -1,0 +1,86 @@
+# Publishes the type graph as a GitHub Pages site: one page per layer with a PlantUML class diagram,
+# an interactive explorer of classes and licensed edges, and a SPARQL console over all.ttl.
+#
+# The site is a view of ontology/<layer>/<layer>.json, generated here and never committed.
+# Pull requests build it (so a change that breaks the site fails review); only main deploys.
+
+name: Pages
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    paths: ['ontology/**', 'docs/**', 'README.md', 'site-src/**', 'tools/build-site.mjs', 'tools/ontology.mjs', '.github/workflows/pages.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pages-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PLANTUML_VERSION: '1.2026.9'
+
+jobs:
+  build:
+    name: Build site
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Generate pages, graph data and PlantUML sources
+        run: node tools/build-site.mjs --repo "$GITHUB_REPOSITORY"
+
+      # Smetana is PlantUML's built-in layout engine, so this needs Java and no Graphviz.
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Render PlantUML to SVG
+        run: |
+          curl -fsSL -o "$RUNNER_TEMP/plantuml.jar" \
+            "https://github.com/plantuml/plantuml/releases/download/v${PLANTUML_VERSION}/plantuml-${PLANTUML_VERSION}.jar"
+          java -Djava.awt.headless=true -jar "$RUNNER_TEMP/plantuml.jar" -tsvg -failfast2 site/diagrams/*.puml
+          ls -la site/diagrams/*.svg
+
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3'
+          bundler-cache: true
+          working-directory: site
+
+      - id: pages
+        if: github.event_name != 'pull_request'
+        uses: actions/configure-pages@v5
+
+      - name: Jekyll build (just-the-docs)
+        working-directory: site
+        env:
+          JEKYLL_ENV: production
+        run: bundle exec jekyll build --baseurl "${{ steps.pages.outputs.base_path || '/smart-kg' }}" -d ../_site
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    name: Deploy
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
