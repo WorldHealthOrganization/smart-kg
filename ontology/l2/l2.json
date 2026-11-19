@@ -1,5 +1,5 @@
 {
-  "schemaVersion": "1.0",
+  "schemaVersion": "3.0",
   "layer": "L2",
   "namespace": "http://smart.who.int/kg/",
   "source": "authored",
@@ -94,6 +94,16 @@
       "predicate": "verifiedBy",
       "iri": "http://smart.who.int/kg/verifiedBy",
       "note": "A requirement statement is verified by a test scenario. The statement is the granularity at which conformance is asserted, so it is also the granularity at which a test is claimed to check it. The edge records the claim that a scenario exists for the statement; whether the scenario actually exercises each success criterion is a review question, recorded per criterion by `verification` on successCriteria, not by this edge."
+    },
+    {
+      "predicate": "derivedFrom",
+      "iri": "http://smart.who.int/kg/derivedFrom",
+      "note": "This normative content restates or operationalises that recommendation."
+    },
+    {
+      "predicate": "appearsIn",
+      "iri": "http://smart.who.int/kg/appearsIn",
+      "note": "A citation string appears in an L2 or L3 artefact at a stated location."
     }
   ],
   "classes": [
@@ -223,7 +233,7 @@
       "name": "Scheduling Logic",
       "kind": "Component",
       "iri": "http://smart.who.int/kg/scheduling-logic",
-      "note": "When an intervention is due, as a DAK component. NOT declared by DAK.fsh -- it is added here because the published SOP lists Scheduling Logic as an active L2 input (spreadsheets under input/scheduling-logic), WHO's ArchiMate model declares it a BusinessObject realised by PlanDefinition, and l1:schedule and l1:schedule-entry had no L2 component to reach. Note that the SOP's own L3 row for scheduling is present but HTML-commented-out and there is no l3_schedulinglogic.md page, so WHO has drafted the mapping and not activated it; the L3 edge is licensed here as a deliberate departure, recorded rather than hidden.",
+      "note": "When an intervention is due, as a DAK component. NOT declared by DAK.fsh -- it is added here because the published SOP lists Scheduling Logic as an active L2 input (spreadsheets under input/scheduling-logic), WHO's ArchiMate model declares it a BusinessObject realised by PlanDefinition, and L1's schedules needed an L2 component to reach (since L1 3.0, a recommendation's timing slot). Note that the SOP's own L3 row for scheduling is present but HTML-commented-out and there is no l3_schedulinglogic.md page, so WHO has drafted the mapping and not activated it; the L3 edge is licensed here as a deliberate departure, recorded rather than hidden.",
       "properties": [
         "id",
         "description",
@@ -324,6 +334,21 @@
         "resolutionStatus"
       ],
       "propertyNote": "resolutionStatus is `unresolved` on a component that something else names but no DAK declares -- an L3 artefact whose title carries the component id, for instance. The node exists so the gap is queryable and carries the referenced id and nothing else."
+    },
+    {
+      "id": "external-artifact",
+      "name": "External artefact",
+      "kind": "Reference",
+      "iri": "http://smart.who.int/kg/external-artifact",
+      "note": "A DAK file addressed by canonical URL: a BPMN process, a DMN decision table, a FHIR resource, a workbook. Deliberately opaque: it carries an IRI and a kind, and nothing about its interior. The L2-BPMN, L2-DMN and L3 classes that describe a file's interior elaborate this class at the same IRI. Moved here from L1 in 3.0 unchanged: a DAK file is the DAK's material, not WHO content.",
+      "properties": [
+        "iri",
+        "targetKind",
+        "version"
+      ],
+      "valueSets": {
+        "targetKind": "artifact-kind"
+      }
     }
   ],
   "edges": [
@@ -422,16 +447,6 @@
       "predicate": "implementedBy",
       "source": "indicator",
       "target": "program-indicator"
-    },
-    {
-      "predicate": "implementedBy",
-      "source": "schedule-entry",
-      "target": "scheduling-logic"
-    },
-    {
-      "predicate": "implementedBy",
-      "source": "schedule",
-      "target": "scheduling-logic"
     },
     {
       "predicate": "sourcedFrom",
@@ -547,18 +562,44 @@
       "predicate": "derivedFrom",
       "source": "functional-requirement",
       "target": "recommendation",
-      "note": "Reuses l1's derivedFrom at its own IRI rather than redeclaring it, as program-indicator derivedFrom indicator already does. Licensed here because l1 cannot name an l2 class. The requirement-level trace a reviewer asks for -- which recommendation this requirement comes from -- and a judgement: `inferred` or `decided`, with a note and evidence, never `derived`."
+      "note": "Uses the derivedFrom predicate declared above (L1 3.0 points nothing out of L1, so the predicate lives here), as program-indicator derivedFrom indicator already does. Licensed here because l1 cannot name an l2 class. The requirement-level trace a reviewer asks for -- which recommendation this requirement comes from -- and a judgement: `inferred` or `decided`, with a note and evidence, never `derived`."
     },
     {
       "predicate": "derivedFrom",
       "source": "non-functional-requirement",
       "target": "recommendation",
-      "note": "Reuses l1's derivedFrom at its own IRI rather than redeclaring it, as program-indicator derivedFrom indicator already does. Licensed here because l1 cannot name an l2 class. The requirement-level trace a reviewer asks for -- which recommendation this requirement comes from -- and a judgement: `inferred` or `decided`, with a note and evidence, never `derived`."
+      "note": "Uses the derivedFrom predicate declared above (L1 3.0 points nothing out of L1, so the predicate lives here), as program-indicator derivedFrom indicator already does. Licensed here because l1 cannot name an l2 class. The requirement-level trace a reviewer asks for -- which recommendation this requirement comes from -- and a judgement: `inferred` or `decided`, with a note and evidence, never `derived`."
     },
     {
       "predicate": "verifiedBy",
       "source": "requirement-statement",
       "target": "test-scenario"
+    },
+    {
+      "predicate": "appearsIn",
+      "source": "citation",
+      "target": "external-artifact"
+    },
+    {
+      "predicate": "implementedBy",
+      "source": "recommendation",
+      "target": "external-artifact"
+    },
+    {
+      "predicate": "implementedBy",
+      "source": "indicator",
+      "target": "external-artifact"
+    },
+    {
+      "predicate": "implementedBy",
+      "source": "health-intervention",
+      "target": "external-artifact"
+    },
+    {
+      "predicate": "implementedBy",
+      "source": "recommendation",
+      "target": "scheduling-logic",
+      "note": "Replaces schedule and schedule-entry implementedBy scheduling-logic: L1 3.0 carries timing on the recommendation."
     }
   ],
   "deliberatelyOmitted": [
@@ -589,6 +630,39 @@
     {
       "what": "An `implementedBy` edge from health-intervention",
       "why": "The published SOP's authored-L3 table gives Health Interventions `n/a` in all three columns, and the L2 guidance calls health interventions and the L1 recommendations behind them inputs rather than outputs. WHO's ArchiMate model disagrees -- it has `L3: Plan Definition realises Health Intervention` -- and that contradiction is recorded rather than resolved here. L1 reaches L3 through business-process, decision-support-logic and program-indicator instead."
+    }
+  ],
+  "valueSets": [
+    {
+      "id": "artifact-kind",
+      "note": "What kind of file an external artefact is. Moved with the class from L1, where it was free text.",
+      "source": "Files observed in smart-base and smart-immunizations",
+      "codes": [
+        {
+          "code": "dmn",
+          "definition": "A DMN decision table."
+        },
+        {
+          "code": "bpmn",
+          "definition": "A BPMN process."
+        },
+        {
+          "code": "fhir-resource",
+          "definition": "A FHIR resource, addressed by canonical URL."
+        },
+        {
+          "code": "spreadsheet",
+          "definition": "A workbook, such as the decision-support logic or indicators workbook."
+        },
+        {
+          "code": "feature-file",
+          "definition": "A Gherkin feature file."
+        },
+        {
+          "code": "document",
+          "definition": "Any other document."
+        }
+      ]
     }
   ]
 }

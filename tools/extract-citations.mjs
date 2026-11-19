@@ -1,23 +1,29 @@
 #!/usr/bin/env node
-// Extracts L1 citations from a DMN decision table into L1 graph nodes.
+// Extracts L1 citations from a DMN decision table.
 //
 // This is the whole point of the L1 graph, in 150 lines. WHO's own tooling already provides for an
 // L1 reference per decision-table rule -- the BCG table declares an output column whose description
 // reads "Reference for the source content (L1)" -- but it holds free text that no tool can follow,
 // and only 1 of that table's 25 rules has one filled in. This turns each such string into a
-// `citation` node with a location, leaves it `unresolved` until a person resolves it, and reports
-// how many rules had nothing to extract.
+// `citation` node, leaves it `unresolved` until a person resolves it, and reports how many rules had
+// nothing to extract. A cell holding several citations on separate lines yields one node per line,
+// and "[Add appropriate reference]" is recorded as a placeholder: the author saying a source is
+// missing, which coverage counts apart from a blank.
+//
+// The output is an L2 document: the citations are L1 nodes, but the file they appear in is the DAK's
+// (l2:external-artifact), and since L1 3.0 nothing in L1 points out of L1.
 //
 // What it does NOT do is guess the resolution. Matching "WHO recommendations for routine
 // immunization - summary tables (March 2023) (1)" to a publication is a judgement, and the schema
 // requires a note and evidence for a judgement. An extractor that resolved silently would be
 // manufacturing provenance.
 //
-//   node tools/extract-citations.mjs <file.dmn> [--out /tmp/l1.json]
+//   node tools/extract-citations.mjs <file.dmn> [--out /tmp/citations.json]
 
 import { readFileSync, writeFileSync } from "node:fs";
 import { basename } from "node:path";
 import { sha256, dakNamespace, artifactId, citationId, normalisedScheme } from "./kgid.mjs";
+import { ontologyVersion } from "./ontology.mjs";
 
 const dec = (s) => s.replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"')
                     .replace(/&#39;/g, "'").replace(/&amp;/g, "&");
@@ -52,7 +58,7 @@ export function extract(xml, path) {
     id: artifact,
     type: "external-artifact",
     label: /label="([^"]+)"/.exec(xml)?.[1] ?? tableId,
-    properties: { iri: artifact, targetKind: "dmn:DecisionTable" },
+    properties: { iri: artifact, targetKind: "dmn" },
     derivation: "derived",
     skill: "kg/extract-citations",
   });
@@ -62,7 +68,7 @@ export function extract(xml, path) {
   // and 8 carry only the first (guidance) one. Which rules cite a source and which do not is
   // precisely the question this graph exists to make answerable, so the extractor reports it
   // instead of quietly emitting whatever it found.
-  const cov = { rules: 0, cited: 0, noAnnotations: 0, shortOfRefColumn: 0 };
+  const cov = { rules: 0, cited: 0, placeholderOnly: 0, noAnnotations: 0, shortOfRefColumn: 0 };
 
   for (const [, ruleId, body] of xml.matchAll(/<dmn:rule id="([^"]+)">([\s\S]*?)<\/dmn:rule>/g)) {
     cov.rules++;
@@ -77,25 +83,32 @@ export function extract(xml, path) {
       if (annotations.length > 0) cov.shortOfRefColumn++;
       continue;
     }
-    const citationText = annotations[refAnnotationIndex];
-    if (!citationText || citationText === "–" || citationText === "-") continue;
-    cov.cited++;
+    const cell = annotations[refAnnotationIndex];
+    // One citation per line: a cell can cite the summary tables and a position paper at once, and
+    // those resolve to different publications.
+    const lines = (cell ?? "").split(/\r?\n/).map((l) => l.trim()).filter((l) => l && l !== "–" && l !== "-");
+    if (!lines.length) continue;
+    if (lines.some((l) => !/^\[.*\]$/.test(l))) cov.cited++;
+    else cov.placeholderOnly++;
 
-    // One citation node per distinct string; many rules cite the same source, and minting a node
-    // per rule would inflate the graph and hide the fact that they are one reference.
-    let citeId = seenCitations.get(citationText);
-    if (!citeId) {
-      citeId = citationId(nsUrl, citationText);
+    for (const citationText of lines) {
+      // One citation node per distinct string; many rules cite the same source, and minting a node
+      // per rule would inflate the graph and hide the fact that they are one reference. Where each
+      // rule cites it is recorded by L2-DMN's citesSource edges, not on the node -- a location
+      // property could only ever hold the first rule.
+      if (seenCitations.has(citationText)) continue;
+      const citeId = citationId(nsUrl, citationText);
       seenCitations.set(citationText, citeId);
       const numbering = /\((\d+)\)\s*$/.exec(citationText)?.[1] ?? null;
+      const placeholder = /^\[.*\]$/.test(citationText);
       nodes.push({
         id: citeId,
         type: "citation",
         label: citationText.length > 80 ? citationText.slice(0, 77) + "..." : citationText,
         properties: {
           text: citationText,
-          location: `${path}#${ruleId}`,
           ...(numbering ? { numbering } : {}),
+          citationKind: placeholder ? "placeholder" : "reference",
           resolutionStatus: "unresolved",
         },
         derivation: "derived",
@@ -115,10 +128,10 @@ export function extract(xml, path) {
 
   return {
     doc: {
-      "@context": "http://smart.who.int/kg/l1.context.jsonld",
-      id: `${nsUrl}/kg/l1`,
+      "@context": "http://smart.who.int/kg/l2.context.jsonld",
+      id: `${nsUrl}/kg/citations`,
       type: "Entity",
-      ontologyVersion: "1.0",
+      ontologyVersion: ontologyVersion(),
       generatedAt: new Date().toISOString().replace(/\.\d+Z$/, "Z"),
       wasDerivedFrom: [{ path, sha256: sha256(readFileSync(path)) }],
       nodes,
@@ -135,7 +148,8 @@ const outIdx = process.argv.indexOf("--out");
 if (outIdx !== -1) writeFileSync(process.argv[outIdx + 1], JSON.stringify(doc, null, 2) + "\n");
 console.error(`${stats.rules} rules, ${stats.citations} distinct L1 citation(s), ` +
               `${doc.nodes.length} nodes, ${doc.edges.length} edges`);
-console.error(`coverage: ${stats.cited}/${stats.rules} rules cite an L1 source ` +
+console.error(`coverage: ${stats.cited}/${stats.rules} rules cite an L1 source` +
+              (stats.placeholderOnly ? `, ${stats.placeholderOnly} carry only a placeholder` : "") + ` ` +
               `(${stats.noAnnotations} carry no annotation at all` +
               (stats.shortOfRefColumn ? `, ${stats.shortOfRefColumn} stop short of the reference column` : "") +
               `)`);

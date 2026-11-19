@@ -15,6 +15,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { basename } from "node:path";
 import { sha256, dakNamespace, artifactId, elementId, citationId, dataElementId, normalisedScheme } from "./kgid.mjs";
 import { extract as extractBpmn } from "./extract-bpmn.mjs";
+import { ontologyVersion } from "./ontology.mjs";
 
 const SKILL = "kg/extract-dmn";
 const dec = (s) => String(s).replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"')
@@ -93,7 +94,7 @@ export function extract(xml, path, bpmn = null) {
       if (!target) {
         target = `${ns}/artifact/${basename(href)}${frag ? `#${frag}` : ""}`;
         nodes.push(node(target, "external-artifact", taskName ?? href,
-          { iri: target, targetKind: "bpmn:Task" }, {
+          { iri: target, targetKind: "bpmn" }, {
             derivation: "inferred",
             note: "The task named by this href is in a BPMN file this graph does not hold, so it " +
                   "is an opaque pointer. Nothing is claimed about the task itself.",
@@ -231,7 +232,7 @@ export function extract(xml, path, bpmn = null) {
   return {
     doc: {
       "@context": "http://smart.who.int/kg/l2-dmn.context.jsonld",
-      id: `${ns}/kg/l2-dmn`, type: "Entity", ontologyVersion: "1.0",
+      id: `${ns}/kg/l2-dmn`, type: "Entity", ontologyVersion: ontologyVersion(),
       generatedAt: new Date().toISOString().replace(/\.\d+Z$/, "Z"),
       wasDerivedFrom: [{ path, sha256: sha256(readFileSync(path)) }],
       nodes, edges,

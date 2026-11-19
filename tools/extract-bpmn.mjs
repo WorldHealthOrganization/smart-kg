@@ -14,6 +14,7 @@
 import { readFileSync, writeFileSync, readdirSync, existsSync, statSync } from "node:fs";
 import { join, basename, relative } from "node:path";
 import { sha256, dakNamespace, artifactId, elementId, personaId, normalisedScheme } from "./kgid.mjs";
+import { ontologyVersion } from "./ontology.mjs";
 
 const SKILL = "kg/extract-bpmn";
 const dec = (s) => String(s).replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"')
@@ -174,7 +175,7 @@ export function extract(xml, path, personaTitles = new Map()) {
   return {
     doc: {
       "@context": "http://smart.who.int/kg/l2-bpmn.context.jsonld",
-      id: `${ns}/kg/l2-bpmn`, type: "Entity", ontologyVersion: "1.0",
+      id: `${ns}/kg/l2-bpmn`, type: "Entity", ontologyVersion: ontologyVersion(),
       generatedAt: new Date().toISOString().replace(/\.\d+Z$/, "Z"),
       wasDerivedFrom: [{ path, sha256: sha256(readFileSync(path)) }],
       nodes, edges,
