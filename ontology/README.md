@@ -6,7 +6,7 @@ so a file stays identifiable once downloaded and handed to a tool.
 ```
 ontology/
   l1/        l1.json  l1.ttl  l1.cypher  l1.context.jsonld      13 classes · 68 edges
-  l2/        …                                                  14 classes · 44 edges
+  l2/        …                                                  14 classes · 47 edges
   l2-bpmn/   …                                                   6 classes · 20 edges
   l2-dmn/    …                                                   6 classes · 10 edges
   l3/        …                                                  14 classes · 39 edges

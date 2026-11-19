@@ -91,6 +91,11 @@
       "note": "Reused from l1, and licensed here for the L1->L2 hop that L1 could not declare itself: l1 cannot name an l2 class without a circular import, but l2 imports l1 and sees both ends. A recommendation is implemented by the DAK component that realises it. Always `inferred`, never `derived` -- deciding that a process realises a recommendation is adaptation, the judgement a DAK exists to record, and it carries a resolutionStatus like every other cross-artefact claim. Note health-intervention has NO implementedBy edge: the published SOP gives Health Interventions an L3 row of `n/a / n/a / n/a` and calls L1 recommendations inputs rather than outputs, so the trace runs through processes, decisions and indicators instead."
     },
     {
+      "predicate": "verifiedBy",
+      "iri": "http://smart.who.int/kg/verifiedBy",
+      "note": "A requirement statement is verified by a test scenario. The statement is the granularity at which conformance is asserted, so it is also the granularity at which a test is claimed to check it. The edge records the claim that a scenario exists for the statement; whether the scenario actually exercises each success criterion is a review question, recorded per criterion by `verification` on successCriteria, not by this edge."
+    },
+    {
       "predicate": "derivedFrom",
       "iri": "http://smart.who.int/kg/derivedFrom",
       "note": "This normative content restates or operationalises that recommendation."
@@ -304,14 +309,15 @@
       "name": "Requirement Statement",
       "kind": "Element",
       "iri": "http://smart.who.int/kg/requirement-statement",
-      "note": "One numbered, labelled statement inside a requirement, with a conformance verb. A node rather than a property because conformance is queried across a whole DAK -- 'every SHALL in this kit, and what fulfils it' is the question requirements exist to answer.",
+      "note": "One numbered, labelled statement inside a requirement, with a conformance verb. A node rather than a property because conformance is queried across a whole DAK -- 'every SHALL in this kit, and what fulfils it' is the question requirements exist to answer. It also carries its own success criteria, so 'what would show this SHALL is met' is answerable per statement rather than per requirement.",
       "properties": [
         "key",
         "label",
         "requirement",
-        "conformance"
+        "conformance",
+        "successCriteria"
       ],
-      "propertyNote": "conformance is the FHIR ConformanceExpectation verb: SHALL, SHOULD, MAY or SHOULD-NOT. Across the 41 committed instances it is 155 SHALL and 15 SHOULD."
+      "propertyNote": "conformance is the FHIR ConformanceExpectation verb: SHALL, SHOULD, MAY or SHOULD-NOT. Across the 41 committed instances it is 155 SHALL and 15 SHOULD. successCriteria is a LIST of objects, each {key, criterion, verification}: `key` is unique within the statement (e.g. SC-1), `criterion` is a checkable sentence, and `verification` is one of test | inspection | review | analysis -- the classic verification methods, and the same field name and enum as folio-assistant's requirement.ts `successCriteria`, so the two map 1:1 with no translation table. Properties in this ontology are names only, so the shape is stated here and enforced by convention and by tools/validate.mjs, which WARNS -- does not fail -- when a statement carries no successCriteria: the 170 statements already committed in smart-base carry none, and a check that failed every existing instance would be switched off rather than acted on."
     },
     {
       "id": "test-scenario",
@@ -551,6 +557,23 @@
       "predicate": "crossReferences",
       "source": "non-functional-requirement",
       "target": "terminology-code"
+    },
+    {
+      "predicate": "derivedFrom",
+      "source": "functional-requirement",
+      "target": "recommendation",
+      "note": "Uses the derivedFrom predicate declared above (L1 3.0 points nothing out of L1, so the predicate lives here), as program-indicator derivedFrom indicator already does. Licensed here because l1 cannot name an l2 class. The requirement-level trace a reviewer asks for -- which recommendation this requirement comes from -- and a judgement: `inferred` or `decided`, with a note and evidence, never `derived`."
+    },
+    {
+      "predicate": "derivedFrom",
+      "source": "non-functional-requirement",
+      "target": "recommendation",
+      "note": "Uses the derivedFrom predicate declared above (L1 3.0 points nothing out of L1, so the predicate lives here), as program-indicator derivedFrom indicator already does. Licensed here because l1 cannot name an l2 class. The requirement-level trace a reviewer asks for -- which recommendation this requirement comes from -- and a judgement: `inferred` or `decided`, with a note and evidence, never `derived`."
+    },
+    {
+      "predicate": "verifiedBy",
+      "source": "requirement-statement",
+      "target": "test-scenario"
     },
     {
       "predicate": "appearsIn",

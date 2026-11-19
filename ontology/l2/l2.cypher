@@ -76,6 +76,9 @@ MATCH (s:KGClass {id:'data-element'}), (t:KGClass {id:'terminology-code'}) MERGE
 MATCH (s:KGClass {id:'program-indicator'}), (t:KGClass {id:'terminology-code'}) MERGE (s)-[:CROSSREFERENCES {predicate:'crossReferences'}]->(t);
 MATCH (s:KGClass {id:'functional-requirement'}), (t:KGClass {id:'terminology-code'}) MERGE (s)-[:CROSSREFERENCES {predicate:'crossReferences'}]->(t);
 MATCH (s:KGClass {id:'non-functional-requirement'}), (t:KGClass {id:'terminology-code'}) MERGE (s)-[:CROSSREFERENCES {predicate:'crossReferences'}]->(t);
+MATCH (s:KGClass {id:'functional-requirement'}), (t:KGClass {id:'recommendation'}) MERGE (s)-[:DERIVEDFROM {predicate:'derivedFrom'}]->(t);
+MATCH (s:KGClass {id:'non-functional-requirement'}), (t:KGClass {id:'recommendation'}) MERGE (s)-[:DERIVEDFROM {predicate:'derivedFrom'}]->(t);
+MATCH (s:KGClass {id:'requirement-statement'}), (t:KGClass {id:'test-scenario'}) MERGE (s)-[:VERIFIEDBY {predicate:'verifiedBy'}]->(t);
 MATCH (s:KGClass {id:'citation'}), (t:KGClass {id:'external-artifact'}) MERGE (s)-[:APPEARSIN {predicate:'appearsIn'}]->(t);
 MATCH (s:KGClass {id:'recommendation'}), (t:KGClass {id:'external-artifact'}) MERGE (s)-[:IMPLEMENTEDBY {predicate:'implementedBy'}]->(t);
 MATCH (s:KGClass {id:'indicator'}), (t:KGClass {id:'external-artifact'}) MERGE (s)-[:IMPLEMENTEDBY {predicate:'implementedBy'}]->(t);

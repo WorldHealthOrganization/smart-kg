@@ -176,6 +176,21 @@ export function validateGraph(doc, loaded, external = new Map()) {
     }
   }
 
+  // A requirement statement says what must hold; its successCriteria say what would show that it
+  // does. One without them is a SHALL nobody can check -- but every statement committed in
+  // smart-base today predates the property, so this WARNS rather than fails. An error here would
+  // fail every existing instance and get the check switched off instead of acted on. An empty
+  // list counts as none.
+  for (const n of nodes.values()) {
+    if (n.type !== "requirement-statement") continue;
+    const sc = n.properties?.successCriteria;
+    if (!Array.isArray(sc) || sc.length === 0) {
+      warnings.push(
+        `requirement-statement "${n.id}" carries no successCriteria, so nothing says what would ` +
+        `show it is met. Add a list of {key, criterion, verification: test|inspection|review|analysis}.`);
+    }
+  }
+
   // Value conformance. Where a class binds a property to a value set, the value must be one of its
   // codes. Before value sets these vocabularies were prose in a propertyNote, and "Strong",
   // "STRONG" and "weak" all passed -- after which a coverage query filtering on "strong" silently
